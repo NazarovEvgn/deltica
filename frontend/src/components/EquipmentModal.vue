@@ -1,0 +1,429 @@
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import {
+  NModal,
+  NCard,
+  NForm,
+  NFormItem,
+  NInput,
+  NSelect,
+  NDatePicker,
+  NInputNumber,
+  NButton,
+  NSpace,
+  NGrid,
+  NGridItem
+} from 'naive-ui'
+import axios from 'axios'
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    required: true
+  },
+  equipmentId: {
+    type: Number,
+    default: null
+  }
+})
+
+const emit = defineEmits(['update:show', 'saved'])
+
+// Модель формы
+const formValue = ref({
+  // Equipment
+  equipment_name: '',
+  equipment_model: '',
+  equipment_type: 'SI',
+  equipment_specs: '',
+  factory_number: '',
+  inventory_number: '',
+  equipment_year: new Date().getFullYear(),
+
+  // Verification
+  verification_type: 'verification',
+  registry_number: '',
+  verification_interval: 12,
+  verification_date: Date.now(),
+  verification_due: Date.now(),
+  verification_plan: Date.now(),
+  verification_state: 'state_work',
+  status: 'status_fit',
+
+  // Responsibility
+  department: '',
+  responsible_person: '',
+  verifier_org: '',
+
+  // Finance
+  cost_rate: null,
+  quantity: 1,
+  coefficient: 1.0,
+  total_cost: null,
+  invoice_number: '',
+  paid_amount: null,
+  payment_date: null
+})
+
+// Опции для select-ов
+const equipmentTypeOptions = [
+  { label: 'СИ (Средства Измерения)', value: 'SI' },
+  { label: 'ИО (Испытательное Оборудование)', value: 'IO' }
+]
+
+const verificationTypeOptions = [
+  { label: 'Калибровка', value: 'calibration' },
+  { label: 'Верификация', value: 'verification' },
+  { label: 'Сертификация', value: 'certification' }
+]
+
+const verificationStateOptions = [
+  { label: 'В работе', value: 'state_work' },
+  { label: 'На хранении', value: 'state_storage' },
+  { label: 'На верификации', value: 'state_verification' },
+  { label: 'В ремонте', value: 'state_repair' },
+  { label: 'В архиве', value: 'state_archived' }
+]
+
+const statusOptions = [
+  { label: 'Годен', value: 'status_fit' },
+  { label: 'Просрочен', value: 'status_expired' },
+  { label: 'Истекает', value: 'status_expiring' },
+  { label: 'На хранении', value: 'status_storage' },
+  { label: 'На верификации', value: 'status_verification' },
+  { label: 'В ремонте', value: 'status_repair' }
+]
+
+const isEdit = ref(false)
+
+// Загрузка данных для редактирования
+const loadEquipmentData = async () => {
+  if (!props.equipmentId) return
+
+  try {
+    const response = await axios.get(`http://localhost:8000/main-table/${props.equipmentId}`)
+    const data = response.data
+
+    // Заполняем форму данными
+    formValue.value = {
+      equipment_name: data.equipment_name,
+      equipment_model: data.equipment_model,
+      equipment_type: data.equipment_type || 'SI',
+      equipment_specs: data.equipment_specs || '',
+      factory_number: data.factory_number,
+      inventory_number: data.inventory_number,
+      equipment_year: data.equipment_year,
+
+      verification_type: data.verification_type,
+      registry_number: data.registry_number || '',
+      verification_interval: data.verification_interval,
+      verification_date: new Date(data.verification_date).getTime(),
+      verification_due: new Date(data.verification_due).getTime(),
+      verification_plan: new Date(data.verification_plan).getTime(),
+      verification_state: data.verification_state,
+      status: data.status,
+
+      department: data.department || '',
+      responsible_person: data.responsible_person || '',
+      verifier_org: data.verifier_org || '',
+
+      cost_rate: data.cost_rate,
+      quantity: data.quantity || 1,
+      coefficient: data.coefficient || 1.0,
+      total_cost: data.total_cost,
+      invoice_number: data.invoice_number || '',
+      paid_amount: data.paid_amount,
+      payment_date: data.payment_date ? new Date(data.payment_date).getTime() : null
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке данных оборудования:', error)
+  }
+}
+
+// Сброс формы
+const resetForm = () => {
+  formValue.value = {
+    equipment_name: '',
+    equipment_model: '',
+    equipment_type: 'SI',
+    equipment_specs: '',
+    factory_number: '',
+    inventory_number: '',
+    equipment_year: new Date().getFullYear(),
+
+    verification_type: 'verification',
+    registry_number: '',
+    verification_interval: 12,
+    verification_date: Date.now(),
+    verification_due: Date.now(),
+    verification_plan: Date.now(),
+    verification_state: 'state_work',
+    status: 'status_fit',
+
+    department: '',
+    responsible_person: '',
+    verifier_org: '',
+
+    cost_rate: null,
+    quantity: 1,
+    coefficient: 1.0,
+    total_cost: null,
+    invoice_number: '',
+    paid_amount: null,
+    payment_date: null
+  }
+}
+
+// Сохранение данных
+const handleSave = async () => {
+  try {
+    // Подготовка данных для отправки
+    const payload = {
+      ...formValue.value,
+      verification_date: new Date(formValue.value.verification_date).toISOString().split('T')[0],
+      verification_due: new Date(formValue.value.verification_due).toISOString().split('T')[0],
+      verification_plan: new Date(formValue.value.verification_plan).toISOString().split('T')[0],
+      payment_date: formValue.value.payment_date
+        ? new Date(formValue.value.payment_date).toISOString().split('T')[0]
+        : null
+    }
+
+    if (isEdit.value) {
+      // Обновление
+      await axios.put(`http://localhost:8000/main-table/${props.equipmentId}`, payload)
+    } else {
+      // Создание
+      await axios.post('http://localhost:8000/main-table/', payload)
+    }
+
+    emit('saved')
+    handleClose()
+  } catch (error) {
+    console.error('Ошибка при сохранении:', error)
+    alert('Ошибка при сохранении данных')
+  }
+}
+
+// Закрытие модального окна
+const handleClose = () => {
+  emit('update:show', false)
+  resetForm()
+}
+
+// Наблюдение за изменением show и equipmentId
+watch(() => props.show, (newValue) => {
+  if (newValue) {
+    isEdit.value = !!props.equipmentId
+    if (isEdit.value) {
+      loadEquipmentData()
+    } else {
+      resetForm()
+    }
+  }
+})
+</script>
+
+<template>
+  <n-modal
+    :show="show"
+    @update:show="handleClose"
+    preset="card"
+    :title="isEdit ? 'Редактировать оборудование' : 'Добавить оборудование'"
+    style="width: 90%; max-width: 1200px;"
+    :segmented="{ content: 'soft', footer: 'soft' }"
+  >
+    <n-form :model="formValue" label-placement="top">
+      <n-grid :cols="3" :x-gap="24">
+        <!-- Секция: Оборудование -->
+        <n-grid-item :span="3">
+          <h3>Информация об оборудовании</h3>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Наименование" required>
+            <n-input v-model:value="formValue.equipment_name" placeholder="Введите наименование" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Модель" required>
+            <n-input v-model:value="formValue.equipment_model" placeholder="Введите модель" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Тип оборудования" required>
+            <n-select v-model:value="formValue.equipment_type" :options="equipmentTypeOptions" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Заводской номер" required>
+            <n-input v-model:value="formValue.factory_number" placeholder="Введите заводской номер" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Инвентарный номер" required>
+            <n-input v-model:value="formValue.inventory_number" placeholder="Введите инвентарный номер" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Год выпуска" required>
+            <n-input-number v-model:value="formValue.equipment_year" :min="1900" :max="2100" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item :span="3">
+          <n-form-item label="Спецификация">
+            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите спецификацию" />
+          </n-form-item>
+        </n-grid-item>
+
+        <!-- Секция: Верификация -->
+        <n-grid-item :span="3">
+          <h3>Информация о верификации</h3>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Тип верификации" required>
+            <n-select v-model:value="formValue.verification_type" :options="verificationTypeOptions" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Номер в реестре">
+            <n-input v-model:value="formValue.registry_number" placeholder="Введите номер" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Интервал (месяцы)" required>
+            <n-input-number v-model:value="formValue.verification_interval" :min="1" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Дата верификации" required>
+            <n-date-picker v-model:value="formValue.verification_date" type="date" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Действует до" required>
+            <n-date-picker v-model:value="formValue.verification_due" type="date" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="План верификации" required>
+            <n-date-picker v-model:value="formValue.verification_plan" type="date" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Состояние" required>
+            <n-select v-model:value="formValue.verification_state" :options="verificationStateOptions" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Статус" required>
+            <n-select v-model:value="formValue.status" :options="statusOptions" />
+          </n-form-item>
+        </n-grid-item>
+
+        <!-- Секция: Ответственность -->
+        <n-grid-item :span="3">
+          <h3>Информация об ответственности</h3>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Подразделение" required>
+            <n-input v-model:value="formValue.department" placeholder="Введите подразделение" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Ответственное лицо" required>
+            <n-input v-model:value="formValue.responsible_person" placeholder="Введите ФИО" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Организация-поверитель" required>
+            <n-input v-model:value="formValue.verifier_org" placeholder="Введите организацию" />
+          </n-form-item>
+        </n-grid-item>
+
+        <!-- Секция: Финансы -->
+        <n-grid-item :span="3">
+          <h3>Финансовая информация</h3>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Расценка">
+            <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Количество" required>
+            <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Коэффициент">
+            <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Общая стоимость">
+            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Номер счета">
+            <n-input v-model:value="formValue.invoice_number" placeholder="Введите номер счета" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Оплачено">
+            <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Дата оплаты">
+            <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable />
+          </n-form-item>
+        </n-grid-item>
+      </n-grid>
+    </n-form>
+
+    <template #footer>
+      <n-space justify="end">
+        <n-button @click="handleClose">Отмена</n-button>
+        <n-button type="primary" @click="handleSave">
+          {{ isEdit ? 'Сохранить' : 'Создать' }}
+        </n-button>
+      </n-space>
+    </template>
+  </n-modal>
+</template>
+
+<style scoped>
+h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #18a058;
+  padding-bottom: 8px;
+}
+</style>

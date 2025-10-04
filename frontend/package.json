@@ -12,6 +12,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@revolist/vue3-datagrid": "^4.17.3",
+    "axios": "^1.12.2",
+    "naive-ui": "^2.43.1",
     "vue": "^3.5.18"
   },
   "devDependencies": {

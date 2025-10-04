@@ -1,11 +1,57 @@
-<script setup></script>
+<script setup>
+import { ref } from 'vue'
+import MainTable from './components/MainTable.vue'
+import EquipmentModal from './components/EquipmentModal.vue'
+
+const showModal = ref(false)
+const editingEquipmentId = ref(null)
+const mainTableRef = ref(null)
+
+// Открыть модальное окно для добавления
+const handleAddEquipment = () => {
+  editingEquipmentId.value = null
+  showModal.value = true
+}
+
+// Открыть модальное окно для редактирования
+const handleEditEquipment = (equipmentId) => {
+  editingEquipmentId.value = equipmentId
+  showModal.value = true
+}
+
+// Обработка сохранения (после создания или обновления)
+const handleSaved = () => {
+  mainTableRef.value?.loadData()
+}
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div id="app">
+    <MainTable
+      ref="mainTableRef"
+      @add-equipment="handleAddEquipment"
+      @edit-equipment="handleEditEquipment"
+    />
+    <EquipmentModal
+      v-model:show="showModal"
+      :equipment-id="editingEquipmentId"
+      @saved="handleSaved"
+    />
+  </div>
 </template>
 
-<style scoped></style>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100vh;
+  overflow: hidden;
+}
+</style>
