@@ -121,6 +121,7 @@ class MainTableResponse(BaseModel):
     equipment_id: int
     equipment_name: str
     equipment_model: str
+    equipment_type: EquipmentTypeEnum
     factory_number: str
     inventory_number: str
     verification_type: str

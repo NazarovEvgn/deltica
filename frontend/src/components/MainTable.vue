@@ -21,10 +21,46 @@ const columns = ref([
   { prop: 'verification_date', name: 'Дата верификации', size: 150 },
   { prop: 'verification_due', name: 'Действует до', size: 150 },
   { prop: 'verification_plan', name: 'План верификации', size: 150 },
-  { prop: 'verification_state', name: 'Состояние', size: 150 },
   { prop: 'status', name: 'Статус', size: 150 },
-  { prop: 'department', name: 'Подразделение', size: 180 },
-  { prop: 'responsible_person', name: 'Ответственный', size: 200 }
+  {
+    prop: 'actions',
+    name: 'Действия',
+    size: 200,
+    readonly: true,
+    cellTemplate: (createElement, props) => {
+      const equipmentId = props.model.equipment_id
+      return createElement('div', {
+        style: { display: 'flex', gap: '8px', padding: '4px' }
+      }, [
+        createElement('button', {
+          textContent: 'Редактировать',
+          style: {
+            padding: '4px 12px',
+            cursor: 'pointer',
+            border: '1px solid #18a058',
+            borderRadius: '3px',
+            background: '#18a058',
+            color: 'white',
+            fontSize: '12px'
+          },
+          onClick: () => editEquipment(equipmentId)
+        }),
+        createElement('button', {
+          textContent: 'Удалить',
+          style: {
+            padding: '4px 12px',
+            cursor: 'pointer',
+            border: '1px solid #d03050',
+            borderRadius: '3px',
+            background: '#d03050',
+            color: 'white',
+            fontSize: '12px'
+          },
+          onClick: () => deleteEquipment(equipmentId)
+        })
+      ])
+    }
+  }
 ])
 
 // Загрузка данных с бэкенда
