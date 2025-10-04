@@ -34,6 +34,16 @@ uv sync
 cd frontend && npm install
 ```
 
+### Quick Start (одной командой)
+```bash
+# Windows PowerShell
+.\start.ps1
+
+# Windows CMD
+start.bat
+```
+Эти скрипты запустят backend и frontend одновременно в отдельных окнах.
+
 ### Backend Development
 ```bash
 # Run FastAPI backend with auto-reload (default port 8000)

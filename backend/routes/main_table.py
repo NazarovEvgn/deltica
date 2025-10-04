@@ -46,6 +46,23 @@ def get_equipment_by_id(equipment_id: int, db: Session = Depends(get_db)):
     return equipment
 
 
+@router.get("/{equipment_id}/full")
+def get_equipment_full_by_id(equipment_id: int, db: Session = Depends(get_db)):
+    """
+    Получить полные данные оборудования по ID для редактирования
+    """
+    service = MainTableService(db)
+    equipment = service.get_equipment_full_by_id(equipment_id)
+
+    if not equipment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Оборудование с ID {equipment_id} не найдено"
+        )
+
+    return equipment
+
+
 @router.post("/", response_model=MainTableResponse)
 def create_equipment(equipment_data: MainTableCreate, db: Session = Depends(get_db)):
     """

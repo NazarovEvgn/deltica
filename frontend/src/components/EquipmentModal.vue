@@ -101,7 +101,7 @@ const loadEquipmentData = async () => {
   if (!props.equipmentId) return
 
   try {
-    const response = await axios.get(`http://localhost:8000/main-table/${props.equipmentId}`)
+    const response = await axios.get(`http://localhost:8000/main-table/${props.equipmentId}/full`)
     const data = response.data
 
     // Заполняем форму данными
@@ -117,9 +117,9 @@ const loadEquipmentData = async () => {
       verification_type: data.verification_type,
       registry_number: data.registry_number || '',
       verification_interval: data.verification_interval,
-      verification_date: new Date(data.verification_date).getTime(),
-      verification_due: new Date(data.verification_due).getTime(),
-      verification_plan: new Date(data.verification_plan).getTime(),
+      verification_date: data.verification_date ? new Date(data.verification_date).getTime() : Date.now(),
+      verification_due: data.verification_due ? new Date(data.verification_due).getTime() : Date.now(),
+      verification_plan: data.verification_plan ? new Date(data.verification_plan).getTime() : Date.now(),
       verification_state: data.verification_state,
       status: data.status,
 

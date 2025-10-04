@@ -277,3 +277,50 @@ class MainTableService:
             responsible_person=result.responsible_person,
             verifier_org=result.verifier_org
         )
+
+    def get_equipment_full_by_id(self, equipment_id: int) -> Optional[dict]:
+        """
+        Получить полные данные оборудования по ID для редактирования
+        """
+        equipment = self.db.query(Equipment).filter(Equipment.id == equipment_id).first()
+        if not equipment:
+            return None
+
+        verification = self.db.query(Verification).filter(Verification.equipment_id == equipment_id).first()
+        responsibility = self.db.query(Responsibility).filter(Responsibility.equipment_id == equipment_id).first()
+        finance = self.db.query(Finance).filter(Finance.equipment_model_id == equipment_id).first()
+
+        return {
+            # Equipment fields
+            "equipment_name": equipment.equipment_name,
+            "equipment_model": equipment.equipment_model,
+            "equipment_type": equipment.equipment_type,
+            "equipment_specs": equipment.equipment_specs,
+            "factory_number": equipment.factory_number,
+            "inventory_number": equipment.inventory_number,
+            "equipment_year": equipment.equipment_year,
+
+            # Verification fields
+            "verification_type": verification.verification_type if verification else "",
+            "registry_number": verification.registry_number if verification else "",
+            "verification_interval": verification.verification_interval if verification else 12,
+            "verification_date": verification.verification_date if verification else None,
+            "verification_due": verification.verification_due if verification else None,
+            "verification_plan": verification.verification_plan if verification else None,
+            "verification_state": verification.verification_state if verification else "",
+            "status": verification.status if verification else "",
+
+            # Responsibility fields
+            "department": responsibility.department if responsibility else "",
+            "responsible_person": responsibility.responsible_person if responsibility else "",
+            "verifier_org": responsibility.verifier_org if responsibility else "",
+
+            # Finance fields
+            "cost_rate": finance.cost_rate if finance else None,
+            "quantity": finance.quantity if finance else 1,
+            "coefficient": finance.coefficient if finance else 1.0,
+            "total_cost": finance.total_cost if finance else None,
+            "invoice_number": finance.invoice_number if finance else "",
+            "paid_amount": finance.paid_amount if finance else None,
+            "payment_date": finance.payment_date if finance else None
+        }
