@@ -99,6 +99,21 @@ const statusOptions = [
   { label: 'В ремонте', value: 'status_repair' }
 ]
 
+const departmentOptions = [
+  { label: 'Группа СМ', value: 'sm' },
+  { label: 'ГТЛ', value: 'gtl' },
+  { label: 'ЛБР', value: 'lbr' },
+  { label: 'ЛТР', value: 'ltr' },
+  { label: 'ЛХАиЭИ', value: 'lha' },
+  { label: 'ОГМК', value: 'ogmk' },
+  { label: 'ОООПС', value: 'oii' },
+  { label: 'СМТСиК', value: 'smts' },
+  { label: 'СОИИ', value: 'soii' },
+  { label: 'ТО', value: 'to' },
+  { label: 'ТС', value: 'ts' },
+  { label: 'ЭС', value: 'es' }
+]
+
 const isEdit = ref(false)
 
 // Загрузка данных для редактирования
@@ -399,7 +414,7 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Подразделение" required>
-            <n-input v-model:value="formValue.department" placeholder="Введите подразделение" />
+            <n-select v-model:value="formValue.department" :options="departmentOptions" placeholder="Выберите подразделение" />
           </n-form-item>
         </n-grid-item>
 
