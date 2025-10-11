@@ -45,7 +45,7 @@ class Verification(Base):
         'status_storage',
         'status_verification',
         'status_repair'
-    ), nullable=False)
+    ), nullable=False)  # Auto-calculated by trigger
 
     equipment = relationship("Equipment", back_populates="verifications")
 
