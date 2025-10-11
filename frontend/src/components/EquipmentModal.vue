@@ -114,6 +114,28 @@ const departmentOptions = [
   { label: 'ЭС', value: 'es' }
 ]
 
+const responsiblePersonOptions = [
+  { label: 'Аббасов И.', value: 'iabbasov' },
+  { label: 'Абрамов А.', value: 'aabramov' },
+  { label: 'Антипенский Е.', value: 'eantipensky' },
+  { label: 'Бикиняев Р.', value: 'rbikinyaev' },
+  { label: 'Горбачев Д.', value: 'dgorbachev' },
+  { label: 'Дубинский И.', value: 'idubinsky' },
+  { label: 'Забора И.', value: 'izabora' },
+  { label: 'Калашников С.', value: 'skalashnikov' },
+  { label: 'Кобякова Н.', value: 'nkobyakova' },
+  { label: 'Кулинич Г.', value: 'gkulinich' },
+  { label: 'Макаров В.', value: 'vmakarov' },
+  { label: 'Матуся С.', value: 'smatusya' },
+  { label: 'Медведев А.', value: 'amedvedev' },
+  { label: 'Назаров Е.', value: 'enazarov' },
+  { label: 'Пальянов В.', value: 'vpalyanov' },
+  { label: 'Радионов А.', value: 'aradionov' },
+  { label: 'Солодовниченко И.', value: 'isolodovnichenko' },
+  { label: 'Фещенко Р.', value: 'rfeschenko' },
+  { label: 'Черкашин А.', value: 'acherkashin' }
+]
+
 const isEdit = ref(false)
 
 // Загрузка данных для редактирования
@@ -420,7 +442,7 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Ответственное лицо" required>
-            <n-input v-model:value="formValue.responsible_person" placeholder="Введите ФИО" />
+            <n-select v-model:value="formValue.responsible_person" :options="responsiblePersonOptions" placeholder="Выберите ответственное лицо" />
           </n-form-item>
         </n-grid-item>
 
