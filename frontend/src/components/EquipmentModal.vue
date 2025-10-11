@@ -176,17 +176,26 @@ const resetForm = () => {
   }
 }
 
+// Функция для конвертации timestamp в локальную дату YYYY-MM-DD
+const formatDateToLocal = (timestamp) => {
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Сохранение данных
 const handleSave = async () => {
   try {
     // Подготовка данных для отправки
     const payload = {
       ...formValue.value,
-      verification_date: new Date(formValue.value.verification_date).toISOString().split('T')[0],
-      verification_due: new Date(formValue.value.verification_due).toISOString().split('T')[0],
-      verification_plan: new Date(formValue.value.verification_plan).toISOString().split('T')[0],
+      verification_date: formatDateToLocal(formValue.value.verification_date),
+      verification_due: formatDateToLocal(formValue.value.verification_due),
+      verification_plan: formatDateToLocal(formValue.value.verification_plan),
       payment_date: formValue.value.payment_date
-        ? new Date(formValue.value.payment_date).toISOString().split('T')[0]
+        ? formatDateToLocal(formValue.value.payment_date)
         : null
     }
 
@@ -319,7 +328,13 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Действует до" required>
-            <n-date-picker v-model:value="formValue.verification_due" type="date" style="width: 100%" />
+            <n-date-picker
+              v-model:value="formValue.verification_due"
+              type="date"
+              format="dd/MM/yyyy"
+              disabled
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 

@@ -40,7 +40,7 @@ const columns = ref([
   },
   { prop: 'verification_interval', name: 'Интервал (мес)', size: 120 },
   { prop: 'verification_date', name: 'Дата верификации', size: 150 },
-  { prop: 'verification_due', name: 'Действует до', size: 150 },
+  { prop: 'verification_due', name: 'Действует до', size: 150, readonly: true },
   { prop: 'verification_plan', name: 'План верификации', size: 150 },
   {
     prop: 'status',
