@@ -1,3 +1,5 @@
+#deltica/backend/core/main.py
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routes.main_table import router as main_table_router

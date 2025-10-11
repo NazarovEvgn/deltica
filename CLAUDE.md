@@ -138,6 +138,24 @@ Current implementation in `backend/routes/main_table.py`:
 - **Service layer**: Business logic in services (e.g., `MainTableService`), routes handle HTTP concerns
 - **Full entity CRUD**: Service methods handle creating/updating/deleting across all related tables
 - **Outer joins**: Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility
+- **RevoGrid dropdowns**: For enum fields (verification_type, status), use custom cellTemplate with native `<select>` elements instead of RevoGrid's built-in editor:
+  ```javascript
+  {
+    prop: 'verification_type',
+    cellTemplate: (createElement, props) => {
+      return createElement('select', {
+        value: props.model[props.prop],
+        onChange: async (e) => {
+          props.model[props.prop] = e.target.value
+          await saveCellToServer(props.model.equipment_id, props.prop, e.target.value)
+        }
+      }, [
+        createElement('option', { value: 'calibration' }, 'Калибровка'),
+        // ... other options
+      ])
+    }
+  }
+  ```
 
 ## Important Notes
 
@@ -151,7 +169,10 @@ Current implementation in `backend/routes/main_table.py`:
 
 - **Backend**: Full CRUD API implemented at `/main-table` endpoint
 - **Database**: Models defined, baseline migrations configured, relationships established
-- **Frontend**: Minimal Vue.js 3 setup (placeholder content, MainTable.vue component needed)
+- **Frontend**: RevoGrid table implementation with inline editing, dropdowns for enum fields, action buttons
+  - Main table displays: equipment_name, equipment_model, factory_number, inventory_number, verification_type (dropdown), verification_interval, verification_date, verification_due, verification_plan, status (dropdown), actions (Edit/Delete buttons)
+  - Auto-save on cell edit and dropdown change
+  - Double-click row to open edit modal
 - **Authentication**: Not yet implemented
 - **Tests**: Directory exists but no tests implemented
 
