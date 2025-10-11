@@ -10,6 +10,29 @@ const emit = defineEmits(['add-equipment', 'edit-equipment'])
 const source = ref([])
 const loading = ref(false)
 
+// Функция форматирования даты в dd.mm.yyyy
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
+// Функция форматирования месяца и года (например: Октябрь 2025)
+const formatMonthYear = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const monthNames = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ]
+  const month = monthNames[date.getMonth()]
+  const year = date.getFullYear()
+  return `${month} ${year}`
+}
+
 // Определение колонок для RevoGrid
 const columns = ref([
   { prop: 'equipment_name', name: 'Наименование', size: 200 },
@@ -39,9 +62,40 @@ const columns = ref([
     }
   },
   { prop: 'verification_interval', name: 'Интервал (мес)', size: 120 },
-  { prop: 'verification_date', name: 'Дата верификации', size: 150 },
-  { prop: 'verification_due', name: 'Действует до', size: 150, readonly: true },
-  { prop: 'verification_plan', name: 'План верификации', size: 150 },
+  {
+    prop: 'verification_date',
+    name: 'Дата верификации',
+    size: 150,
+    cellTemplate: (createElement, props) => {
+      return createElement('span', {
+        textContent: formatDate(props.model[props.prop]),
+        style: { padding: '0 4px' }
+      })
+    }
+  },
+  {
+    prop: 'verification_due',
+    name: 'Действует до',
+    size: 150,
+    readonly: true,
+    cellTemplate: (createElement, props) => {
+      return createElement('span', {
+        textContent: formatDate(props.model[props.prop]),
+        style: { padding: '0 4px' }
+      })
+    }
+  },
+  {
+    prop: 'verification_plan',
+    name: 'План верификации',
+    size: 150,
+    cellTemplate: (createElement, props) => {
+      return createElement('span', {
+        textContent: formatMonthYear(props.model[props.prop]),
+        style: { padding: '0 4px' }
+      })
+    }
+  },
   {
     prop: 'status',
     name: 'Статус',
