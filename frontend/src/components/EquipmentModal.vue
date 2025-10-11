@@ -7,6 +7,8 @@ import {
   NFormItem,
   NInput,
   NSelect,
+  NRadioGroup,
+  NRadio,
   NDatePicker,
   NInputNumber,
   NButton,
@@ -300,13 +302,18 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Интервал (месяцы)" required>
-            <n-input-number v-model:value="formValue.verification_interval" :min="1" style="width: 100%" />
+            <n-input-number v-model:value="formValue.verification_interval" :min="12" :step="12" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Дата верификации" required>
-            <n-date-picker v-model:value="formValue.verification_date" type="date" style="width: 100%" />
+            <n-date-picker
+              v-model:value="formValue.verification_date"
+              type="date"
+              format="dd/MM/yyyy"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 
@@ -318,7 +325,12 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="План верификации" required>
-            <n-date-picker v-model:value="formValue.verification_plan" type="date" style="width: 100%" />
+            <n-date-picker
+              v-model:value="formValue.verification_plan"
+              type="month"
+              format="MMM yyyy"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 
