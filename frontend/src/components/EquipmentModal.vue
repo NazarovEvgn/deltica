@@ -283,6 +283,20 @@ const handleClose = () => {
   resetForm()
 }
 
+// Автоматическое обновление verification_plan при изменении verification_date или verification_interval
+watch([() => formValue.value.verification_date, () => formValue.value.verification_interval], ([newDate, newInterval]) => {
+  if (newDate && newInterval) {
+    // Вычисляем verification_due (date + interval месяцев - 1 день)
+    const date = new Date(newDate)
+    date.setMonth(date.getMonth() + newInterval)
+    date.setDate(date.getDate() - 1)
+
+    // Устанавливаем verification_plan на первое число месяца verification_due
+    const planDate = new Date(date.getFullYear(), date.getMonth(), 1)
+    formValue.value.verification_plan = planDate.getTime()
+  }
+})
+
 // Наблюдение за изменением show и equipmentId
 watch(() => props.show, (newValue) => {
   if (newValue) {
