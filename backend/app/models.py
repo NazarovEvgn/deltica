@@ -1,6 +1,6 @@
 # deltica/backend/app/models.py
 
-from sqlalchemy import Column, Integer, Float, String, Date, Enum, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, Date, Enum, ForeignKey, Computed
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 
@@ -29,7 +29,7 @@ class Verification(Base):
     registry_number = Column(String)
     verification_interval = Column(Integer, nullable=False)
     verification_date = Column(Date, nullable=False)
-    verification_due = Column(Date, nullable=False)
+    verification_due = Column(Date, Computed("(verification_date + make_interval(months => verification_interval) - interval '1 day')::date"))
     verification_plan = Column(Date, nullable=False)
     verification_state = Column(Enum(
         'state_work',

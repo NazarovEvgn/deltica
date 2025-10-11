@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { NMessageProvider } from 'naive-ui'
 import MainTable from './components/MainTable.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
 
@@ -26,18 +27,20 @@ const handleSaved = () => {
 </script>
 
 <template>
-  <div id="app">
-    <MainTable
-      ref="mainTableRef"
-      @add-equipment="handleAddEquipment"
-      @edit-equipment="handleEditEquipment"
-    />
-    <EquipmentModal
-      v-model:show="showModal"
-      :equipment-id="editingEquipmentId"
-      @saved="handleSaved"
-    />
-  </div>
+  <n-message-provider>
+    <div id="app">
+      <MainTable
+        ref="mainTableRef"
+        @add-equipment="handleAddEquipment"
+        @edit-equipment="handleEditEquipment"
+      />
+      <EquipmentModal
+        v-model:show="showModal"
+        :equipment-id="editingEquipmentId"
+        @saved="handleSaved"
+      />
+    </div>
+  </n-message-provider>
 </template>
 
 <style>
