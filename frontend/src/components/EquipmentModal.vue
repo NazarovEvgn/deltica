@@ -14,9 +14,12 @@ import {
   NButton,
   NSpace,
   NGrid,
-  NGridItem
+  NGridItem,
+  useMessage
 } from 'naive-ui'
 import axios from 'axios'
+
+const message = useMessage()
 
 const props = defineProps({
   show: {
@@ -185,8 +188,30 @@ const formatDateToLocal = (timestamp) => {
   return `${year}-${month}-${day}`
 }
 
+// Валидация verification_interval (должен быть кратен 12)
+const validateVerificationInterval = (value) => {
+  if (value && value % 12 !== 0) {
+    message.error('Интервал верификации должен быть кратен 12 месяцам (12, 24, 36, 48 и т.д.)')
+    return false
+  }
+  return true
+}
+
+// Обработчик изменения verification_interval
+const handleIntervalChange = (value) => {
+  if (!validateVerificationInterval(value)) {
+    // Округляем до ближайшего кратного 12
+    const rounded = Math.round(value / 12) * 12
+    formValue.value.verification_interval = rounded || 12
+  }
+}
+
 // Сохранение данных
 const handleSave = async () => {
+  // Валидация перед сохранением
+  if (!validateVerificationInterval(formValue.value.verification_interval)) {
+    return
+  }
   try {
     // Подготовка данных для отправки
     const payload = {
@@ -311,7 +336,13 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Интервал (месяцы)" required>
-            <n-input-number v-model:value="formValue.verification_interval" :min="12" :step="12" style="width: 100%" />
+            <n-input-number
+              v-model:value="formValue.verification_interval"
+              :min="12"
+              :step="12"
+              @blur="handleIntervalChange(formValue.verification_interval)"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 

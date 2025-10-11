@@ -2,7 +2,7 @@
 
 from datetime import date
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 
@@ -47,6 +47,15 @@ class VerificationBase(BaseModel):
     verification_plan: date
     verification_state: str
     status: str
+
+    @field_validator('verification_interval')
+    @classmethod
+    def validate_interval_multiple_of_12(cls, v: int) -> int:
+        if v % 12 != 0:
+            raise ValueError('Интервал верификации должен быть кратен 12 месяцам (12, 24, 36, 48 и т.д.)')
+        if v < 12:
+            raise ValueError('Интервал верификации должен быть не менее 12 месяцев')
+        return v
 
 
 class VerificationCreate(VerificationBase):
