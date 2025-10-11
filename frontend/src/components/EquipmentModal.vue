@@ -73,8 +73,8 @@ const equipmentTypeOptions = [
 
 const verificationTypeOptions = [
   { label: 'Калибровка', value: 'calibration' },
-  { label: 'Верификация', value: 'verification' },
-  { label: 'Сертификация', value: 'certification' }
+  { label: 'Поверка', value: 'verification' },
+  { label: 'Аттестация', value: 'certification' }
 ]
 
 const verificationStateOptions = [

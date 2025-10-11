@@ -16,12 +16,77 @@ const columns = ref([
   { prop: 'equipment_model', name: 'Модель', size: 150 },
   { prop: 'factory_number', name: 'Заводской номер', size: 150 },
   { prop: 'inventory_number', name: 'Инвентарный номер', size: 150 },
-  { prop: 'verification_type', name: 'Тип верификации', size: 150 },
+  {
+    prop: 'verification_type',
+    name: 'Тип верификации',
+    size: 150,
+    readonly: true,
+    cellTemplate: (createElement, props) => {
+      const verificationTypeMap = {
+        'calibration': 'Калибровка',
+        'verification': 'Поверка',
+        'certification': 'Аттестация'
+      }
+      const currentValue = props.model[props.prop] || ''
+      const displayValue = verificationTypeMap[currentValue] || currentValue
+
+      return createElement('span', {
+        textContent: displayValue,
+        style: {
+          padding: '0 4px'
+        }
+      })
+    }
+  },
   { prop: 'verification_interval', name: 'Интервал (мес)', size: 120 },
   { prop: 'verification_date', name: 'Дата верификации', size: 150 },
   { prop: 'verification_due', name: 'Действует до', size: 150 },
   { prop: 'verification_plan', name: 'План верификации', size: 150 },
-  { prop: 'status', name: 'Статус', size: 150 },
+  {
+    prop: 'status',
+    name: 'Статус',
+    size: 150,
+    cellTemplate: (createElement, props) => {
+      const statusMap = {
+        'status_fit': 'Годен',
+        'status_expired': 'Просрочен',
+        'status_expiring': 'Истекает',
+        'status_storage': 'На хранении',
+        'status_verification': 'На верификации',
+        'status_repair': 'На ремонте'
+      }
+      const currentValue = props.model[props.prop] || ''
+
+      return createElement('select', {
+        value: currentValue,
+        style: {
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          background: 'transparent',
+          padding: '0 4px',
+          cursor: 'pointer'
+        },
+        onChange: async (e) => {
+          const newValue = e.target.value
+          props.model[props.prop] = newValue
+
+          // Сохраняем на сервер
+          const equipmentId = props.model.equipment_id
+          if (equipmentId) {
+            await saveCellToServer(equipmentId, props.prop, newValue)
+          }
+        }
+      }, [
+        createElement('option', { value: 'status_fit' }, statusMap['status_fit']),
+        createElement('option', { value: 'status_expired' }, statusMap['status_expired']),
+        createElement('option', { value: 'status_expiring' }, statusMap['status_expiring']),
+        createElement('option', { value: 'status_storage' }, statusMap['status_storage']),
+        createElement('option', { value: 'status_verification' }, statusMap['status_verification']),
+        createElement('option', { value: 'status_repair' }, statusMap['status_repair'])
+      ])
+    }
+  },
   {
     prop: 'actions',
     name: 'Действия',
