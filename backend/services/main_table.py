@@ -1,10 +1,56 @@
 # deltica/backend/services/main_table.py
 
 from typing import List, Optional
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 from backend.app.models import Equipment, Verification, Responsibility, Finance
 from backend.app.schemas import MainTableResponse, MainTableCreate, MainTableUpdate
+
+
+def calculate_status(verification_due: date, verification_state: str) -> str:
+    """
+    Вычисляет status на основе verification_due и verification_state.
+
+    Логика приоритетов:
+    1. Если verification_state = 'state_verification', 'state_repair', 'state_storage', 'state_archived'
+       → статус ВСЕГДА дублирует состояние (независимо от срока)
+    2. Если verification_state = 'state_work':
+       - Если CURRENT_DATE > verification_due → status_expired
+       - Если verification_due - CURRENT_DATE <= 14 дней → status_expiring
+       - Иначе → status_fit
+
+    Args:
+        verification_due: Дата окончания действия верификации (вычислена в БД)
+        verification_state: Состояние оборудования
+
+    Returns:
+        Вычисленный status
+    """
+    # Маппинг состояний в статусы
+    state_to_status_map = {
+        "state_storage": "status_storage",
+        "state_verification": "status_verification",
+        "state_repair": "status_repair",
+        "state_archived": "status_fit"
+    }
+
+    # Если состояние не 'state_work', то статус всегда дублирует состояние
+    if verification_state in state_to_status_map:
+        return state_to_status_map[verification_state]
+
+    # Для 'state_work' проверяем срок верификации
+    today = date.today()
+
+    if today > verification_due:
+        return "status_expired"
+
+    days_until_due = (verification_due - today).days
+    if days_until_due <= 14:
+        return "status_expiring"
+
+    return "status_fit"
 
 
 class MainTableService:
@@ -21,6 +67,7 @@ class MainTableService:
                 Equipment.id.label("equipment_id"),
                 Equipment.equipment_name,
                 Equipment.equipment_model,
+                Equipment.equipment_type,
                 Equipment.factory_number,
                 Equipment.inventory_number,
                 Verification.verification_type,
@@ -47,6 +94,7 @@ class MainTableService:
                 equipment_id=row.equipment_id,
                 equipment_name=row.equipment_name,
                 equipment_model=row.equipment_model,
+                equipment_type=row.equipment_type,
                 factory_number=row.factory_number,
                 inventory_number=row.inventory_number,
                 verification_type=row.verification_type or "",
@@ -81,20 +129,28 @@ class MainTableService:
         self.db.add(equipment)
         self.db.flush()  # Получаем ID оборудования
 
-        # Создаем верификацию
+        # Создаем верификацию (status временно устанавливаем в status_fit)
         verification = Verification(
             equipment_id=equipment.id,
             verification_type=data.verification_type,
             registry_number=data.registry_number,
             verification_interval=data.verification_interval,
             verification_date=data.verification_date,
-            verification_due=data.verification_due,
             verification_plan=data.verification_plan,
             verification_state=data.verification_state,
-            status=data.status
+            status="status_fit"  # Временное значение
         )
 
         self.db.add(verification)
+        self.db.flush()  # БД вычислит verification_due как generated column
+        self.db.refresh(verification)  # Получаем вычисленный verification_due
+
+        # Теперь вычисляем правильный status на основе verification_due из БД
+        calculated_status = calculate_status(
+            verification_due=verification.verification_due,
+            verification_state=verification.verification_state  # Используем значение из объекта
+        )
+        verification.status = calculated_status
 
         # Создаем ответственность
         responsibility = Responsibility(
@@ -126,6 +182,7 @@ class MainTableService:
             equipment_id=equipment.id,
             equipment_name=equipment.equipment_name,
             equipment_model=equipment.equipment_model,
+            equipment_type=equipment.equipment_type,
             factory_number=equipment.factory_number,
             inventory_number=equipment.inventory_number,
             verification_type=verification.verification_type,
@@ -164,10 +221,19 @@ class MainTableService:
             verification.registry_number = data.registry_number
             verification.verification_interval = data.verification_interval
             verification.verification_date = data.verification_date
-            verification.verification_due = data.verification_due
             verification.verification_plan = data.verification_plan
             verification.verification_state = data.verification_state
-            verification.status = data.status
+
+            # Флашим изменения, чтобы БД пересчитала verification_due
+            self.db.flush()
+            self.db.refresh(verification)
+
+            # Теперь вычисляем правильный status на основе verification_due из БД
+            calculated_status = calculate_status(
+                verification_due=verification.verification_due,
+                verification_state=verification.verification_state  # Используем обновленное значение
+            )
+            verification.status = calculated_status
 
         # Обновляем ответственность
         responsibility = self.db.query(Responsibility).filter(Responsibility.equipment_id == equipment_id).first()
@@ -194,6 +260,7 @@ class MainTableService:
             equipment_id=equipment.id,
             equipment_name=equipment.equipment_name,
             equipment_model=equipment.equipment_model,
+            equipment_type=equipment.equipment_type,
             factory_number=equipment.factory_number,
             inventory_number=equipment.inventory_number,
             verification_type=verification.verification_type if verification else "",
@@ -236,6 +303,7 @@ class MainTableService:
                 Equipment.id.label("equipment_id"),
                 Equipment.equipment_name,
                 Equipment.equipment_model,
+                Equipment.equipment_type,
                 Equipment.factory_number,
                 Equipment.inventory_number,
                 Verification.verification_type,
@@ -264,6 +332,7 @@ class MainTableService:
             equipment_id=result.equipment_id,
             equipment_name=result.equipment_name,
             equipment_model=result.equipment_model,
+            equipment_type=result.equipment_type,
             factory_number=result.factory_number,
             inventory_number=result.inventory_number,
             verification_type=result.verification_type or "",

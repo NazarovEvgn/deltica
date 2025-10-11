@@ -7,14 +7,19 @@ import {
   NFormItem,
   NInput,
   NSelect,
+  NRadioGroup,
+  NRadio,
   NDatePicker,
   NInputNumber,
   NButton,
   NSpace,
   NGrid,
-  NGridItem
+  NGridItem,
+  useMessage
 } from 'naive-ui'
 import axios from 'axios'
+
+const message = useMessage()
 
 const props = defineProps({
   show: {
@@ -73,8 +78,8 @@ const equipmentTypeOptions = [
 
 const verificationTypeOptions = [
   { label: 'Калибровка', value: 'calibration' },
-  { label: 'Верификация', value: 'verification' },
-  { label: 'Сертификация', value: 'certification' }
+  { label: 'Поверка', value: 'verification' },
+  { label: 'Аттестация', value: 'certification' }
 ]
 
 const verificationStateOptions = [
@@ -174,17 +179,48 @@ const resetForm = () => {
   }
 }
 
+// Функция для конвертации timestamp в локальную дату YYYY-MM-DD
+const formatDateToLocal = (timestamp) => {
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Валидация verification_interval (должен быть кратен 12)
+const validateVerificationInterval = (value) => {
+  if (value && value % 12 !== 0) {
+    message.error('Интервал верификации должен быть кратен 12 месяцам (12, 24, 36, 48 и т.д.)')
+    return false
+  }
+  return true
+}
+
+// Обработчик изменения verification_interval
+const handleIntervalChange = (value) => {
+  if (!validateVerificationInterval(value)) {
+    // Округляем до ближайшего кратного 12
+    const rounded = Math.round(value / 12) * 12
+    formValue.value.verification_interval = rounded || 12
+  }
+}
+
 // Сохранение данных
 const handleSave = async () => {
+  // Валидация перед сохранением
+  if (!validateVerificationInterval(formValue.value.verification_interval)) {
+    return
+  }
   try {
     // Подготовка данных для отправки
     const payload = {
       ...formValue.value,
-      verification_date: new Date(formValue.value.verification_date).toISOString().split('T')[0],
-      verification_due: new Date(formValue.value.verification_due).toISOString().split('T')[0],
-      verification_plan: new Date(formValue.value.verification_plan).toISOString().split('T')[0],
+      verification_date: formatDateToLocal(formValue.value.verification_date),
+      verification_due: formatDateToLocal(formValue.value.verification_due),
+      verification_plan: formatDateToLocal(formValue.value.verification_plan),
       payment_date: formValue.value.payment_date
-        ? new Date(formValue.value.payment_date).toISOString().split('T')[0]
+        ? formatDateToLocal(formValue.value.payment_date)
         : null
     }
 
@@ -300,25 +336,47 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Интервал (месяцы)" required>
-            <n-input-number v-model:value="formValue.verification_interval" :min="1" style="width: 100%" />
+            <n-input-number
+              v-model:value="formValue.verification_interval"
+              :min="12"
+              :step="12"
+              @blur="handleIntervalChange(formValue.verification_interval)"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Дата верификации" required>
-            <n-date-picker v-model:value="formValue.verification_date" type="date" style="width: 100%" />
+            <n-date-picker
+              v-model:value="formValue.verification_date"
+              type="date"
+              format="dd/MM/yyyy"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Действует до" required>
-            <n-date-picker v-model:value="formValue.verification_due" type="date" style="width: 100%" />
+            <n-date-picker
+              v-model:value="formValue.verification_due"
+              type="date"
+              format="dd/MM/yyyy"
+              disabled
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="План верификации" required>
-            <n-date-picker v-model:value="formValue.verification_plan" type="date" style="width: 100%" />
+            <n-date-picker
+              v-model:value="formValue.verification_plan"
+              type="month"
+              format="MMM yyyy"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-grid-item>
 
@@ -330,7 +388,7 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Статус" required>
-            <n-select v-model:value="formValue.status" :options="statusOptions" />
+            <n-select v-model:value="formValue.status" :options="statusOptions" disabled />
           </n-form-item>
         </n-grid-item>
 
