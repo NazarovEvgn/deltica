@@ -388,7 +388,7 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Статус" required>
-            <n-select v-model:value="formValue.status" :options="statusOptions" />
+            <n-select v-model:value="formValue.status" :options="statusOptions" disabled />
           </n-form-item>
         </n-grid-item>
 

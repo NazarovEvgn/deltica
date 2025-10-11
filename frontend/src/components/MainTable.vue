@@ -46,6 +46,7 @@ const columns = ref([
     prop: 'status',
     name: 'Статус',
     size: 150,
+    readonly: true,
     cellTemplate: (createElement, props) => {
       const statusMap = {
         'status_fit': 'Годен',
@@ -56,35 +57,14 @@ const columns = ref([
         'status_repair': 'На ремонте'
       }
       const currentValue = props.model[props.prop] || ''
+      const displayValue = statusMap[currentValue] || currentValue
 
-      return createElement('select', {
-        value: currentValue,
+      return createElement('span', {
+        textContent: displayValue,
         style: {
-          width: '100%',
-          height: '100%',
-          border: 'none',
-          background: 'transparent',
-          padding: '0 4px',
-          cursor: 'pointer'
-        },
-        onChange: async (e) => {
-          const newValue = e.target.value
-          props.model[props.prop] = newValue
-
-          // Сохраняем на сервер
-          const equipmentId = props.model.equipment_id
-          if (equipmentId) {
-            await saveCellToServer(equipmentId, props.prop, newValue)
-          }
+          padding: '0 4px'
         }
-      }, [
-        createElement('option', { value: 'status_fit' }, statusMap['status_fit']),
-        createElement('option', { value: 'status_expired' }, statusMap['status_expired']),
-        createElement('option', { value: 'status_expiring' }, statusMap['status_expiring']),
-        createElement('option', { value: 'status_storage' }, statusMap['status_storage']),
-        createElement('option', { value: 'status_verification' }, statusMap['status_verification']),
-        createElement('option', { value: 'status_repair' }, statusMap['status_repair'])
-      ])
+      })
     }
   },
   {
