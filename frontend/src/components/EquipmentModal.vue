@@ -15,8 +15,17 @@ import {
   NSpace,
   NGrid,
   NGridItem,
+  NUpload,
+  NUploadDragger,
+  NText,
+  NP,
+  NIcon,
+  NList,
+  NListItem,
+  NThing,
   useMessage
 } from 'naive-ui'
+import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon } from '@vicons/ionicons5'
 import axios from 'axios'
 
 const message = useMessage()
@@ -137,6 +146,98 @@ const responsiblePersonOptions = [
 ]
 
 const isEdit = ref(false)
+
+// Состояние файлов
+const equipmentFiles = ref([])
+const selectedFileType = ref('other')
+
+const fileTypeOptions = [
+  { label: 'Свидетельство о поверке', value: 'certificate' },
+  { label: 'Паспорт', value: 'passport' },
+  { label: 'Техническая документация', value: 'technical_doc' },
+  { label: 'Прочее', value: 'other' }
+]
+
+// Загрузка списка файлов оборудования
+const loadEquipmentFiles = async () => {
+  if (!props.equipmentId) return
+
+  try {
+    const response = await axios.get(`http://localhost:8000/files/equipment/${props.equipmentId}`)
+    equipmentFiles.value = response.data
+  } catch (error) {
+    console.error('Ошибка при загрузке файлов:', error)
+  }
+}
+
+// Обработчик загрузки файла
+const handleFileUpload = async ({ file }) => {
+  if (!isEdit.value || !props.equipmentId) {
+    message.warning('Сначала сохраните оборудование')
+    return
+  }
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file.file)
+    formData.append('file_type', selectedFileType.value)
+
+    await axios.post(
+      `http://localhost:8000/files/upload/${props.equipmentId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+
+    message.success('Файл успешно загружен')
+    await loadEquipmentFiles()
+  } catch (error) {
+    console.error('Ошибка при загрузке файла:', error)
+    message.error(error.response?.data?.detail || 'Ошибка при загрузке файла')
+  }
+
+  return false  // Предотвращаем стандартное поведение
+}
+
+// Открытие файла для просмотра
+const openFile = (fileId, fileName) => {
+  // Открываем файл в новой вкладке для просмотра
+  window.open(`http://localhost:8000/files/view/${fileId}`, '_blank')
+}
+
+// Скачивание файла (принудительное скачивание)
+const downloadFile = (fileId, fileName) => {
+  // Используем endpoint для скачивания
+  window.location.href = `http://localhost:8000/files/download/${fileId}`
+}
+
+// Удаление файла
+const deleteFile = async (fileId) => {
+  try {
+    await axios.delete(`http://localhost:8000/files/${fileId}`)
+    message.success('Файл успешно удален')
+    await loadEquipmentFiles()
+  } catch (error) {
+    console.error('Ошибка при удалении файла:', error)
+    message.error('Ошибка при удалении файла')
+  }
+}
+
+// Форматирование размера файла
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+}
+
+// Получение метки типа файла
+const getFileTypeLabel = (fileType) => {
+  const option = fileTypeOptions.find(opt => opt.value === fileType)
+  return option ? option.label : fileType
+}
 
 // Загрузка данных для редактирования
 const loadEquipmentData = async () => {
@@ -303,8 +404,10 @@ watch(() => props.show, (newValue) => {
     isEdit.value = !!props.equipmentId
     if (isEdit.value) {
       loadEquipmentData()
+      loadEquipmentFiles()
     } else {
       resetForm()
+      equipmentFiles.value = []
     }
   }
 })
@@ -512,6 +615,88 @@ watch(() => props.show, (newValue) => {
             <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable />
           </n-form-item>
         </n-grid-item>
+
+        <!-- Секция: Файлы (только при редактировании) -->
+        <template v-if="isEdit">
+          <n-grid-item :span="3">
+            <h3>Прикрепленные файлы</h3>
+          </n-grid-item>
+
+          <n-grid-item :span="3">
+            <!-- Список загруженных файлов -->
+            <n-list v-if="equipmentFiles.length > 0" bordered style="margin-bottom: 16px;">
+              <n-list-item v-for="file in equipmentFiles" :key="file.id">
+                <n-thing>
+                  <template #avatar>
+                    <n-icon size="24" :component="DocumentIcon" />
+                  </template>
+                  <template #header>
+                    <a
+                      href="#"
+                      @click.prevent="openFile(file.id, file.file_name)"
+                      style="color: #18a058; text-decoration: none; cursor: pointer;"
+                      @mouseover="$event.target.style.textDecoration = 'underline'"
+                      @mouseleave="$event.target.style.textDecoration = 'none'"
+                    >
+                      {{ file.file_name }}
+                    </a>
+                  </template>
+                  <template #description>
+                    {{ getFileTypeLabel(file.file_type) }} • {{ formatFileSize(file.file_size) }}
+                  </template>
+                  <template #action>
+                    <n-space>
+                      <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                        Скачать
+                      </n-button>
+                      <n-button size="small" type="error" @click="deleteFile(file.id)">
+                        <template #icon>
+                          <n-icon :component="TrashIcon" />
+                        </template>
+                        Удалить
+                      </n-button>
+                    </n-space>
+                  </template>
+                </n-thing>
+              </n-list-item>
+            </n-list>
+            <n-text v-else depth="3" style="display: block; margin-bottom: 16px;">
+              Файлы не загружены
+            </n-text>
+
+            <!-- Загрузчик файлов -->
+            <n-space vertical>
+              <n-form-item label="Тип файла">
+                <n-select
+                  v-model:value="selectedFileType"
+                  :options="fileTypeOptions"
+                  placeholder="Выберите тип файла"
+                />
+              </n-form-item>
+
+              <n-upload
+                :custom-request="handleFileUpload"
+                :show-file-list="false"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+              >
+                <n-upload-dragger>
+                  <div style="margin-bottom: 12px">
+                    <n-icon size="48" :depth="3">
+                      <cloud-upload-icon />
+                    </n-icon>
+                  </div>
+                  <n-text style="font-size: 16px">
+                    Перетащите файл сюда или нажмите для загрузки
+                  </n-text>
+                  <n-p depth="3" style="margin: 8px 0 0 0">
+                    Допустимые форматы: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX<br />
+                    Максимальный размер: 50 МБ
+                  </n-p>
+                </n-upload-dragger>
+              </n-upload>
+            </n-space>
+          </n-grid-item>
+        </template>
       </n-grid>
     </n-form>
 

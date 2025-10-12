@@ -16,3 +16,6 @@ wheels/
 
 # Documentation
 docs/
+
+# Uploaded files
+backend/uploads/

@@ -1,6 +1,6 @@
 # deltica/backend/app/schemas.py
 
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from enum import Enum
@@ -185,3 +185,27 @@ class MainTableCreate(BaseModel):
 
 class MainTableUpdate(MainTableCreate):
     pass
+
+
+# Схемы для EquipmentFile
+class FileTypeEnum(str, Enum):
+    certificate = "certificate"  # Свидетельство о поверке
+    passport = "passport"  # Паспорт
+    technical_doc = "technical_doc"  # Техническая документация
+    other = "other"  # Прочее
+
+
+class EquipmentFileBase(BaseModel):
+    file_name: str
+    file_type: FileTypeEnum = FileTypeEnum.other
+
+
+class EquipmentFileResponse(EquipmentFileBase):
+    id: int
+    equipment_id: int
+    file_path: str
+    file_size: int
+    uploaded_at: datetime
+
+    class Config:
+        from_attributes = True
