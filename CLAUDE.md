@@ -87,14 +87,22 @@ uv run alembic downgrade -1
 # Run all tests
 uv run pytest
 
-# Run specific test file
-uv run pytest backend/tests/test_status_calculation.py
+# Run all file-related tests (98 tests)
+uv run pytest backend/tests/test_file*.py -v
 
-# Run with verbose output
-uv run pytest -v
+# Run specific test categories
+uv run pytest backend/tests/test_file_utils.py      # Unit tests (39)
+uv run pytest backend/tests/test_files_api.py       # Integration tests (17)
+uv run pytest backend/tests/test_files_security.py  # Security tests (20)
+uv run pytest backend/tests/test_files_encoding.py  # Encoding tests (16)
 
-# Note: Tests currently have import issues (ModuleNotFoundError: No module named 'backend')
-# This needs to be fixed by adding proper PYTHONPATH configuration or using relative imports
+# Run status calculation tests
+uv run pytest backend/tests/test_status_calculation.py  # 11 tests
+
+# Run with coverage report
+uv run pytest backend/tests/test_file*.py --cov=backend.routes.files --cov-report=html
+
+# Results: 98/98 file tests passed (100%), ~1.5 seconds execution time
 ```
 
 ## Architecture
@@ -104,16 +112,25 @@ uv run pytest -v
 backend/
 ├── core/           # Application core (config, database, main)
 │   ├── config.py       # Environment config via pydantic-settings
-│   ├── database.py     # SQLAlchemy engine and session
-│   └── main.py         # FastAPI app instance
+│   ├── database.py     # SQLAlchemy engine, session, get_db() dependency
+│   └── main.py         # FastAPI app instance with routers
 ├── app/            # Domain models and schemas
-│   ├── models.py       # SQLAlchemy ORM models
-│   └── schemas.py      # Pydantic schemas for API
+│   ├── models.py       # SQLAlchemy ORM models (Equipment, Verification, EquipmentFile, etc.)
+│   └── schemas.py      # Pydantic schemas for API requests/responses
 ├── services/       # Business logic layer
 │   └── main_table.py   # MainTableService with CRUD logic
 ├── routes/         # API endpoints
-│   └── main_table.py   # Main table router at /main-table
-└── tests/          # Test directory (currently empty)
+│   ├── main_table.py   # Main table router at /main-table
+│   └── files.py        # File management router at /files
+└── tests/          # Test directory with comprehensive test suite
+    ├── conftest.py          # Pytest fixtures (db_session, client, temp files)
+    ├── test_file_utils.py   # 39 unit tests for file utilities
+    ├── test_files_api.py    # 17 integration tests for API endpoints
+    ├── test_files_security.py   # 20 security tests (path traversal, limits)
+    ├── test_files_encoding.py   # 16 encoding tests (Cyrillic, UTF-8)
+    ├── test_status_calculation.py  # 11 tests for verification status logic
+    ├── test_verification_due.py    # Tests for verification_due calculations
+    └── README.md            # Test documentation and usage guide
 ```
 
 ### Database Schema
@@ -121,6 +138,7 @@ backend/
 
 1. **Equipment** - Basic equipment info (name, model, type, factory_number, inventory_number, year)
    - One-to-many relationship with Verification
+   - One-to-many relationship with EquipmentFile (cascade delete)
    - One-to-one relationships with Responsibility and Finance (via equipment_id FK)
 
 2. **Verification** - Verification details (type, dates, state, status, interval)
@@ -132,15 +150,30 @@ backend/
 4. **Finance** - Cost and payment tracking (cost_rate, quantity, coefficient, total_cost, invoice, payment)
    - Foreign key to Equipment (equipment_model_id)
 
+5. **EquipmentFile** - File attachments (certificates, passports, technical docs)
+   - Foreign key to Equipment (equipment_id) with CASCADE DELETE
+   - Fields: file_name, file_path, file_type, file_size, uploaded_at
+   - File types: 'certificate', 'passport', 'technical_doc', 'other'
+   - Storage: filesystem (backend/uploads/equipment_{id}/)
+
 ### API Endpoints
 
-Current implementation in `backend/routes/main_table.py`:
+**Main Table** (`backend/routes/main_table.py`):
 - `GET /main-table/` - Get all equipment with joined verification and responsibility data
 - `GET /main-table/{equipment_id}` - Get single equipment by ID with all related data
 - `GET /main-table/{equipment_id}/full` - Get complete equipment data for editing (used by frontend auto-save)
 - `POST /main-table/` - Create new equipment with all related entities (verification, responsibility, finance)
 - `PUT /main-table/{equipment_id}` - Update equipment and all related entities
 - `DELETE /main-table/{equipment_id}` - Delete equipment and cascade delete all related entities
+
+**File Management** (`backend/routes/files.py`):
+- `POST /files/upload/{equipment_id}` - Upload file (PDF, DOC, DOCX, XLS, XLSX, JPG, PNG) with type selection
+- `GET /files/view/{file_id}` - View file in browser (inline Content-Disposition, proper MIME type)
+- `GET /files/download/{file_id}` - Download file (attachment Content-Disposition, forced download)
+- `GET /files/equipment/{equipment_id}` - List all files for equipment with metadata
+- `DELETE /files/{file_id}` - Delete file from database and filesystem
+- **Security**: File type validation, 50 MB size limit, filename sanitization, path traversal protection
+- **Encoding**: Full Cyrillic support, RFC 5987 Content-Disposition headers, UTF-8 encoding
 
 ### Database Configuration
 
@@ -191,8 +224,9 @@ Current implementation in `backend/routes/main_table.py`:
 - **Backend**: Full CRUD API implemented at `/main-table` endpoint
   - Application-level status calculation based on `verification_due` and `verification_state`
   - Flush/refresh pattern to retrieve DB-computed `verification_due` before status calculation
-- **Database**: Models defined, migrations active (`22b18436b99e`), relationships established
+- **Database**: Models defined, migrations active (`88f8d0e8cb6d`), relationships established
   - `verification_due` as computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
+  - `equipment_files` table with CASCADE DELETE on equipment removal
 - **Frontend**: RevoGrid table with full functionality (`frontend/src/components/MainTable.vue`)
   - Date formatting: dd.mm.yyyy for dates, "Месяц ГГГГ" for verification_plan
   - Fixed lists: Department (12 items) and responsible_person (19 items) via `<n-select>`
@@ -202,20 +236,34 @@ Current implementation in `backend/routes/main_table.py`:
   - Range editing with auto-save (via `@beforerangeedit` event)
   - Copy-paste support (Ctrl+C / Ctrl+V) in grid
   - Double-click row to open edit modal with Naive UI form
+- **File Management** (`frontend/src/components/EquipmentModal.vue`):
+  - ✅ Drag-n-drop file upload (Naive UI NUploadDragger)
+  - ✅ File type selection (certificate/passport/technical_doc/other)
+  - ✅ File list with metadata (name, type, size, upload date)
+  - ✅ Click filename to view in browser (new tab)
+  - ✅ Download button for file sharing
+  - ✅ Delete button with confirmation
+  - ✅ Full Cyrillic filename support
+  - Icons from @vicons/ionicons5
 - **Authentication**: Not yet implemented (planned: role-based access with admin/laborant roles)
-- **File uploads**: Not yet implemented (planned: PDF attachments for verification certificates)
 - **Archiving**: Not yet implemented (planned: separate archive table for decommissioned equipment)
-- **Tests**:
-  - Unit tests for status calculation in `backend/tests/test_status_calculation.py` (11 tests)
-  - Verification due tests in `backend/tests/test_verification_due.py`
-  - **Known issue**: Tests have import errors (ModuleNotFoundError: No module named 'backend') - needs PYTHONPATH fix
+- **Tests**: Comprehensive test suite (109 tests total)
+  - ✅ Status calculation tests: `test_status_calculation.py` (11 tests)
+  - ✅ Verification due tests: `test_verification_due.py`
+  - ✅ File utilities tests: `test_file_utils.py` (39 unit tests)
+  - ✅ File API tests: `test_files_api.py` (17 integration tests)
+  - ✅ Security tests: `test_files_security.py` (20 tests for path traversal, size limits, injections)
+  - ✅ Encoding tests: `test_files_encoding.py` (16 tests for Cyrillic, UTF-8, RFC 5987)
+  - All tests passing (100% success rate)
+  - Test documentation: `backend/tests/README.md`
 
 ## Known Issues
 
 - **Alembic config**: `alembic.ini` line 87 has hardcoded database credentials (should use `.env`)
 - **Finance FK naming**: Finance model uses `equipment_model_id` (inconsistent with other FK naming - should be `equipment_id`)
-- **Test imports**: Tests fail with `ModuleNotFoundError: No module named 'backend'` - needs PYTHONPATH configuration or pytest.ini with pythonpath setting
 - **Docs versioning**: `docs/` directory is in `.gitignore` - documentation files are local-only (not version controlled)
+- **File storage**: No periodic cleanup for orphaned files (if upload fails after file save but before DB commit)
+- **Disk space**: No validation of available disk space before file upload
 
 ## Documentation
 
