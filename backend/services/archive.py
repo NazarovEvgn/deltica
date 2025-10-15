@@ -109,7 +109,17 @@ class ArchiveService:
             )
             self.db.add(archived_file)
 
-        # 6. Удалить оригинальные записи (CASCADE удалит связанные)
+        # 6. Явно удалить связанные записи (ForeignKey не имеет CASCADE на уровне БД)
+        if verification:
+            self.db.delete(verification)
+        if responsibility:
+            self.db.delete(responsibility)
+        if finance:
+            self.db.delete(finance)
+        for file in files:
+            self.db.delete(file)
+
+        # 7. Удалить оригинальное оборудование
         self.db.delete(equipment)
 
         # Commit всех изменений
@@ -221,7 +231,17 @@ class ArchiveService:
             )
             self.db.add(file)
 
-        # 6. Удалить архивные записи (CASCADE удалит связанные)
+        # 6. Явно удалить архивные связанные записи
+        if archived_verification:
+            self.db.delete(archived_verification)
+        if archived_responsibility:
+            self.db.delete(archived_responsibility)
+        if archived_finance:
+            self.db.delete(archived_finance)
+        for archived_file in archived_files:
+            self.db.delete(archived_file)
+
+        # 7. Удалить архивное оборудование
         self.db.delete(archived_equipment)
 
         # Commit всех изменений
