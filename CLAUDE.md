@@ -97,7 +97,7 @@ uv run alembic downgrade -1
 
 ### Testing
 ```bash
-# Run all tests (109 total)
+# Run all tests (125 total)
 uv run pytest
 
 # Run specific test categories
@@ -107,6 +107,7 @@ uv run pytest backend/tests/test_files_security.py  # File security tests (20)
 uv run pytest backend/tests/test_files_encoding.py  # File encoding tests (16)
 uv run pytest backend/tests/test_status_calculation.py  # Status calculation tests (11)
 uv run pytest backend/tests/test_verification_due.py    # Verification due tests (6)
+uv run pytest backend/tests/test_archive.py         # Archive functionality tests (16)
 
 # Run all file-related tests together (98 tests)
 uv run pytest backend/tests/test_file*.py -v
@@ -116,11 +117,13 @@ uv run pytest backend/tests/test_files_api.py::test_upload_file_success -v
 
 # Run with coverage report
 uv run pytest backend/tests/test_file*.py --cov=backend.routes.files --cov-report=html
+uv run pytest backend/tests/test_archive.py --cov=backend.services.archive --cov-report=html
 
 # Results: All tests passing (100% success rate)
 # - File tests: 98/98 passed (~1.5 seconds)
 # - Status tests: 11/11 passed
-# - Verification tests: 6/6 passed (estimated)
+# - Verification tests: 6/6 passed
+# - Archive tests: 16/16 passed (~0.2 seconds)
 ```
 
 ## Architecture
@@ -136,10 +139,12 @@ backend/
 │   ├── models.py       # SQLAlchemy ORM models (Equipment, Verification, EquipmentFile, etc.)
 │   └── schemas.py      # Pydantic schemas for API requests/responses
 ├── services/       # Business logic layer
-│   └── main_table.py   # MainTableService with CRUD logic
+│   ├── main_table.py   # MainTableService with CRUD logic
+│   └── archive.py      # ArchiveService with archive/restore/delete logic
 ├── routes/         # API endpoints
 │   ├── main_table.py   # Main table router at /main-table
-│   └── files.py        # File management router at /files
+│   ├── files.py        # File management router at /files
+│   └── archive.py      # Archive router at /archive
 └── tests/          # Test directory with comprehensive test suite
     ├── conftest.py          # Pytest fixtures (db_session, client, temp files)
     ├── test_file_utils.py   # 39 unit tests for file utilities
@@ -148,6 +153,7 @@ backend/
     ├── test_files_encoding.py   # 16 encoding tests (Cyrillic, UTF-8)
     ├── test_status_calculation.py  # 11 tests for verification status logic
     ├── test_verification_due.py    # Tests for verification_due calculations
+    ├── test_archive.py      # 16 tests for archive functionality
     └── README.md            # Test documentation and usage guide
 ```
 
@@ -174,6 +180,16 @@ backend/
    - File types: 'certificate', 'passport', 'technical_doc', 'other'
    - Storage: filesystem (backend/uploads/equipment_{id}/)
 
+**Archive entities** (mirror structure of main tables):
+
+6. **ArchivedEquipment** - Archived equipment records
+   - Stores original_id, archived_at, archive_reason (optional)
+   - One-to-many with ArchivedVerification, ArchivedResponsibility, ArchivedFinance, ArchivedEquipmentFile
+
+7. **ArchivedVerification**, **ArchivedResponsibility**, **ArchivedFinance**, **ArchivedEquipmentFile** - Archived related data
+   - Mirror structure of main tables with archived_equipment_id FK
+   - CASCADE DELETE on archived_equipment removal
+
 ### API Endpoints
 
 **Main Table** (`backend/routes/main_table.py`):
@@ -192,6 +208,14 @@ backend/
 - `DELETE /files/{file_id}` - Delete file from database and filesystem
 - **Security**: File type validation, 50 MB size limit, filename sanitization, path traversal protection
 - **Encoding**: Full Cyrillic support, RFC 5987 Content-Disposition headers, UTF-8 encoding
+
+**Archive** (`backend/routes/archive.py`):
+- `POST /archive/equipment/{equipment_id}` - Archive equipment with optional archive_reason
+- `GET /archive/` - List all archived equipment
+- `GET /archive/{archived_equipment_id}` - Get archived equipment by ID
+- `POST /archive/restore/{archived_equipment_id}` - Restore equipment from archive to main tables
+- `DELETE /archive/{archived_equipment_id}` - Permanently delete from archive
+- **Logic**: Copies all related data to archive tables, explicitly deletes originals (no FK CASCADE)
 
 ### Database Configuration
 
@@ -242,9 +266,10 @@ backend/
 - **Backend**: Full CRUD API implemented at `/main-table` endpoint
   - Application-level status calculation based on `verification_due` and `verification_state`
   - Flush/refresh pattern to retrieve DB-computed `verification_due` before status calculation
-- **Database**: Models defined, migrations active (current: `88f8d0e8cb6d`), relationships established
+- **Database**: Models defined, migrations active (current: `168ffc404f69`), relationships established
   - Migration `22b18436b99e`: Added `verification_due` as computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
   - Migration `88f8d0e8cb6d`: Added `equipment_files` table with CASCADE DELETE on equipment removal
+  - Migration `168ffc404f69`: Added archive tables (archived_equipment, archived_verification, archived_responsibility, archived_finance, archived_equipment_files)
 - **Frontend**: RevoGrid table with full functionality (`frontend/src/components/MainTable.vue`)
   - Date formatting: dd.mm.yyyy for dates, "Месяц ГГГГ" for verification_plan
   - Fixed lists: Department (12 items) and responsible_person (19 items) via `<n-select>`
@@ -263,15 +288,24 @@ backend/
   - ✅ Delete button with confirmation
   - ✅ Full Cyrillic filename support
   - Icons from @vicons/ionicons5
+- **Archiving** (`frontend/src/components/ArchiveTable.vue`, `backend/routes/archive.py`):
+  - ✅ "В архив" button in equipment edit modal with confirmation dialog
+  - ✅ Separate archive view accessible via "Архив" button in main table
+  - ✅ Archive service with full cycle: archive, restore, delete permanently
+  - ✅ 5 archive tables mirror main structure (archived_equipment, archived_verification, etc.)
+  - ✅ Explicit deletion of related records (no CASCADE on FK level)
+  - ✅ Archive table displays: name, model, factory/inventory numbers, type, archived_at, archive_reason
+  - ✅ Restore functionality returns equipment to main table
+  - ✅ Permanent delete with warning confirmation
 - **Authentication**: Not yet implemented (planned: role-based access with admin/laborant roles)
-- **Archiving**: Not yet implemented (planned: separate archive table for decommissioned equipment)
-- **Tests**: Comprehensive test suite (109+ tests total)
+- **Tests**: Comprehensive test suite (125 tests total)
   - ✅ Status calculation tests: `test_status_calculation.py` (11 tests) - validates status calculation based on verification_due and verification_state
   - ✅ Verification due tests: `test_verification_due.py` (6+ tests) - validates computed column for verification_due dates
   - ✅ File utilities tests: `test_file_utils.py` (39 unit tests) - file extensions, MIME types, sanitization, validation
   - ✅ File API tests: `test_files_api.py` (17 integration tests) - upload, view, download, delete, cascade delete
   - ✅ Security tests: `test_files_security.py` (20 tests) - path traversal, size limits, injections, parallel uploads
   - ✅ Encoding tests: `test_files_encoding.py` (16 tests) - Cyrillic filenames, UTF-8, RFC 5987 headers
+  - ✅ Archive tests: `test_archive.py` (16 tests) - archive, restore, delete, data integrity, full cycle
   - All tests passing (100% success rate)
   - Test documentation: `backend/tests/README.md` with detailed coverage breakdown
 
