@@ -23,12 +23,15 @@ import {
   NList,
   NListItem,
   NThing,
-  useMessage
+  useMessage,
+  useDialog,
+  NDialogProvider
 } from 'naive-ui'
-import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon } from '@vicons/ionicons5'
+import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon } from '@vicons/ionicons5'
 import axios from 'axios'
 
 const message = useMessage()
+const dialog = useDialog()
 
 const props = defineProps({
   show: {
@@ -384,6 +387,29 @@ const handleClose = () => {
   resetForm()
 }
 
+// Архивирование оборудования
+const handleArchive = async () => {
+  dialog.warning({
+    title: 'Подтверждение архивирования',
+    content: `Вы уверены, что хотите архивировать оборудование "${formValue.value.equipment_name}"? Оно будет перемещено в архив и удалено из основной таблицы.`,
+    positiveText: 'Архивировать',
+    negativeText: 'Отмена',
+    onPositiveClick: async () => {
+      try {
+        await axios.post(`http://localhost:8000/archive/equipment/${props.equipmentId}`, {
+          archive_reason: null  // Можно добавить поле для ввода причины
+        })
+        message.success('Оборудование успешно архивировано')
+        emit('saved')
+        handleClose()
+      } catch (error) {
+        console.error('Ошибка при архивировании:', error)
+        message.error(error.response?.data?.detail || 'Ошибка при архивировании оборудования')
+      }
+    }
+  })
+}
+
 // Автоматическое обновление verification_plan при изменении verification_date или verification_interval
 watch([() => formValue.value.verification_date, () => formValue.value.verification_interval], ([newDate, newInterval]) => {
   if (newDate && newInterval) {
@@ -701,11 +727,25 @@ watch(() => props.show, (newValue) => {
     </n-form>
 
     <template #footer>
-      <n-space justify="end">
-        <n-button @click="handleClose">Отмена</n-button>
-        <n-button type="primary" @click="handleSave">
-          {{ isEdit ? 'Сохранить' : 'Создать' }}
+      <n-space justify="space-between">
+        <n-button
+          v-if="isEdit"
+          type="warning"
+          @click="handleArchive"
+        >
+          <template #icon>
+            <n-icon :component="ArchiveIcon" />
+          </template>
+          В архив
         </n-button>
+        <span v-else></span>
+
+        <n-space>
+          <n-button @click="handleClose">Отмена</n-button>
+          <n-button type="primary" @click="handleSave">
+            {{ isEdit ? 'Сохранить' : 'Создать' }}
+          </n-button>
+        </n-space>
       </n-space>
     </template>
   </n-modal>

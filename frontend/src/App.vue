@@ -1,12 +1,14 @@
 <script setup>
 import { ref } from 'vue'
-import { NMessageProvider } from 'naive-ui'
+import { NMessageProvider, NDialogProvider } from 'naive-ui'
 import MainTable from './components/MainTable.vue'
+import ArchiveTable from './components/ArchiveTable.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
 
 const showModal = ref(false)
 const editingEquipmentId = ref(null)
 const mainTableRef = ref(null)
+const showArchive = ref(false)
 
 // Открыть модальное окно для добавления
 const handleAddEquipment = () => {
@@ -24,22 +26,36 @@ const handleEditEquipment = (equipmentId) => {
 const handleSaved = () => {
   mainTableRef.value?.loadData()
 }
+
+// Переключение отображения архива
+const toggleArchive = () => {
+  showArchive.value = !showArchive.value
+}
 </script>
 
 <template>
   <n-message-provider>
-    <div id="app">
-      <MainTable
-        ref="mainTableRef"
-        @add-equipment="handleAddEquipment"
-        @edit-equipment="handleEditEquipment"
-      />
-      <EquipmentModal
-        v-model:show="showModal"
-        :equipment-id="editingEquipmentId"
-        @saved="handleSaved"
-      />
-    </div>
+    <n-dialog-provider>
+      <div id="app">
+        <MainTable
+          v-if="!showArchive"
+          ref="mainTableRef"
+          @add-equipment="handleAddEquipment"
+          @edit-equipment="handleEditEquipment"
+          @show-archive="toggleArchive"
+        />
+        <ArchiveTable
+          v-else
+          @back-to-main="toggleArchive"
+          @restored="handleSaved"
+        />
+        <EquipmentModal
+          v-model:show="showModal"
+          :equipment-id="editingEquipmentId"
+          @saved="handleSaved"
+        />
+      </div>
+    </n-dialog-provider>
   </n-message-provider>
 </template>
 

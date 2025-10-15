@@ -90,3 +90,106 @@ class EquipmentFile(Base):
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
     equipment = relationship("Equipment", back_populates="files")
+
+
+# ==================== АРХИВНЫЕ ТАБЛИЦЫ ====================
+
+class ArchivedEquipment(Base):
+    """Архивная таблица для списанного оборудования"""
+    __tablename__ = "archived_equipment"
+
+    id = Column(Integer, primary_key=True, index=True)
+    original_id = Column(Integer, nullable=False, index=True)  # ID оригинальной записи
+    equipment_name = Column(String, nullable=False)
+    equipment_model = Column(String, nullable=False)
+    equipment_type = Column(Enum('SI', 'IO', name='equipment_type_enum'), nullable=False)
+    equipment_specs = Column(String)
+    factory_number = Column(String, nullable=False)
+    inventory_number = Column(String, nullable=False)
+    equipment_year = Column(Integer, nullable=False)
+
+    # Метаданные архивирования
+    archived_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    archive_reason = Column(String)  # Причина списания (опционально)
+
+    # Relationships
+    archived_verifications = relationship("ArchivedVerification", back_populates="archived_equipment", cascade="all, delete-orphan")
+    archived_files = relationship("ArchivedEquipmentFile", back_populates="archived_equipment", cascade="all, delete-orphan")
+
+
+class ArchivedVerification(Base):
+    """Архивная таблица для данных поверки"""
+    __tablename__ = "archived_verification"
+
+    id = Column(Integer, primary_key=True, index=True)
+    archived_equipment_id = Column(Integer, ForeignKey("archived_equipment.id", ondelete="CASCADE"), nullable=False)
+    original_equipment_id = Column(Integer, nullable=False)  # ID оригинального equipment
+    verification_type = Column(Enum('calibration', 'verification', 'certification', name='verification_type_enum'), nullable=False)
+    registry_number = Column(String)
+    verification_interval = Column(Integer, nullable=False)
+    verification_date = Column(Date, nullable=False)
+    verification_due = Column(Date, nullable=False)  # Копируем computed значение
+    verification_plan = Column(Date, nullable=False)
+    verification_state = Column(Enum(
+        'state_work',
+        'state_storage',
+        'state_verification',
+        'state_repair',
+        'state_archived',
+        name='verification_state_enum'
+    ), nullable=False)
+    status = Column(Enum(
+        'status_fit',
+        'status_expired',
+        'status_expiring',
+        'status_storage',
+        'status_verification',
+        'status_repair',
+        name='verification_status_enum'
+    ), nullable=False)
+
+    archived_equipment = relationship("ArchivedEquipment", back_populates="archived_verifications")
+
+
+class ArchivedResponsibility(Base):
+    """Архивная таблица для данных об ответственных"""
+    __tablename__ = "archived_responsibility"
+
+    id = Column(Integer, primary_key=True, index=True)
+    archived_equipment_id = Column(Integer, ForeignKey("archived_equipment.id", ondelete="CASCADE"), nullable=False)
+    original_equipment_id = Column(Integer, nullable=False)
+    department = Column(String, nullable=False)
+    responsible_person = Column(String, nullable=False)
+    verifier_org = Column(String, nullable=False)
+
+
+class ArchivedFinance(Base):
+    """Архивная таблица для финансовых данных"""
+    __tablename__ = "archived_finance"
+
+    id = Column(Integer, primary_key=True, index=True)
+    archived_equipment_id = Column(Integer, ForeignKey("archived_equipment.id", ondelete="CASCADE"), nullable=False)
+    original_equipment_id = Column(Integer, nullable=False)
+    cost_rate = Column(Float)
+    quantity = Column(Integer, nullable=False)
+    coefficient = Column(Float, default=1.0)
+    total_cost = Column(Float)
+    invoice_number = Column(String)
+    paid_amount = Column(Float)
+    payment_date = Column(Date)
+
+
+class ArchivedEquipmentFile(Base):
+    """Архивная таблица для файлов"""
+    __tablename__ = "archived_equipment_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    archived_equipment_id = Column(Integer, ForeignKey("archived_equipment.id", ondelete="CASCADE"), nullable=False)
+    original_equipment_id = Column(Integer, nullable=False)
+    file_name = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    file_type = Column(Enum('certificate', 'passport', 'technical_doc', 'other', name='file_type_enum'), nullable=False, default='other')
+    file_size = Column(Integer, nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), nullable=False)  # Копируем дату оригинальной загрузки
+
+    archived_equipment = relationship("ArchivedEquipment", back_populates="archived_files")

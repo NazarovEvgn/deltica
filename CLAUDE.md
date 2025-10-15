@@ -39,13 +39,26 @@ cd frontend && npm install
 
 ### Quick Start (одной командой)
 ```bash
-# Windows PowerShell
+# Windows PowerShell (рекомендуется)
 .\start.ps1
 
 # Windows CMD
 start.bat
+# или
+deltica-start.bat
 ```
 Эти скрипты запустят backend и frontend одновременно в отдельных окнах.
+
+**Для удобной работы** можно настроить PowerShell алиас (см. README_START.md):
+```powershell
+# Добавить в $PROFILE:
+function Start-Deltica {
+    Set-Location C:\Projects\deltica
+    .\start.ps1
+}
+Set-Alias deltica Start-Deltica
+```
+После этого из любой директории можно запускать просто `deltica`.
 
 ### Backend Development
 ```bash
@@ -84,25 +97,30 @@ uv run alembic downgrade -1
 
 ### Testing
 ```bash
-# Run all tests
+# Run all tests (109 total)
 uv run pytest
 
-# Run all file-related tests (98 tests)
+# Run specific test categories
+uv run pytest backend/tests/test_file_utils.py      # File utilities unit tests (39)
+uv run pytest backend/tests/test_files_api.py       # File API integration tests (17)
+uv run pytest backend/tests/test_files_security.py  # File security tests (20)
+uv run pytest backend/tests/test_files_encoding.py  # File encoding tests (16)
+uv run pytest backend/tests/test_status_calculation.py  # Status calculation tests (11)
+uv run pytest backend/tests/test_verification_due.py    # Verification due tests (6)
+
+# Run all file-related tests together (98 tests)
 uv run pytest backend/tests/test_file*.py -v
 
-# Run specific test categories
-uv run pytest backend/tests/test_file_utils.py      # Unit tests (39)
-uv run pytest backend/tests/test_files_api.py       # Integration tests (17)
-uv run pytest backend/tests/test_files_security.py  # Security tests (20)
-uv run pytest backend/tests/test_files_encoding.py  # Encoding tests (16)
-
-# Run status calculation tests
-uv run pytest backend/tests/test_status_calculation.py  # 11 tests
+# Run single test by name
+uv run pytest backend/tests/test_files_api.py::test_upload_file_success -v
 
 # Run with coverage report
 uv run pytest backend/tests/test_file*.py --cov=backend.routes.files --cov-report=html
 
-# Results: 98/98 file tests passed (100%), ~1.5 seconds execution time
+# Results: All tests passing (100% success rate)
+# - File tests: 98/98 passed (~1.5 seconds)
+# - Status tests: 11/11 passed
+# - Verification tests: 6/6 passed (estimated)
 ```
 
 ## Architecture
@@ -182,7 +200,7 @@ backend/
 - **Default connection**: `postgresql://postgres:postgres@localhost:5432/deltica_db`
 - **Alembic config**: `alembic.ini` has hardcoded connection string (line 87) - update if needed
 - **Migration directory**: `migrations/` (active)
-- **Current migration**: `22b18436b99e` (with computed verification_due column)
+- **Current migration**: `88f8d0e8cb6d` (with equipment_files table and CASCADE DELETE)
 
 ### Key Development Patterns
 
@@ -224,9 +242,9 @@ backend/
 - **Backend**: Full CRUD API implemented at `/main-table` endpoint
   - Application-level status calculation based on `verification_due` and `verification_state`
   - Flush/refresh pattern to retrieve DB-computed `verification_due` before status calculation
-- **Database**: Models defined, migrations active (`88f8d0e8cb6d`), relationships established
-  - `verification_due` as computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
-  - `equipment_files` table with CASCADE DELETE on equipment removal
+- **Database**: Models defined, migrations active (current: `88f8d0e8cb6d`), relationships established
+  - Migration `22b18436b99e`: Added `verification_due` as computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
+  - Migration `88f8d0e8cb6d`: Added `equipment_files` table with CASCADE DELETE on equipment removal
 - **Frontend**: RevoGrid table with full functionality (`frontend/src/components/MainTable.vue`)
   - Date formatting: dd.mm.yyyy for dates, "Месяц ГГГГ" for verification_plan
   - Fixed lists: Department (12 items) and responsible_person (19 items) via `<n-select>`
@@ -247,15 +265,15 @@ backend/
   - Icons from @vicons/ionicons5
 - **Authentication**: Not yet implemented (planned: role-based access with admin/laborant roles)
 - **Archiving**: Not yet implemented (planned: separate archive table for decommissioned equipment)
-- **Tests**: Comprehensive test suite (109 tests total)
-  - ✅ Status calculation tests: `test_status_calculation.py` (11 tests)
-  - ✅ Verification due tests: `test_verification_due.py`
-  - ✅ File utilities tests: `test_file_utils.py` (39 unit tests)
-  - ✅ File API tests: `test_files_api.py` (17 integration tests)
-  - ✅ Security tests: `test_files_security.py` (20 tests for path traversal, size limits, injections)
-  - ✅ Encoding tests: `test_files_encoding.py` (16 tests for Cyrillic, UTF-8, RFC 5987)
+- **Tests**: Comprehensive test suite (109+ tests total)
+  - ✅ Status calculation tests: `test_status_calculation.py` (11 tests) - validates status calculation based on verification_due and verification_state
+  - ✅ Verification due tests: `test_verification_due.py` (6+ tests) - validates computed column for verification_due dates
+  - ✅ File utilities tests: `test_file_utils.py` (39 unit tests) - file extensions, MIME types, sanitization, validation
+  - ✅ File API tests: `test_files_api.py` (17 integration tests) - upload, view, download, delete, cascade delete
+  - ✅ Security tests: `test_files_security.py` (20 tests) - path traversal, size limits, injections, parallel uploads
+  - ✅ Encoding tests: `test_files_encoding.py` (16 tests) - Cyrillic filenames, UTF-8, RFC 5987 headers
   - All tests passing (100% success rate)
-  - Test documentation: `backend/tests/README.md`
+  - Test documentation: `backend/tests/README.md` with detailed coverage breakdown
 
 ## Known Issues
 
@@ -270,7 +288,11 @@ backend/
 - `docs/deltica_architecture.md` - Architectural overview and component structure
 - `docs/deltica_dev_plan.md` - Development roadmap and feature priorities
 - `docs/deltica_description.md` - Domain description and business requirements
+- `backend/tests/README.md` - Comprehensive test documentation (98 file tests, 11 status tests)
+- `README_START.md` - Quick start guide with PowerShell alias setup
 - UI mockups in PDF format in `docs/`
+
+**Note**: `docs/` directory is in `.gitignore` - documentation files are local-only (not version controlled)
 
 ## Repository Information
 

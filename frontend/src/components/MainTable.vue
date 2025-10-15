@@ -4,7 +4,7 @@ import { NButton, NSpace } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
 
-const emit = defineEmits(['add-equipment', 'edit-equipment'])
+const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive'])
 
 // Данные таблицы
 const source = ref([])
@@ -329,6 +329,9 @@ defineExpose({
         </n-button>
         <n-button @click="loadData">
           Обновить
+        </n-button>
+        <n-button type="warning" @click="$emit('show-archive')">
+          Архив
         </n-button>
       </n-space>
       <div class="hint-text">
