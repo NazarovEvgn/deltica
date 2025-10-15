@@ -209,3 +209,27 @@ class EquipmentFileResponse(EquipmentFileBase):
 
     class Config:
         from_attributes = True
+
+
+# Схемы для архива
+class ArchiveRequest(BaseModel):
+    """Запрос на архивирование с опциональной причиной"""
+    archive_reason: Optional[str] = None
+
+
+class ArchiveResponse(BaseModel):
+    """Ответ с данными архивного оборудования"""
+    id: int
+    original_id: int
+    equipment_name: str
+    equipment_model: str
+    equipment_type: EquipmentTypeEnum
+    equipment_specs: Optional[str] = None
+    factory_number: str
+    inventory_number: str
+    equipment_year: int
+    archived_at: datetime
+    archive_reason: Optional[str] = None
+
+    class Config:
+        from_attributes = True
