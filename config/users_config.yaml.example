@@ -1,0 +1,129 @@
+# Конфигурация пользователей системы Deltica
+#
+# ВАЖНО:
+# 1. Скопируйте этот файл в users_config.yaml и измените пароли
+# 2. Файл users_config.yaml добавлен в .gitignore и не попадёт в репозиторий
+# 3. После изменения файла запустите синхронизацию:
+#    uv run python backend/scripts/sync_users.py
+#
+# Формат:
+# - username: логин для входа (латиница, без пробелов)
+# - password: пароль в открытом виде (будет захеширован при синхронизации)
+# - full_name: ФИО пользователя
+# - department: подразделение (должно совпадать с department в таблице responsibility)
+# - role: роль (admin или laborant)
+# - is_active: активен ли пользователь (true/false)
+
+users:
+  # Администратор системы
+  - username: admin
+    password: admin123  # ОБЯЗАТЕЛЬНО ИЗМЕНИТЕ ПАРОЛЬ!
+    full_name: Администратор Системы
+    department: Администрация
+    role: admin
+    is_active: true
+
+  # Лаборанты (примеры)
+  - username: ivanov
+    password: lab123
+    full_name: Иванов Петр Сергеевич
+    department: Отдел добычи
+    role: laborant
+    is_active: true
+
+  - username: petrova
+    password: lab123
+    full_name: Петрова Анна Михайловна
+    department: Отдел добычи
+    role: laborant
+    is_active: true
+
+  - username: sidorov
+    password: lab123
+    full_name: Сидоров Иван Петрович
+    department: Отдел добычи
+    role: laborant
+    is_active: true
+
+  - username: volkov
+    password: lab123
+    full_name: Волков Михаил Петрович
+    department: Метрологическая служба
+    role: laborant
+    is_active: true
+
+  - username: sokolova
+    password: lab123
+    full_name: Соколова Татьяна Николаевна
+    department: Метрологическая служба
+    role: laborant
+    is_active: true
+
+  - username: orlov
+    password: lab123
+    full_name: Орлов Сергей Алексеевич
+    department: Метрологическая служба
+    role: laborant
+    is_active: true
+
+  - username: zaytsev
+    password: lab123
+    full_name: Зайцев Андрей Владимирович
+    department: Отдел контроля
+    role: laborant
+    is_active: true
+
+  - username: lebedeva
+    password: lab123
+    full_name: Лебедева Ольга Сергеевна
+    department: Отдел контроля
+    role: laborant
+    is_active: true
+
+  - username: belov
+    password: lab123
+    full_name: Белов Дмитрий Анатольевич
+    department: Отдел контроля
+    role: laborant
+    is_active: true
+
+  - username: morozov
+    password: lab123
+    full_name: Морозов Алексей Дмитриевич
+    department: Лаборатория качества
+    role: laborant
+    is_active: true
+
+  - username: kozlova
+    password: lab123
+    full_name: Козлова Мария Александровна
+    department: Лаборатория качества
+    role: laborant
+    is_active: true
+
+  - username: novikova
+    password: lab123
+    full_name: Новикова Елена Викторовна
+    department: Лаборатория качества
+    role: laborant
+    is_active: true
+
+  - username: fedorov
+    password: lab123
+    full_name: Федоров Николай Иванович
+    department: Отдел транспорта
+    role: laborant
+    is_active: true
+
+  - username: solodovnichenko
+    password: lab123
+    full_name: Солодовниченко
+    department: ОИИ
+    role: laborant
+    is_active: true
+
+# Примечания:
+# - Для деактивации пользователя установите is_active: false
+# - Для изменения пароля просто измените значение password и запустите синхронизацию
+# - Новые пользователи будут добавлены, существующие - обновлены
+# - Пользователи, удалённые из конфига, НЕ будут удалены из БД автоматически

@@ -5,9 +5,14 @@ import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
 import SearchBar from './SearchBar.vue'
 import FilterPanel from './FilterPanel.vue'
+import UserProfile from './UserProfile.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
+import { useAuth } from '../composables/useAuth'
 
-const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive'])
+const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive', 'show-login'])
+
+// Аутентификация
+const { currentUser, isAuthenticated, isAdmin, isLaborant } = useAuth()
 
 // Данные таблицы
 const source = ref([])
@@ -58,7 +63,14 @@ const loadData = async () => {
   loading.value = true
   try {
     const response = await axios.get('http://localhost:8000/main-table/')
-    source.value = response.data
+    let data = response.data
+
+    // Фильтрация данных для лаборанта (показываем только оборудование его подразделения)
+    if (isLaborant.value && currentUser.value?.department) {
+      data = data.filter(item => item.department === currentUser.value.department)
+    }
+
+    source.value = data
   } catch (error) {
     console.error('Ошибка при загрузке данных:', error)
   } finally {
@@ -135,11 +147,13 @@ const dynamicColumns = computed(() => {
   })
 })
 
-// Добавляем колонку действий в конец
+// Добавляем колонку действий в конец (только для администратора)
 const columnsWithActions = computed(() => {
-  return [
-    ...dynamicColumns.value,
-    {
+  const columns = [...dynamicColumns.value]
+
+  // Колонка действий только для администратора
+  if (isAdmin.value) {
+    columns.push({
       prop: 'actions',
       name: 'Действия',
       size: 200,
@@ -177,8 +191,10 @@ const columnsWithActions = computed(() => {
           })
         ])
       }
-    }
-  ]
+    })
+  }
+
+  return columns
 })
 
 // Обработчик двойного клика по ячейке
@@ -331,31 +347,48 @@ defineExpose({
   <div class="main-table-container">
     <!-- Панель действий и поиска -->
     <div class="top-panel">
-      <n-space :size="16" align="center">
-        <n-space>
-          <n-button type="primary" @click="$emit('add-equipment')">
-            Добавить оборудование
-          </n-button>
-          <n-button @click="loadData">
-            Обновить
-          </n-button>
-          <n-button type="warning" @click="$emit('show-archive')">
-            Архив
-          </n-button>
-          <n-button secondary @click="showFilterDrawer = true">
-            Фильтры и колонки
-          </n-button>
+      <n-space :size="16" align="center" justify="space-between" style="width: 100%">
+        <n-space :size="16" align="center">
+          <n-space v-if="isAdmin">
+            <n-button type="primary" @click="$emit('add-equipment')">
+              Добавить оборудование
+            </n-button>
+            <n-button @click="loadData">
+              Обновить
+            </n-button>
+            <n-button type="warning" @click="$emit('show-archive')">
+              Архив
+            </n-button>
+            <n-button secondary @click="showFilterDrawer = true">
+              Фильтры и колонки
+            </n-button>
+          </n-space>
+
+          <n-space v-else-if="isAuthenticated">
+            <n-button @click="loadData">
+              Обновить
+            </n-button>
+            <n-button secondary @click="showFilterDrawer = true">
+              Фильтры и колонки
+            </n-button>
+          </n-space>
+
+          <SearchBar
+            v-model="searchQuery"
+            :total-count="filterStats.total"
+            :filtered-count="filterStats.filtered"
+          />
         </n-space>
 
-        <SearchBar
-          v-model="searchQuery"
-          :total-count="filterStats.total"
-          :filtered-count="filterStats.filtered"
-        />
+        <!-- UserProfile компонент справа -->
+        <UserProfile @show-login="$emit('show-login')" />
       </n-space>
 
-      <div class="hint-text">
+      <div class="hint-text" v-if="isAdmin">
         Двойной клик по строке для редактирования. Можно копировать данные (Ctrl+C / Ctrl+V)
+      </div>
+      <div class="hint-text" v-else-if="isLaborant">
+        Отображается оборудование подразделения: {{ currentUser?.department }}
       </div>
     </div>
 
@@ -368,7 +401,7 @@ defineExpose({
         theme="compact"
         :resize="true"
         :range="true"
-        :readonly="false"
+        :readonly="isLaborant"
         :row-headers="true"
         :can-focus="true"
         @afteredit="handleAfterEdit"

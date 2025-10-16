@@ -1,14 +1,25 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { NMessageProvider, NDialogProvider } from 'naive-ui'
 import MainTable from './components/MainTable.vue'
 import ArchiveTable from './components/ArchiveTable.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
+import LoginModal from './components/LoginModal.vue'
+import { useAuth } from './composables/useAuth'
 
 const showModal = ref(false)
 const editingEquipmentId = ref(null)
 const mainTableRef = ref(null)
 const showArchive = ref(false)
+const showLoginModal = ref(false)
+
+// Инициализация аутентификации
+const { initialize } = useAuth()
+
+onMounted(async () => {
+  // Проверяем наличие сохраненного токена и восстанавливаем сессию
+  await initialize()
+})
 
 // Открыть модальное окно для добавления
 const handleAddEquipment = () => {
@@ -31,6 +42,17 @@ const handleSaved = () => {
 const toggleArchive = () => {
   showArchive.value = !showArchive.value
 }
+
+// Показать окно логина
+const showLogin = () => {
+  showLoginModal.value = true
+}
+
+// Обработка успешного входа
+const handleLoginSuccess = () => {
+  // После входа перезагружаем данные таблицы
+  mainTableRef.value?.loadData()
+}
 </script>
 
 <template>
@@ -43,6 +65,7 @@ const toggleArchive = () => {
           @add-equipment="handleAddEquipment"
           @edit-equipment="handleEditEquipment"
           @show-archive="toggleArchive"
+          @show-login="showLogin"
         />
         <ArchiveTable
           v-else
@@ -53,6 +76,10 @@ const toggleArchive = () => {
           v-model:show="showModal"
           :equipment-id="editingEquipmentId"
           @saved="handleSaved"
+        />
+        <LoginModal
+          v-model:show="showLoginModal"
+          @login-success="handleLoginSuccess"
         />
       </div>
     </n-dialog-provider>
