@@ -1,14 +1,34 @@
 <script setup>
-import { ref, onMounted, h } from 'vue'
-import { NButton, NSpace } from 'naive-ui'
+import { ref, onMounted, h, computed, watch } from 'vue'
+import { NButton, NSpace, NDrawer, NDrawerContent } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
+import SearchBar from './SearchBar.vue'
+import FilterPanel from './FilterPanel.vue'
+import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 
 const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive'])
 
 // Данные таблицы
 const source = ref([])
 const loading = ref(false)
+
+// Инициализация фильтров
+const {
+  searchQuery,
+  visibleColumns,
+  activeFilters,
+  fieldDefinitions,
+  fieldGroups,
+  filteredData,
+  filterStats,
+  resetFilters,
+  applyQuickFilter,
+  loadSavedSettings
+} = useEquipmentFilters(source)
+
+// Состояние drawer для фильтров
+const showFilterDrawer = ref(false)
 
 // Функция форматирования даты в dd.mm.yyyy
 const formatDate = (dateString) => {
@@ -33,135 +53,6 @@ const formatMonthYear = (dateString) => {
   return `${month} ${year}`
 }
 
-// Определение колонок для RevoGrid
-const columns = ref([
-  { prop: 'equipment_name', name: 'Наименование', size: 200 },
-  { prop: 'equipment_model', name: 'Модель', size: 150 },
-  { prop: 'factory_number', name: 'Заводской номер', size: 150 },
-  { prop: 'inventory_number', name: 'Инвентарный номер', size: 150 },
-  {
-    prop: 'verification_type',
-    name: 'Тип верификации',
-    size: 150,
-    readonly: true,
-    cellTemplate: (createElement, props) => {
-      const verificationTypeMap = {
-        'calibration': 'Калибровка',
-        'verification': 'Поверка',
-        'certification': 'Аттестация'
-      }
-      const currentValue = props.model[props.prop] || ''
-      const displayValue = verificationTypeMap[currentValue] || currentValue
-
-      return createElement('span', {
-        textContent: displayValue,
-        style: {
-          padding: '0 4px'
-        }
-      })
-    }
-  },
-  { prop: 'verification_interval', name: 'Интервал (мес)', size: 120 },
-  {
-    prop: 'verification_date',
-    name: 'Дата верификации',
-    size: 150,
-    cellTemplate: (createElement, props) => {
-      return createElement('span', {
-        textContent: formatDate(props.model[props.prop]),
-        style: { padding: '0 4px' }
-      })
-    }
-  },
-  {
-    prop: 'verification_due',
-    name: 'Действует до',
-    size: 150,
-    readonly: true,
-    cellTemplate: (createElement, props) => {
-      return createElement('span', {
-        textContent: formatDate(props.model[props.prop]),
-        style: { padding: '0 4px' }
-      })
-    }
-  },
-  {
-    prop: 'verification_plan',
-    name: 'План верификации',
-    size: 150,
-    cellTemplate: (createElement, props) => {
-      return createElement('span', {
-        textContent: formatMonthYear(props.model[props.prop]),
-        style: { padding: '0 4px' }
-      })
-    }
-  },
-  {
-    prop: 'status',
-    name: 'Статус',
-    size: 150,
-    readonly: true,
-    cellTemplate: (createElement, props) => {
-      const statusMap = {
-        'status_fit': 'Годен',
-        'status_expired': 'Просрочен',
-        'status_expiring': 'Истекает',
-        'status_storage': 'На хранении',
-        'status_verification': 'На верификации',
-        'status_repair': 'На ремонте'
-      }
-      const currentValue = props.model[props.prop] || ''
-      const displayValue = statusMap[currentValue] || currentValue
-
-      return createElement('span', {
-        textContent: displayValue,
-        style: {
-          padding: '0 4px'
-        }
-      })
-    }
-  },
-  {
-    prop: 'actions',
-    name: 'Действия',
-    size: 200,
-    readonly: true,
-    cellTemplate: (createElement, props) => {
-      const equipmentId = props.model.equipment_id
-      return createElement('div', {
-        style: { display: 'flex', gap: '8px', padding: '4px' }
-      }, [
-        createElement('button', {
-          textContent: 'Редактировать',
-          style: {
-            padding: '4px 12px',
-            cursor: 'pointer',
-            border: '1px solid #18a058',
-            borderRadius: '3px',
-            background: '#18a058',
-            color: 'white',
-            fontSize: '12px'
-          },
-          onClick: () => editEquipment(equipmentId)
-        }),
-        createElement('button', {
-          textContent: 'Удалить',
-          style: {
-            padding: '4px 12px',
-            cursor: 'pointer',
-            border: '1px solid #d03050',
-            borderRadius: '3px',
-            background: '#d03050',
-            color: 'white',
-            fontSize: '12px'
-          },
-          onClick: () => deleteEquipment(equipmentId)
-        })
-      ])
-    }
-  }
-])
-
 // Загрузка данных с бэкенда
 const loadData = async () => {
   loading.value = true
@@ -174,6 +65,121 @@ const loadData = async () => {
     loading.value = false
   }
 }
+
+// Динамические колонки на основе видимых полей
+const dynamicColumns = computed(() => {
+  return visibleColumns.value.map(fieldKey => {
+    const fieldDef = fieldDefinitions[fieldKey]
+
+    // Базовая конфигурация колонки
+    const columnConfig = {
+      prop: fieldKey,
+      name: fieldDef?.label || fieldKey,
+      size: 150,
+      readonly: fieldDef?.computed || false
+    }
+
+    // Добавляем cellTemplate для форматирования
+    if (fieldKey === 'verification_date' || fieldKey === 'verification_due' || fieldKey === 'payment_date') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        return createElement('span', {
+          textContent: formatDate(props.model[props.prop]),
+          style: { padding: '0 4px' }
+        })
+      }
+    } else if (fieldKey === 'verification_plan') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        return createElement('span', {
+          textContent: formatMonthYear(props.model[props.prop]),
+          style: { padding: '0 4px' }
+        })
+      }
+    } else if (fieldKey === 'verification_type') {
+      columnConfig.readonly = true
+      columnConfig.cellTemplate = (createElement, props) => {
+        const verificationTypeMap = {
+          'calibration': 'Калибровка',
+          'verification': 'Поверка',
+          'certification': 'Аттестация'
+        }
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = verificationTypeMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: { padding: '0 4px' }
+        })
+      }
+    } else if (fieldKey === 'status') {
+      columnConfig.readonly = true
+      columnConfig.cellTemplate = (createElement, props) => {
+        const statusMap = {
+          'status_fit': 'Годен',
+          'status_expired': 'Просрочен',
+          'status_expiring': 'Истекает',
+          'status_storage': 'На хранении',
+          'status_verification': 'На верификации',
+          'status_repair': 'На ремонте'
+        }
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = statusMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: { padding: '0 4px' }
+        })
+      }
+    }
+
+    return columnConfig
+  })
+})
+
+// Добавляем колонку действий в конец
+const columnsWithActions = computed(() => {
+  return [
+    ...dynamicColumns.value,
+    {
+      prop: 'actions',
+      name: 'Действия',
+      size: 200,
+      readonly: true,
+      cellTemplate: (createElement, props) => {
+        const equipmentId = props.model.equipment_id
+        return createElement('div', {
+          style: { display: 'flex', gap: '8px', padding: '4px' }
+        }, [
+          createElement('button', {
+            textContent: 'Редактировать',
+            style: {
+              padding: '4px 12px',
+              cursor: 'pointer',
+              border: '1px solid #18a058',
+              borderRadius: '3px',
+              background: '#18a058',
+              color: 'white',
+              fontSize: '12px'
+            },
+            onClick: () => editEquipment(equipmentId)
+          }),
+          createElement('button', {
+            textContent: 'Удалить',
+            style: {
+              padding: '4px 12px',
+              cursor: 'pointer',
+              border: '1px solid #d03050',
+              borderRadius: '3px',
+              background: '#d03050',
+              color: 'white',
+              fontSize: '12px'
+            },
+            onClick: () => deleteEquipment(equipmentId)
+          })
+        ])
+      }
+    }
+  ]
+})
 
 // Обработчик двойного клика по ячейке
 const handleCellDblClick = (event) => {
@@ -312,6 +318,7 @@ const editEquipment = (equipmentId) => {
 
 onMounted(() => {
   loadData()
+  loadSavedSettings()
 })
 
 // Экспорт функции для перезагрузки данных (для использования родительским компонентом)
@@ -322,28 +329,42 @@ defineExpose({
 
 <template>
   <div class="main-table-container">
-    <div class="action-panel">
-      <n-space>
-        <n-button type="primary" @click="$emit('add-equipment')">
-          Добавить оборудование
-        </n-button>
-        <n-button @click="loadData">
-          Обновить
-        </n-button>
-        <n-button type="warning" @click="$emit('show-archive')">
-          Архив
-        </n-button>
+    <!-- Панель действий и поиска -->
+    <div class="top-panel">
+      <n-space :size="16" align="center">
+        <n-space>
+          <n-button type="primary" @click="$emit('add-equipment')">
+            Добавить оборудование
+          </n-button>
+          <n-button @click="loadData">
+            Обновить
+          </n-button>
+          <n-button type="warning" @click="$emit('show-archive')">
+            Архив
+          </n-button>
+          <n-button secondary @click="showFilterDrawer = true">
+            Фильтры и колонки
+          </n-button>
+        </n-space>
+
+        <SearchBar
+          v-model="searchQuery"
+          :total-count="filterStats.total"
+          :filtered-count="filterStats.filtered"
+        />
       </n-space>
+
       <div class="hint-text">
         Двойной клик по строке для редактирования. Можно копировать данные (Ctrl+C / Ctrl+V)
       </div>
     </div>
 
+    <!-- Таблица с данными -->
     <div class="table-wrapper">
       <v-grid
         ref="grid"
-        :source="source"
-        :columns="columns"
+        :source="filteredData"
+        :columns="columnsWithActions"
         theme="compact"
         :resize="true"
         :range="true"
@@ -355,6 +376,26 @@ defineExpose({
         @celldblclick="handleCellDblClick"
       />
     </div>
+
+    <!-- Drawer с фильтрами -->
+    <n-drawer
+      v-model:show="showFilterDrawer"
+      :width="400"
+      placement="left"
+    >
+      <n-drawer-content title="Фильтры и колонки" closable>
+        <FilterPanel
+          :field-definitions="fieldDefinitions"
+          :field-groups="fieldGroups"
+          :visible-columns="visibleColumns"
+          :active-filters="activeFilters"
+          @update:visible-columns="visibleColumns = $event"
+          @update:active-filters="activeFilters = $event"
+          @reset="resetFilters"
+          @apply-quick-filter="applyQuickFilter"
+        />
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
@@ -366,13 +407,13 @@ defineExpose({
   flex-direction: column;
   padding: 20px;
   box-sizing: border-box;
+  gap: 16px;
 }
 
-.action-panel {
-  margin-bottom: 20px;
+.top-panel {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .hint-text {

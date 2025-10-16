@@ -224,7 +224,7 @@ backend/
 - **Default connection**: `postgresql://postgres:postgres@localhost:5432/deltica_db`
 - **Alembic config**: `alembic.ini` has hardcoded connection string (line 87) - update if needed
 - **Migration directory**: `migrations/` (active)
-- **Current migration**: `88f8d0e8cb6d` (with equipment_files table and CASCADE DELETE)
+- **Current migration**: `168ffc404f69` (head - with archive tables)
 
 ### Key Development Patterns
 
