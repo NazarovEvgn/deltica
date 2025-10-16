@@ -136,7 +136,7 @@ backend/
 │   ├── database.py     # SQLAlchemy engine, session, get_db() dependency
 │   └── main.py         # FastAPI app instance with routers
 ├── app/            # Domain models and schemas
-│   ├── models.py       # SQLAlchemy ORM models (Equipment, Verification, EquipmentFile, etc.)
+│   ├── models.py       # SQLAlchemy ORM models (Equipment, Verification, User, etc.)
 │   └── schemas.py      # Pydantic schemas for API requests/responses
 ├── services/       # Business logic layer
 │   ├── main_table.py   # MainTableService with CRUD logic
@@ -144,7 +144,13 @@ backend/
 ├── routes/         # API endpoints
 │   ├── main_table.py   # Main table router at /main-table
 │   ├── files.py        # File management router at /files
-│   └── archive.py      # Archive router at /archive
+│   ├── archive.py      # Archive router at /archive
+│   └── auth.py         # Authentication router at /auth
+├── utils/          # Utility functions
+│   └── auth.py         # Authentication utilities (JWT, bcrypt, dependencies)
+├── scripts/        # Management scripts
+│   ├── seed_users.py   # Initial user creation from responsibility table
+│   └── sync_users.py   # Sync users from YAML config to database
 └── tests/          # Test directory with comprehensive test suite
     ├── conftest.py          # Pytest fixtures (db_session, client, temp files)
     ├── test_file_utils.py   # 39 unit tests for file utilities
@@ -190,6 +196,13 @@ backend/
    - Mirror structure of main tables with archived_equipment_id FK
    - CASCADE DELETE on archived_equipment removal
 
+**Authentication entities:**
+
+8. **User** - User accounts for authentication and authorization
+   - Fields: username, password_hash, full_name, department, role (admin/laborant), is_active
+   - Role-based access: admin (full CRUD), laborant (read-only, department-filtered)
+   - Managed via YAML config file (config/users_config.yaml)
+
 ### API Endpoints
 
 **Main Table** (`backend/routes/main_table.py`):
@@ -217,6 +230,13 @@ backend/
 - `DELETE /archive/{archived_equipment_id}` - Permanently delete from archive
 - **Logic**: Copies all related data to archive tables, explicitly deletes originals (no FK CASCADE)
 
+**Authentication** (`backend/routes/auth.py`):
+- `POST /auth/login` - User login with username/password, returns JWT token and user data
+- `GET /auth/me` - Get current authenticated user information
+- `POST /auth/token` - Alternative OAuth2 login endpoint (for Swagger UI)
+- **Security**: JWT tokens (24-hour expiration), bcrypt password hashing
+- **Dependencies**: `get_current_user`, `get_current_active_admin` for protected routes
+
 ### Database Configuration
 
 - **Environment variables**: Configure in `.env` file (DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME)
@@ -224,7 +244,32 @@ backend/
 - **Default connection**: `postgresql://postgres:postgres@localhost:5432/deltica_db`
 - **Alembic config**: `alembic.ini` has hardcoded connection string (line 87) - update if needed
 - **Migration directory**: `migrations/` (active)
-- **Current migration**: `168ffc404f69` (head - with archive tables)
+- **Current migration**: `0eda230e7a45` (head - with users table for authentication)
+
+### User Management Scripts
+
+- **backend/scripts/seed_users.py** - Initial user creation:
+  ```bash
+  uv run python backend/scripts/seed_users.py
+  ```
+  - Creates admin user (admin/admin123)
+  - Creates laborant users from responsibility table (password: lab123)
+  - Run once for initial setup
+
+- **backend/scripts/sync_users.py** - Sync users from YAML config:
+  ```bash
+  uv run python backend/scripts/sync_users.py
+  ```
+  - Reads config/users_config.yaml
+  - Creates new users, updates existing (ФИО, department, role, password, status)
+  - Detailed change reports
+  - Run after editing config/users_config.yaml
+
+- **config/users_config.yaml** - User configuration file:
+  - YAML format with user credentials and metadata
+  - In .gitignore (not committed to repo)
+  - Example file: config/users_config.yaml.example
+  - Documentation: config/README.md
 
 ### Key Development Patterns
 
@@ -235,6 +280,8 @@ backend/
 - **Status calculation**: Application-level logic in `backend/services/main_table.py::calculate_status()`. Status depends on both `verification_due` (from DB computed column) and `verification_state`. Non-work states (storage/verification/repair/archived) always override date-based statuses.
 - **Fixed value lists**: Department (12 options) and responsible_person (19 options) are enforced via frontend `<n-select>` only, not in DB constraints
 - **Date formatting**: Use `formatDate()` for dd.mm.yyyy display, `formatMonthYear()` for "Месяц ГГГГ" display in tables
+- **Authentication**: JWT tokens stored in localStorage, axios interceptors add Bearer token automatically
+- **Role-based UI**: Components check `isAdmin`/`isLaborant` computed properties to show/hide features
 - **RevoGrid features**:
   - **cellTemplates**: For custom rendering (date formatting, status mapping, action buttons). Example:
     ```javascript
@@ -266,10 +313,11 @@ backend/
 - **Backend**: Full CRUD API implemented at `/main-table` endpoint
   - Application-level status calculation based on `verification_due` and `verification_state`
   - Flush/refresh pattern to retrieve DB-computed `verification_due` before status calculation
-- **Database**: Models defined, migrations active (current: `168ffc404f69`), relationships established
+- **Database**: Models defined, migrations active (current: `0eda230e7a45`), relationships established
   - Migration `22b18436b99e`: Added `verification_due` as computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
   - Migration `88f8d0e8cb6d`: Added `equipment_files` table with CASCADE DELETE on equipment removal
   - Migration `168ffc404f69`: Added archive tables (archived_equipment, archived_verification, archived_responsibility, archived_finance, archived_equipment_files)
+  - Migration `0eda230e7a45`: Added users table with user_role_enum (admin/laborant)
 - **Frontend**: RevoGrid table with full functionality (`frontend/src/components/MainTable.vue`)
   - Date formatting: dd.mm.yyyy for dates, "Месяц ГГГГ" for verification_plan
   - Fixed lists: Department (12 items) and responsible_person (19 items) via `<n-select>`
@@ -297,7 +345,27 @@ backend/
   - ✅ Archive table displays: name, model, factory/inventory numbers, type, archived_at, archive_reason
   - ✅ Restore functionality returns equipment to main table
   - ✅ Permanent delete with warning confirmation
-- **Authentication**: Not yet implemented (planned: role-based access with admin/laborant roles)
+- **Search and Filtration** (`frontend/src/composables/useEquipmentFilters.js`):
+  - ✅ Client-side search across all fields with debounce (300ms)
+  - ✅ Dynamic filter panel with 24 database fields
+  - ✅ Column visibility toggles
+  - ✅ Quick filters: Просроченные, Истекают, Годные, На верификации, На хранении, В ремонте
+  - ✅ Filter persistence in localStorage
+  - ✅ Statistics display (total/filtered counts)
+- **Authentication** (`frontend/src/composables/useAuth.js`, `backend/routes/auth.py`):
+  - ✅ JWT-based authentication with 24-hour token expiration
+  - ✅ Bcrypt password hashing
+  - ✅ Role-based access control (admin/laborant)
+  - ✅ LoginModal component with Naive UI form validation
+  - ✅ UserProfile component with dropdown menu (profile info, logout)
+  - ✅ Automatic session restoration from localStorage
+  - ✅ Axios interceptors for automatic Bearer token injection
+  - ✅ Role-based UI rendering:
+    - **Admin**: Full access (CRUD, all data, archive)
+    - **Laborant**: Read-only, department-filtered data only
+  - ✅ User management via YAML config (config/users_config.yaml)
+  - ✅ Sync script for user updates (backend/scripts/sync_users.py)
+  - ✅ Initial user creation script (backend/scripts/seed_users.py)
 - **Tests**: Comprehensive test suite (125 tests total)
   - ✅ Status calculation tests: `test_status_calculation.py` (11 tests) - validates status calculation based on verification_due and verification_state
   - ✅ Verification due tests: `test_verification_due.py` (6+ tests) - validates computed column for verification_due dates
@@ -323,10 +391,19 @@ backend/
 - `docs/deltica_dev_plan.md` - Development roadmap and feature priorities
 - `docs/deltica_description.md` - Domain description and business requirements
 - `backend/tests/README.md` - Comprehensive test documentation (98 file tests, 11 status tests)
+- `config/README.md` - User management documentation (YAML config, scripts, security)
 - `README_START.md` - Quick start guide with PowerShell alias setup
 - UI mockups in PDF format in `docs/`
 
 **Note**: `docs/` directory is in `.gitignore` - documentation files are local-only (not version controlled)
+
+## Test Users
+
+After running seed script (`uv run python backend/scripts/seed_users.py`):
+- **Admin**: `admin` / `admin123`
+- **Laborants**: `ivanov`, `petrova`, `sidorov`, `volkov`, etc. / `lab123`
+
+Total: 1 admin + 14 laborants (based on responsibility table data)
 
 ## Repository Information
 
