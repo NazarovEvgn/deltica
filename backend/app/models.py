@@ -1,6 +1,6 @@
 # deltica/backend/app/models.py
 
-from sqlalchemy import Column, Integer, Float, String, Date, DateTime, Enum, ForeignKey, Computed
+from sqlalchemy import Column, Integer, Float, String, Date, DateTime, Enum, ForeignKey, Computed, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from backend.core.database import Base
@@ -193,3 +193,20 @@ class ArchivedEquipmentFile(Base):
     uploaded_at = Column(DateTime(timezone=True), nullable=False)  # Копируем дату оригинальной загрузки
 
     archived_equipment = relationship("ArchivedEquipment", back_populates="archived_files")
+
+
+# ==================== ПОЛЬЗОВАТЕЛИ И АУТЕНТИФИКАЦИЯ ====================
+
+class User(Base):
+    """Модель пользователя для аутентификации и авторизации"""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)  # Логин для входа
+    password_hash = Column(String, nullable=False)  # Хеш пароля (bcrypt)
+    full_name = Column(String, nullable=False)  # ФИО (из responsible_person)
+    department = Column(String, nullable=False)  # Подразделение
+    role = Column(Enum('admin', 'laborant', name='user_role_enum'), nullable=False, default='laborant')
+    is_active = Column(Boolean, default=True, nullable=False)  # Активен ли пользователь
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

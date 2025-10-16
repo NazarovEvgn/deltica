@@ -14,6 +14,9 @@ wheels/
 .env.local
 .env.production
 
+# User configuration (содержит пароли)
+config/users_config.yaml
+
 # Documentation
 docs/
 

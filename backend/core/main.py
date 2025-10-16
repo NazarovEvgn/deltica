@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.routes.main_table import router as main_table_router
 from backend.routes.files import router as files_router
 from backend.routes.archive import router as archive_router
+from backend.routes.auth import router as auth_router
 
 app = FastAPI(title="Deltica API", version="1.0.0")
 
@@ -25,6 +26,7 @@ def get_root():
 def post_root():
     return {"message": "POST works"}
 
+app.include_router(auth_router)
 app.include_router(main_table_router)
 app.include_router(files_router)
 app.include_router(archive_router)

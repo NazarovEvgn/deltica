@@ -233,3 +233,41 @@ class ArchiveResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ==================== СХЕМЫ ДЛЯ АУТЕНТИФИКАЦИИ ====================
+
+class UserRoleEnum(str, Enum):
+    admin = "admin"
+    laborant = "laborant"
+
+
+class UserBase(BaseModel):
+    username: str
+    full_name: str
+    department: str
+    role: UserRoleEnum = UserRoleEnum.laborant
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserResponse(UserBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
