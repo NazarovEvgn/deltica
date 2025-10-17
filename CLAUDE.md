@@ -211,6 +211,15 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Storage: `backend/uploads/pinned_documents/` with unique filename generation
 - Frontend: Button in top-right of MainTable, opens Naive UI modal with file list
 
+**8. Metrics Dashboard** (`frontend/src/composables/useEquipmentMetrics.js`, `frontend/src/components/MetricsDashboard.vue`):
+- Client-side metrics calculation from database data (not filtered data)
+- Displays 6 key metrics: total, fit, expired, on verification, in storage, in repair
+- For admin: metrics show statistics for entire database
+- For laborant: metrics show statistics only for their department (filtered at loadData level)
+- Metrics are reactive and update automatically when data is reloaded
+- Location: Between action buttons and search bar in MainTable
+- Compact card design with color coding and hover effects
+
 ## Important Notes
 
 - **Language**: Project documentation and code comments are in Russian (oil & gas industry domain)
