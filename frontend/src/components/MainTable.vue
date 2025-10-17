@@ -6,6 +6,7 @@ import axios from 'axios'
 import SearchBar from './SearchBar.vue'
 import FilterPanel from './FilterPanel.vue'
 import UserProfile from './UserProfile.vue'
+import DocumentsPanel from './DocumentsPanel.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useAuth } from '../composables/useAuth'
 
@@ -380,8 +381,11 @@ defineExpose({
           />
         </n-space>
 
-        <!-- UserProfile компонент справа -->
-        <UserProfile @show-login="$emit('show-login')" />
+        <!-- DocumentsPanel и UserProfile компоненты справа -->
+        <n-space :size="12" align="center">
+          <DocumentsPanel />
+          <UserProfile @show-login="$emit('show-login')" />
+        </n-space>
       </n-space>
 
       <div class="hint-text" v-if="isAdmin">

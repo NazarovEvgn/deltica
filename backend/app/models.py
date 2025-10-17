@@ -210,3 +210,17 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)  # Активен ли пользователь
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# ==================== ЗАКРЕПЛЕННЫЕ ДОКУМЕНТЫ ====================
+
+class PinnedDocument(Base):
+    """Модель для хранения закрепленных PDF документов (инструкции, графики, регламенты и т.п.)"""
+    __tablename__ = "pinned_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    file_name = Column(String, nullable=False)  # Оригинальное имя файла
+    file_path = Column(String, nullable=False)  # Относительный путь к файлу
+    file_size = Column(Integer, nullable=False)  # Размер в байтах
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    uploaded_by = Column(String, nullable=False)  # Username пользователя, загрузившего файл

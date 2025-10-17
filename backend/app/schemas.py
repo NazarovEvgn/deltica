@@ -271,3 +271,20 @@ class TokenResponse(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+# ==================== СХЕМЫ ДЛЯ ЗАКРЕПЛЕННЫХ ДОКУМЕНТОВ ====================
+
+class PinnedDocumentBase(BaseModel):
+    file_name: str
+
+
+class PinnedDocumentResponse(PinnedDocumentBase):
+    id: int
+    file_path: str
+    file_size: int
+    uploaded_at: datetime
+    uploaded_by: str
+
+    class Config:
+        from_attributes = True
