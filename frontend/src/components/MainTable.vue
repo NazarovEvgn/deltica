@@ -7,7 +7,9 @@ import SearchBar from './SearchBar.vue'
 import FilterPanel from './FilterPanel.vue'
 import UserProfile from './UserProfile.vue'
 import DocumentsPanel from './DocumentsPanel.vue'
+import MetricsDashboard from './MetricsDashboard.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
+import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
 
 const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive', 'show-login'])
@@ -32,6 +34,9 @@ const {
   applyQuickFilter,
   loadSavedSettings
 } = useEquipmentFilters(source)
+
+// Инициализация метрик (на основе данных из БД, уже отфильтрованных по department для лаборанта)
+const { metrics } = useEquipmentMetrics(source)
 
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
@@ -348,8 +353,10 @@ defineExpose({
   <div class="main-table-container">
     <!-- Панель действий и поиска -->
     <div class="top-panel">
+      <!-- Первая строка: кнопки, метрики, поиск и профиль -->
       <n-space :size="16" align="center" justify="space-between" style="width: 100%">
         <n-space :size="16" align="center">
+          <!-- Кнопки управления -->
           <n-space v-if="isAdmin">
             <n-button type="primary" @click="$emit('add-equipment')">
               Добавить оборудование
@@ -374,6 +381,10 @@ defineExpose({
             </n-button>
           </n-space>
 
+          <!-- Дашборд с метриками -->
+          <MetricsDashboard :metrics="metrics" />
+
+          <!-- Поиск -->
           <SearchBar
             v-model="searchQuery"
             :total-count="filterStats.total"
