@@ -37,28 +37,14 @@ uv sync
 cd frontend && npm install
 ```
 
-### Quick Start (одной командой)
+### Quick Start
 ```bash
-# Windows PowerShell (рекомендуется)
+# Windows PowerShell (рекомендуется) - запускает backend и frontend одновременно
 .\start.ps1
 
 # Windows CMD
 start.bat
-# или
-deltica-start.bat
 ```
-Эти скрипты запустят backend и frontend одновременно в отдельных окнах.
-
-**Для удобной работы** можно настроить PowerShell алиас (см. README_START.md):
-```powershell
-# Добавить в $PROFILE:
-function Start-Deltica {
-    Set-Location C:\Projects\deltica
-    .\start.ps1
-}
-Set-Alias deltica Start-Deltica
-```
-После этого из любой директории можно запускать просто `deltica`.
 
 ### Backend Development
 ```bash
@@ -67,6 +53,8 @@ uv run uvicorn backend.core.main:app --reload
 
 # Start on different port if needed
 uv run uvicorn backend.core.main:app --reload --port 8001
+
+# API documentation: http://localhost:8000/docs (Swagger UI)
 ```
 
 ### Frontend Development
@@ -97,33 +85,35 @@ uv run alembic downgrade -1
 
 ### Testing
 ```bash
-# Run all tests (125 total)
+# Run all tests (152 total)
 uv run pytest
 
-# Run specific test categories
-uv run pytest backend/tests/test_file_utils.py      # File utilities unit tests (39)
-uv run pytest backend/tests/test_files_api.py       # File API integration tests (17)
-uv run pytest backend/tests/test_files_security.py  # File security tests (20)
-uv run pytest backend/tests/test_files_encoding.py  # File encoding tests (16)
-uv run pytest backend/tests/test_status_calculation.py  # Status calculation tests (11)
-uv run pytest backend/tests/test_verification_due.py    # Verification due tests (6)
-uv run pytest backend/tests/test_archive.py         # Archive functionality tests (16)
-
-# Run all file-related tests together (98 tests)
-uv run pytest backend/tests/test_file*.py -v
+# Run specific test files
+uv run pytest backend/tests/test_file_utils.py       # File utilities (39 tests)
+uv run pytest backend/tests/test_files_api.py        # File API (17 tests)
+uv run pytest backend/tests/test_files_security.py   # File security (20 tests)
+uv run pytest backend/tests/test_files_encoding.py   # File encoding (16 tests)
+uv run pytest backend/tests/test_status_calculation.py  # Status calculation (11 tests)
+uv run pytest backend/tests/test_verification_due.py    # Verification due (6 tests)
+uv run pytest backend/tests/test_archive.py          # Archive functionality (16 tests)
+uv run pytest backend/tests/test_pinned_documents.py # Pinned documents API (23 tests)
 
 # Run single test by name
 uv run pytest backend/tests/test_files_api.py::test_upload_file_success -v
 
 # Run with coverage report
 uv run pytest backend/tests/test_file*.py --cov=backend.routes.files --cov-report=html
-uv run pytest backend/tests/test_archive.py --cov=backend.services.archive --cov-report=html
+```
 
-# Results: All tests passing (100% success rate)
-# - File tests: 98/98 passed (~1.5 seconds)
-# - Status tests: 11/11 passed
-# - Verification tests: 6/6 passed
-# - Archive tests: 16/16 passed (~0.2 seconds)
+### User Management
+```bash
+# Initial user creation (run once for initial setup)
+uv run python backend/scripts/seed_users.py
+# Creates admin user (admin/admin123) and laborant users from responsibility table (password: lab123)
+
+# Sync users from YAML config (run after editing config/users_config.yaml)
+uv run python backend/scripts/sync_users.py
+# Reads config/users_config.yaml and creates/updates users
 ```
 
 ## Architecture
@@ -141,164 +131,85 @@ backend/
 ├── services/       # Business logic layer
 │   ├── main_table.py   # MainTableService with CRUD logic
 │   └── archive.py      # ArchiveService with archive/restore/delete logic
-├── routes/         # API endpoints
-│   ├── main_table.py   # Main table router at /main-table
-│   ├── files.py        # File management router at /files
-│   ├── archive.py      # Archive router at /archive
-│   └── auth.py         # Authentication router at /auth
-├── utils/          # Utility functions
-│   └── auth.py         # Authentication utilities (JWT, bcrypt, dependencies)
-├── scripts/        # Management scripts
-│   ├── seed_users.py   # Initial user creation from responsibility table
-│   └── sync_users.py   # Sync users from YAML config to database
-└── tests/          # Test directory with comprehensive test suite
-    ├── conftest.py          # Pytest fixtures (db_session, client, temp files)
-    ├── test_file_utils.py   # 39 unit tests for file utilities
-    ├── test_files_api.py    # 17 integration tests for API endpoints
-    ├── test_files_security.py   # 20 security tests (path traversal, limits)
-    ├── test_files_encoding.py   # 16 encoding tests (Cyrillic, UTF-8)
-    ├── test_status_calculation.py  # 11 tests for verification status logic
-    ├── test_verification_due.py    # Tests for verification_due calculations
-    ├── test_archive.py      # 16 tests for archive functionality
-    └── README.md            # Test documentation and usage guide
+├── routes/         # API endpoints (/main-table, /files, /archive, /auth, /pinned-documents)
+├── utils/          # Utility functions (auth helpers)
+├── scripts/        # Management scripts (seed_users.py, sync_users.py)
+└── tests/          # Test suite (152 tests total, all passing)
 ```
 
-### Database Schema
-**Core entities with relationships:**
+### Database Schema Overview
 
-1. **Equipment** - Basic equipment info (name, model, type, factory_number, inventory_number, year)
-   - One-to-many relationship with Verification
-   - One-to-many relationship with EquipmentFile (cascade delete)
-   - One-to-one relationships with Responsibility and Finance (via equipment_id FK)
+**Core entities:**
+- **Equipment** → **Verification** (one-to-many)
+- **Equipment** → **Responsibility** (one-to-one, via equipment_id FK)
+- **Equipment** → **Finance** (one-to-one, via equipment_model_id FK) ⚠️ Note: inconsistent FK naming
+- **Equipment** → **EquipmentFile** (one-to-many, CASCADE DELETE)
 
-2. **Verification** - Verification details (type, dates, state, status, interval)
-   - Foreign key to Equipment (equipment_id)
+**Archive entities:** Mirror structure of main tables (ArchivedEquipment, ArchivedVerification, ArchivedResponsibility, ArchivedFinance, ArchivedEquipmentFile)
 
-3. **Responsibility** - Ownership data (department, responsible_person, verifier_org)
-   - Foreign key to Equipment (equipment_id)
+**Authentication:** User table with role-based access (admin/laborant), managed via YAML config (config/users_config.yaml)
 
-4. **Finance** - Cost and payment tracking (cost_rate, quantity, coefficient, total_cost, invoice, payment)
-   - Foreign key to Equipment (equipment_model_id)
+**Pinned Documents:** PinnedDocument table for shared PDF files (instructions, schedules, etc.) accessible to all users. Admin-only upload/delete. Storage: `backend/uploads/pinned_documents/`
 
-5. **EquipmentFile** - File attachments (certificates, passports, technical docs)
-   - Foreign key to Equipment (equipment_id) with CASCADE DELETE
-   - Fields: file_name, file_path, file_type, file_size, uploaded_at
-   - File types: 'certificate', 'passport', 'technical_doc', 'other'
-   - Storage: filesystem (backend/uploads/equipment_{id}/)
+**Important computed column:**
+- `verification_due` is a PostgreSQL computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
+- Requires `db.flush()` and `db.refresh(equipment)` to retrieve computed value after insert/update
 
-**Archive entities** (mirror structure of main tables):
+### API Routes
 
-6. **ArchivedEquipment** - Archived equipment records
-   - Stores original_id, archived_at, archive_reason (optional)
-   - One-to-many with ArchivedVerification, ArchivedResponsibility, ArchivedFinance, ArchivedEquipmentFile
+All routes documented in Swagger UI at `http://localhost:8000/docs`
 
-7. **ArchivedVerification**, **ArchivedResponsibility**, **ArchivedFinance**, **ArchivedEquipmentFile** - Archived related data
-   - Mirror structure of main tables with archived_equipment_id FK
-   - CASCADE DELETE on archived_equipment removal
+**Key endpoints:**
+- `/main-table/*` - CRUD operations for equipment with joined verification/responsibility data
+- `/files/*` - File upload/download/view with Cyrillic support (RFC 5987 headers)
+- `/archive/*` - Archive/restore/delete with explicit deletion (no FK CASCADE)
+- `/auth/*` - JWT authentication (24-hour expiration), bcrypt password hashing
+- `/pinned-documents/*` - Shared PDF documents (view/download for all, upload/delete admin-only)
 
-**Authentication entities:**
+### Critical Development Patterns
 
-8. **User** - User accounts for authentication and authorization
-   - Fields: username, password_hash, full_name, department, role (admin/laborant), is_active
-   - Role-based access: admin (full CRUD), laborant (read-only, department-filtered)
-   - Managed via YAML config file (config/users_config.yaml)
+**1. Status Calculation Logic** (`backend/services/main_table.py::calculate_status()`):
+- Status depends on BOTH `verification_due` (computed column) and `verification_state`
+- Non-work states (storage/verification/repair/archived) ALWAYS override date-based statuses
+- Must call `db.flush()` and `db.refresh(equipment)` before calculating status to get computed `verification_due`
 
-### API Endpoints
+**2. Archive Operations** (`backend/services/archive.py`):
+- Archive process: Copy to archive tables → Explicitly delete from main tables
+- NO FK CASCADE on archive level - deletion is explicit in service layer
+- Restore process: Copy back to main tables → Delete from archive tables
 
-**Main Table** (`backend/routes/main_table.py`):
-- `GET /main-table/` - Get all equipment with joined verification and responsibility data
-- `GET /main-table/{equipment_id}` - Get single equipment by ID with all related data
-- `GET /main-table/{equipment_id}/full` - Get complete equipment data for editing (used by frontend auto-save)
-- `POST /main-table/` - Create new equipment with all related entities (verification, responsibility, finance)
-- `PUT /main-table/{equipment_id}` - Update equipment and all related entities
-- `DELETE /main-table/{equipment_id}` - Delete equipment and cascade delete all related entities
+**3. File Management** (`backend/routes/files.py`):
+- Full Cyrillic filename support with RFC 5987 Content-Disposition headers
+- File type validation (PDF, DOC, DOCX, XLS, XLSX, JPG, PNG), 50 MB size limit
+- Path traversal protection and filename sanitization
+- Storage: filesystem at `backend/uploads/equipment_{id}/`
 
-**File Management** (`backend/routes/files.py`):
-- `POST /files/upload/{equipment_id}` - Upload file (PDF, DOC, DOCX, XLS, XLSX, JPG, PNG) with type selection
-- `GET /files/view/{file_id}` - View file in browser (inline Content-Disposition, proper MIME type)
-- `GET /files/download/{file_id}` - Download file (attachment Content-Disposition, forced download)
-- `GET /files/equipment/{equipment_id}` - List all files for equipment with metadata
-- `DELETE /files/{file_id}` - Delete file from database and filesystem
-- **Security**: File type validation, 50 MB size limit, filename sanitization, path traversal protection
-- **Encoding**: Full Cyrillic support, RFC 5987 Content-Disposition headers, UTF-8 encoding
+**4. RevoGrid Auto-save Pattern** (`frontend/src/components/MainTable.vue`):
+- Cell edit triggers `@afteredit` event
+- Calls `GET /main-table/{id}/full` to get complete equipment data
+- Updates changed field in received data
+- Sends `PUT /main-table/{id}` with complete updated data
+- Range editing (drag-to-fill, Ctrl+C/Ctrl+V) uses `@beforerangeedit` event
 
-**Archive** (`backend/routes/archive.py`):
-- `POST /archive/equipment/{equipment_id}` - Archive equipment with optional archive_reason
-- `GET /archive/` - List all archived equipment
-- `GET /archive/{archived_equipment_id}` - Get archived equipment by ID
-- `POST /archive/restore/{archived_equipment_id}` - Restore equipment from archive to main tables
-- `DELETE /archive/{archived_equipment_id}` - Permanently delete from archive
-- **Logic**: Copies all related data to archive tables, explicitly deletes originals (no FK CASCADE)
+**5. Database Session Management**:
+- Use dependency injection via `get_db()` in routes
+- Service layer handles business logic, routes handle HTTP concerns
+- Full entity CRUD: Service methods create/update/delete across all related tables
+- Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility
 
-**Authentication** (`backend/routes/auth.py`):
-- `POST /auth/login` - User login with username/password, returns JWT token and user data
-- `GET /auth/me` - Get current authenticated user information
-- `POST /auth/token` - Alternative OAuth2 login endpoint (for Swagger UI)
-- **Security**: JWT tokens (24-hour expiration), bcrypt password hashing
-- **Dependencies**: `get_current_user`, `get_current_active_admin` for protected routes
+**6. Authentication Flow**:
+- JWT tokens stored in localStorage
+- Axios interceptors automatically add Bearer token to requests
+- Role-based UI: Components check `isAdmin`/`isLaborant` computed properties
+- User management via YAML config (config/users_config.yaml), not database admin panel
 
-### Database Configuration
-
-- **Environment variables**: Configure in `.env` file (DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME)
-- **Config**: `backend/core/config.py` uses pydantic-settings to read `.env` and build DATABASE_URL
-- **Default connection**: `postgresql://postgres:postgres@localhost:5432/deltica_db`
-- **Alembic config**: `alembic.ini` has hardcoded connection string (line 87) - update if needed
-- **Migration directory**: `migrations/` (active)
-- **Current migration**: `0eda230e7a45` (head - with users table for authentication)
-
-### User Management Scripts
-
-- **backend/scripts/seed_users.py** - Initial user creation:
-  ```bash
-  uv run python backend/scripts/seed_users.py
-  ```
-  - Creates admin user (admin/admin123)
-  - Creates laborant users from responsibility table (password: lab123)
-  - Run once for initial setup
-
-- **backend/scripts/sync_users.py** - Sync users from YAML config:
-  ```bash
-  uv run python backend/scripts/sync_users.py
-  ```
-  - Reads config/users_config.yaml
-  - Creates new users, updates existing (ФИО, department, role, password, status)
-  - Detailed change reports
-  - Run after editing config/users_config.yaml
-
-- **config/users_config.yaml** - User configuration file:
-  - YAML format with user credentials and metadata
-  - In .gitignore (not committed to repo)
-  - Example file: config/users_config.yaml.example
-  - Documentation: config/README.md
-
-### Key Development Patterns
-
-- **Database sessions**: Use dependency injection via `get_db()` in routes
-- **Service layer**: Business logic in services (e.g., `MainTableService`), routes handle HTTP concerns
-- **Full entity CRUD**: Service methods handle creating/updating/deleting across all related tables
-- **Outer joins**: Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility
-- **Status calculation**: Application-level logic in `backend/services/main_table.py::calculate_status()`. Status depends on both `verification_due` (from DB computed column) and `verification_state`. Non-work states (storage/verification/repair/archived) always override date-based statuses.
-- **Fixed value lists**: Department (12 options) and responsible_person (19 options) are enforced via frontend `<n-select>` only, not in DB constraints
-- **Date formatting**: Use `formatDate()` for dd.mm.yyyy display, `formatMonthYear()` for "Месяц ГГГГ" display in tables
-- **Authentication**: JWT tokens stored in localStorage, axios interceptors add Bearer token automatically
-- **Role-based UI**: Components check `isAdmin`/`isLaborant` computed properties to show/hide features
-- **RevoGrid features**:
-  - **cellTemplates**: For custom rendering (date formatting, status mapping, action buttons). Example:
-    ```javascript
-    {
-      prop: 'verification_date',
-      cellTemplate: (createElement, props) => {
-        return createElement('span', {
-          textContent: formatDate(props.model[props.prop]),
-          style: { padding: '0 4px' }
-        })
-      }
-    }
-    ```
-  - **Auto-save**: Cell edits trigger `@afteredit` event, which calls `/full` endpoint to get complete data, updates changed field, then PUT to save
-  - **Range editing**: Supports drag-to-fill and copy-paste (Ctrl+C/Ctrl+V), handled via `@beforerangeedit` event
-  - **Double-click**: Opens edit modal for full equipment editing
-  - **Read-only columns**: Set `readonly: true` for computed fields (verification_due, status, actions)
+**7. Pinned Documents** (`backend/routes/pinned_documents.py`, `frontend/src/components/DocumentsPanel.vue`):
+- PDF-only validation (50 MB limit), filename sanitization (supports Cyrillic)
+- Admin-only upload/delete (via `get_current_active_admin` dependency)
+- All authenticated users can view/download (via `get_current_user` dependency)
+- File viewing uses axios with blob + JWT authentication (not direct file URLs)
+- Storage: `backend/uploads/pinned_documents/` with unique filename generation
+- Frontend: Button in top-right of MainTable, opens Naive UI modal with file list
 
 ## Important Notes
 
@@ -306,76 +217,7 @@ backend/
 - **Communication**: Always respond in Russian ("Общайся на русском языке")
 - **Verification logic**: Verification dates and status calculations are critical business logic
 - **Data integrity**: Equipment deletion cascades to all related entities (verification, responsibility, finance)
-- **Planned features**: Role-based access control, integration with ФГИС Аршин (Russian federal metrology system)
-
-## Current Implementation Status
-
-- **Backend**: Full CRUD API implemented at `/main-table` endpoint
-  - Application-level status calculation based on `verification_due` and `verification_state`
-  - Flush/refresh pattern to retrieve DB-computed `verification_due` before status calculation
-- **Database**: Models defined, migrations active (current: `0eda230e7a45`), relationships established
-  - Migration `22b18436b99e`: Added `verification_due` as computed column: `(verification_date + interval '1 month' * verification_interval - interval '1 day')::date`
-  - Migration `88f8d0e8cb6d`: Added `equipment_files` table with CASCADE DELETE on equipment removal
-  - Migration `168ffc404f69`: Added archive tables (archived_equipment, archived_verification, archived_responsibility, archived_finance, archived_equipment_files)
-  - Migration `0eda230e7a45`: Added users table with user_role_enum (admin/laborant)
-- **Frontend**: RevoGrid table with full functionality (`frontend/src/components/MainTable.vue`)
-  - Date formatting: dd.mm.yyyy for dates, "Месяц ГГГГ" for verification_plan
-  - Fixed lists: Department (12 items) and responsible_person (19 items) via `<n-select>`
-  - Auto-fill: verification_plan defaults to verification_due month but remains editable
-  - Main table columns: equipment_name, equipment_model, factory_number, inventory_number, verification_type, verification_interval, verification_date, verification_due, verification_plan, status, actions
-  - Auto-save on cell edit (via `@afteredit` event → GET `/full` → PUT with updated data)
-  - Range editing with auto-save (via `@beforerangeedit` event)
-  - Copy-paste support (Ctrl+C / Ctrl+V) in grid
-  - Double-click row to open edit modal with Naive UI form
-- **File Management** (`frontend/src/components/EquipmentModal.vue`):
-  - ✅ Drag-n-drop file upload (Naive UI NUploadDragger)
-  - ✅ File type selection (certificate/passport/technical_doc/other)
-  - ✅ File list with metadata (name, type, size, upload date)
-  - ✅ Click filename to view in browser (new tab)
-  - ✅ Download button for file sharing
-  - ✅ Delete button with confirmation
-  - ✅ Full Cyrillic filename support
-  - Icons from @vicons/ionicons5
-- **Archiving** (`frontend/src/components/ArchiveTable.vue`, `backend/routes/archive.py`):
-  - ✅ "В архив" button in equipment edit modal with confirmation dialog
-  - ✅ Separate archive view accessible via "Архив" button in main table
-  - ✅ Archive service with full cycle: archive, restore, delete permanently
-  - ✅ 5 archive tables mirror main structure (archived_equipment, archived_verification, etc.)
-  - ✅ Explicit deletion of related records (no CASCADE on FK level)
-  - ✅ Archive table displays: name, model, factory/inventory numbers, type, archived_at, archive_reason
-  - ✅ Restore functionality returns equipment to main table
-  - ✅ Permanent delete with warning confirmation
-- **Search and Filtration** (`frontend/src/composables/useEquipmentFilters.js`):
-  - ✅ Client-side search across all fields with debounce (300ms)
-  - ✅ Dynamic filter panel with 24 database fields
-  - ✅ Column visibility toggles
-  - ✅ Quick filters: Просроченные, Истекают, Годные, На верификации, На хранении, В ремонте
-  - ✅ Filter persistence in localStorage
-  - ✅ Statistics display (total/filtered counts)
-- **Authentication** (`frontend/src/composables/useAuth.js`, `backend/routes/auth.py`):
-  - ✅ JWT-based authentication with 24-hour token expiration
-  - ✅ Bcrypt password hashing
-  - ✅ Role-based access control (admin/laborant)
-  - ✅ LoginModal component with Naive UI form validation
-  - ✅ UserProfile component with dropdown menu (profile info, logout)
-  - ✅ Automatic session restoration from localStorage
-  - ✅ Axios interceptors for automatic Bearer token injection
-  - ✅ Role-based UI rendering:
-    - **Admin**: Full access (CRUD, all data, archive)
-    - **Laborant**: Read-only, department-filtered data only
-  - ✅ User management via YAML config (config/users_config.yaml)
-  - ✅ Sync script for user updates (backend/scripts/sync_users.py)
-  - ✅ Initial user creation script (backend/scripts/seed_users.py)
-- **Tests**: Comprehensive test suite (125 tests total)
-  - ✅ Status calculation tests: `test_status_calculation.py` (11 tests) - validates status calculation based on verification_due and verification_state
-  - ✅ Verification due tests: `test_verification_due.py` (6+ tests) - validates computed column for verification_due dates
-  - ✅ File utilities tests: `test_file_utils.py` (39 unit tests) - file extensions, MIME types, sanitization, validation
-  - ✅ File API tests: `test_files_api.py` (17 integration tests) - upload, view, download, delete, cascade delete
-  - ✅ Security tests: `test_files_security.py` (20 tests) - path traversal, size limits, injections, parallel uploads
-  - ✅ Encoding tests: `test_files_encoding.py` (16 tests) - Cyrillic filenames, UTF-8, RFC 5987 headers
-  - ✅ Archive tests: `test_archive.py` (16 tests) - archive, restore, delete, data integrity, full cycle
-  - All tests passing (100% success rate)
-  - Test documentation: `backend/tests/README.md` with detailed coverage breakdown
+- **Fixed value lists**: Department (12 options) and responsible_person (19 options) enforced via frontend `<n-select>` only, NOT in DB constraints
 
 ## Known Issues
 
@@ -383,27 +225,12 @@ backend/
 - **Finance FK naming**: Finance model uses `equipment_model_id` (inconsistent with other FK naming - should be `equipment_id`)
 - **Docs versioning**: `docs/` directory is in `.gitignore` - documentation files are local-only (not version controlled)
 - **File storage**: No periodic cleanup for orphaned files (if upload fails after file save but before DB commit)
-- **Disk space**: No validation of available disk space before file upload
-
-## Documentation
-
-- `docs/deltica_architecture.md` - Architectural overview and component structure
-- `docs/deltica_dev_plan.md` - Development roadmap and feature priorities
-- `docs/deltica_description.md` - Domain description and business requirements
-- `backend/tests/README.md` - Comprehensive test documentation (98 file tests, 11 status tests)
-- `config/README.md` - User management documentation (YAML config, scripts, security)
-- `README_START.md` - Quick start guide with PowerShell alias setup
-- UI mockups in PDF format in `docs/`
-
-**Note**: `docs/` directory is in `.gitignore` - documentation files are local-only (not version controlled)
 
 ## Test Users
 
 After running seed script (`uv run python backend/scripts/seed_users.py`):
 - **Admin**: `admin` / `admin123`
 - **Laborants**: `ivanov`, `petrova`, `sidorov`, `volkov`, etc. / `lab123`
-
-Total: 1 admin + 14 laborants (based on responsibility table data)
 
 ## Repository Information
 
