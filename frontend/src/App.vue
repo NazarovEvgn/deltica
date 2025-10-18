@@ -16,6 +16,7 @@ const themeOverrides = {
 
 const showModal = ref(false)
 const editingEquipmentId = ref(null)
+const isViewMode = ref(false)
 const mainTableRef = ref(null)
 const showArchive = ref(false)
 const showLoginModal = ref(false)
@@ -31,12 +32,21 @@ onMounted(async () => {
 // Открыть модальное окно для добавления
 const handleAddEquipment = () => {
   editingEquipmentId.value = null
+  isViewMode.value = false
   showModal.value = true
 }
 
 // Открыть модальное окно для редактирования
 const handleEditEquipment = (equipmentId) => {
   editingEquipmentId.value = equipmentId
+  isViewMode.value = false
+  showModal.value = true
+}
+
+// Открыть модальное окно для просмотра (для лаборанта)
+const handleViewEquipment = (equipmentId) => {
+  editingEquipmentId.value = equipmentId
+  isViewMode.value = true
   showModal.value = true
 }
 
@@ -72,6 +82,7 @@ const handleLoginSuccess = () => {
             ref="mainTableRef"
             @add-equipment="handleAddEquipment"
             @edit-equipment="handleEditEquipment"
+            @view-equipment="handleViewEquipment"
             @show-archive="toggleArchive"
             @show-login="showLogin"
           />
@@ -83,6 +94,7 @@ const handleLoginSuccess = () => {
           <EquipmentModal
             v-model:show="showModal"
             :equipment-id="editingEquipmentId"
+            :read-only="isViewMode"
             @saved="handleSaved"
           />
           <LoginModal

@@ -41,6 +41,10 @@ const props = defineProps({
   equipmentId: {
     type: Number,
     default: null
+  },
+  readOnly: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -444,7 +448,7 @@ watch(() => props.show, (newValue) => {
     :show="show"
     @update:show="handleClose"
     preset="card"
-    :title="isEdit ? 'Редактировать оборудование' : 'Добавить оборудование'"
+    :title="readOnly ? 'Просмотр оборудования' : (isEdit ? 'Редактировать оборудование' : 'Добавить оборудование')"
     style="width: 90%; max-width: 1200px;"
     :segmented="{ content: 'soft', footer: 'soft' }"
   >
@@ -457,43 +461,43 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Наименование" required>
-            <n-input v-model:value="formValue.equipment_name" placeholder="Введите наименование" />
+            <n-input v-model:value="formValue.equipment_name" placeholder="Введите наименование" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Модель" required>
-            <n-input v-model:value="formValue.equipment_model" placeholder="Введите модель" />
+            <n-input v-model:value="formValue.equipment_model" placeholder="Введите модель" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Тип оборудования" required>
-            <n-select v-model:value="formValue.equipment_type" :options="equipmentTypeOptions" />
+            <n-select v-model:value="formValue.equipment_type" :options="equipmentTypeOptions" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Заводской номер" required>
-            <n-input v-model:value="formValue.factory_number" placeholder="Введите заводской номер" />
+            <n-input v-model:value="formValue.factory_number" placeholder="Введите заводской номер" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Инвентарный номер" required>
-            <n-input v-model:value="formValue.inventory_number" placeholder="Введите инвентарный номер" />
+            <n-input v-model:value="formValue.inventory_number" placeholder="Введите инвентарный номер" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Год выпуска" required>
-            <n-input-number v-model:value="formValue.equipment_year" :min="1900" :max="2100" style="width: 100%" />
+            <n-input-number v-model:value="formValue.equipment_year" :min="1900" :max="2100" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item :span="3">
           <n-form-item label="Спецификация">
-            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите спецификацию" />
+            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите спецификацию" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
@@ -504,13 +508,13 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Тип верификации" required>
-            <n-select v-model:value="formValue.verification_type" :options="verificationTypeOptions" />
+            <n-select v-model:value="formValue.verification_type" :options="verificationTypeOptions" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Номер в реестре">
-            <n-input v-model:value="formValue.registry_number" placeholder="Введите номер" />
+            <n-input v-model:value="formValue.registry_number" placeholder="Введите номер" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
@@ -522,6 +526,7 @@ watch(() => props.show, (newValue) => {
               :step="12"
               @blur="handleIntervalChange(formValue.verification_interval)"
               style="width: 100%"
+              :disabled="readOnly"
             />
           </n-form-item>
         </n-grid-item>
@@ -533,6 +538,7 @@ watch(() => props.show, (newValue) => {
               type="date"
               format="dd/MM/yyyy"
               style="width: 100%"
+              :disabled="readOnly"
             />
           </n-form-item>
         </n-grid-item>
@@ -556,13 +562,14 @@ watch(() => props.show, (newValue) => {
               type="month"
               format="MMM yyyy"
               style="width: 100%"
+              :disabled="readOnly"
             />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Состояние" required>
-            <n-select v-model:value="formValue.verification_state" :options="verificationStateOptions" />
+            <n-select v-model:value="formValue.verification_state" :options="verificationStateOptions" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
@@ -579,19 +586,19 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Подразделение" required>
-            <n-select v-model:value="formValue.department" :options="departmentOptions" placeholder="Выберите подразделение" />
+            <n-select v-model:value="formValue.department" :options="departmentOptions" placeholder="Выберите подразделение" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Ответственное лицо" required>
-            <n-select v-model:value="formValue.responsible_person" :options="responsiblePersonOptions" placeholder="Выберите ответственное лицо" />
+            <n-select v-model:value="formValue.responsible_person" :options="responsiblePersonOptions" placeholder="Выберите ответственное лицо" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Организация-поверитель" required>
-            <n-input v-model:value="formValue.verifier_org" placeholder="Введите организацию" />
+            <n-input v-model:value="formValue.verifier_org" placeholder="Введите организацию" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
@@ -602,43 +609,43 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Расценка">
-            <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" />
+            <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Количество" required>
-            <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" />
+            <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Коэффициент">
-            <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" />
+            <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Общая стоимость">
-            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" />
+            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Номер счета">
-            <n-input v-model:value="formValue.invoice_number" placeholder="Введите номер счета" />
+            <n-input v-model:value="formValue.invoice_number" placeholder="Введите номер счета" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Оплачено">
-            <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" />
+            <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Дата оплаты">
-            <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable />
+            <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
@@ -675,7 +682,7 @@ watch(() => props.show, (newValue) => {
                       <n-button size="small" @click="downloadFile(file.id, file.file_name)">
                         Скачать
                       </n-button>
-                      <n-button size="small" type="error" @click="deleteFile(file.id)">
+                      <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
                         <template #icon>
                           <n-icon :component="TrashIcon" />
                         </template>
@@ -690,8 +697,8 @@ watch(() => props.show, (newValue) => {
               Файлы не загружены
             </n-text>
 
-            <!-- Загрузчик файлов -->
-            <n-space vertical>
+            <!-- Загрузчик файлов (скрыт в режиме readOnly) -->
+            <n-space v-if="!readOnly" vertical>
               <n-form-item label="Тип файла">
                 <n-select
                   v-model:value="selectedFileType"
@@ -727,7 +734,10 @@ watch(() => props.show, (newValue) => {
     </n-form>
 
     <template #footer>
-      <n-space justify="space-between">
+      <n-space v-if="readOnly" justify="end">
+        <n-button @click="handleClose">Закрыть</n-button>
+      </n-space>
+      <n-space v-else justify="space-between">
         <n-button
           v-if="isEdit"
           type="warning"

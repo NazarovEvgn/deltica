@@ -14,7 +14,7 @@ import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
 
-const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive', 'show-login'])
+const emit = defineEmits(['add-equipment', 'edit-equipment', 'view-equipment', 'show-archive', 'show-login'])
 
 // Аутентификация
 const { currentUser, isAuthenticated, isAdmin, isLaborant } = useAuth()
@@ -170,11 +170,11 @@ const dynamicColumns = computed(() => {
   })
 })
 
-// Добавляем колонку действий в конец (только для администратора)
+// Добавляем колонку действий в конец
 const columnsWithActions = computed(() => {
   const columns = [...dynamicColumns.value]
 
-  // Колонка действий только для администратора
+  // Колонка действий для администратора
   if (isAdmin.value) {
     columns.push({
       prop: 'actions',
@@ -211,6 +211,35 @@ const columnsWithActions = computed(() => {
               fontSize: '12px'
             },
             onClick: () => deleteEquipment(equipmentId)
+          })
+        ])
+      }
+    })
+  }
+  // Колонка действий для лаборанта (только просмотр)
+  else if (isLaborant.value) {
+    columns.push({
+      prop: 'actions',
+      name: 'Действия',
+      size: 120,
+      readonly: true,
+      cellTemplate: (createElement, props) => {
+        const equipmentId = props.model.equipment_id
+        return createElement('div', {
+          style: { display: 'flex', gap: '8px', padding: '4px', justifyContent: 'center' }
+        }, [
+          createElement('button', {
+            textContent: 'Просмотр',
+            style: {
+              padding: '4px 12px',
+              cursor: 'pointer',
+              border: '1px solid #1890ff',
+              borderRadius: '3px',
+              background: '#1890ff',
+              color: 'white',
+              fontSize: '12px'
+            },
+            onClick: () => viewEquipment(equipmentId)
           })
         ])
       }
@@ -353,6 +382,11 @@ const deleteEquipment = async (equipmentId) => {
 // Редактирование оборудования
 const editEquipment = (equipmentId) => {
   emit('edit-equipment', equipmentId)
+}
+
+// Просмотр оборудования (для лаборанта)
+const viewEquipment = (equipmentId) => {
+  emit('view-equipment', equipmentId)
 }
 
 onMounted(() => {
