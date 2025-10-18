@@ -224,3 +224,19 @@ class PinnedDocument(Base):
     file_size = Column(Integer, nullable=False)  # Размер в байтах
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     uploaded_by = Column(String, nullable=False)  # Username пользователя, загрузившего файл
+
+
+# ==================== РЕЗЕРВНОЕ КОПИРОВАНИЕ ====================
+
+class BackupHistory(Base):
+    """Модель для хранения истории резервных копий БД"""
+    __tablename__ = "backup_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    file_name = Column(String, nullable=False)  # Имя файла backup'а
+    file_path = Column(String, nullable=False)  # Полный путь к файлу
+    file_size = Column(Integer, nullable=False)  # Размер в байтах
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_by = Column(String, nullable=False)  # Username администратора
+    status = Column(Enum('success', 'failed', name='backup_status_enum'), nullable=False, default='success')
+    error_message = Column(String)  # Сообщение об ошибке, если backup failed
