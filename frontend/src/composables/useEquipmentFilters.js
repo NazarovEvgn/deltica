@@ -22,7 +22,6 @@ export function useEquipmentFilters(sourceData) {
     'inventory_number',
     'verification_type',
     'verification_interval',
-    'verification_date',
     'verification_due',
     'verification_plan',
     'status'
@@ -65,13 +64,13 @@ export function useEquipmentFilters(sourceData) {
       searchable: true
     },
     factory_number: {
-      label: 'Заводской номер',
+      label: 'Зав. №',
       group: 'equipment',
       type: 'string',
       searchable: true
     },
     inventory_number: {
-      label: 'Инвентарный номер',
+      label: 'Инв. №',
       group: 'equipment',
       type: 'string',
       searchable: true
@@ -102,7 +101,7 @@ export function useEquipmentFilters(sourceData) {
       searchable: true
     },
     verification_interval: {
-      label: 'Интервал (мес)',
+      label: 'Интервал',
       group: 'verification',
       type: 'number',
       searchable: false
@@ -121,7 +120,7 @@ export function useEquipmentFilters(sourceData) {
       computed: true
     },
     verification_plan: {
-      label: 'План верификации',
+      label: 'План',
       group: 'verification',
       type: 'date',
       searchable: false
@@ -374,7 +373,6 @@ export function useEquipmentFilters(sourceData) {
       'inventory_number',
       'verification_type',
       'verification_interval',
-      'verification_date',
       'verification_due',
       'verification_plan',
       'status'

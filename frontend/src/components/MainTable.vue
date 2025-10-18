@@ -96,7 +96,8 @@ const dynamicColumns = computed(() => {
       prop: fieldKey,
       name: fieldDef?.label || fieldKey,
       size: 150,
-      readonly: fieldDef?.computed || false
+      // Убираем readonly для verification_due, несмотря на то что это computed поле
+      readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }
 
     // Добавляем cellTemplate для форматирования
@@ -115,7 +116,6 @@ const dynamicColumns = computed(() => {
         })
       }
     } else if (fieldKey === 'verification_type') {
-      columnConfig.readonly = true
       columnConfig.cellTemplate = (createElement, props) => {
         const verificationTypeMap = {
           'calibration': 'Калибровка',
@@ -131,7 +131,6 @@ const dynamicColumns = computed(() => {
         })
       }
     } else if (fieldKey === 'status') {
-      columnConfig.readonly = true
       columnConfig.cellTemplate = (createElement, props) => {
         const statusMap = {
           'status_fit': 'Годен',
@@ -141,12 +140,28 @@ const dynamicColumns = computed(() => {
           'status_verification': 'На верификации',
           'status_repair': 'На ремонте'
         }
+
+        // Карта цветов для статусов
+        const statusColors = {
+          'status_fit': '#52c41a',           // зеленый
+          'status_expired': '#f5222d',       // красный
+          'status_expiring': '#fa8c16',      // оранжевый
+          'status_storage': '#1890ff',       // синий
+          'status_verification': '#722ed1',  // фиолетовый
+          'status_repair': '#fadb14'         // желтый
+        }
+
         const currentValue = props.model[props.prop] || ''
         const displayValue = statusMap[currentValue] || currentValue
+        const color = statusColors[currentValue] || '#000'
 
         return createElement('span', {
           textContent: displayValue,
-          style: { padding: '0 4px' }
+          style: {
+            padding: '0 4px',
+            color: color,
+            fontWeight: '600'
+          }
         })
       }
     }
