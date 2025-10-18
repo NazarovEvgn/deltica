@@ -20,7 +20,10 @@ app = FastAPI(title="Deltica API", version="1.0.0")
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:5173",  # Frontend URL (default)
+        "http://localhost:5174"   # Frontend URL (alternative port)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

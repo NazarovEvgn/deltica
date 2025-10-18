@@ -141,7 +141,31 @@ const dynamicColumns = computed(() => {
     }
 
     // Добавляем cellTemplate для форматирования
-    if (fieldKey === 'verification_date' || fieldKey === 'verification_due' || fieldKey === 'payment_date') {
+    if (fieldKey === 'department') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        const departmentMap = {
+          'gruppa_sm': 'Группа СМ',
+          'gtl': 'ГТЛ',
+          'lbr': 'ЛБР',
+          'ltr': 'ЛТР',
+          'lhaiei': 'ЛХАиЭИ',
+          'ogmk': 'ОГМК',
+          'oii': 'ОИИ',
+          'smtsik': 'СМТСиК',
+          'soii': 'СОИИ',
+          'to': 'ТО',
+          'ts': 'ТС',
+          'es': 'ЭС'
+        }
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = departmentMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: { padding: '0 4px' }
+        })
+      }
+    } else if (fieldKey === 'verification_date' || fieldKey === 'verification_due' || fieldKey === 'payment_date') {
       columnConfig.cellTemplate = (createElement, props) => {
         return createElement('span', {
           textContent: formatDate(props.model[props.prop]),

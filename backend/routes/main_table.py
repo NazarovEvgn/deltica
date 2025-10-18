@@ -81,12 +81,12 @@ def create_equipment(
     try:
         result = service.create_equipment_full(equipment_data)
         logger.info(
-            f"Equipment created: {equipment_data.name_equipment}",
+            f"Equipment created: {equipment_data.equipment_name}",
             extra={
                 "event": "equipment_created",
                 "user": current_user.username,
-                "equipment_id": result.id,
-                "equipment_name": equipment_data.name_equipment,
+                "equipment_id": result.equipment_id,
+                "equipment_name": equipment_data.equipment_name,
                 "equipment_type": equipment_data.equipment_type
             }
         )
@@ -97,7 +97,7 @@ def create_equipment(
             extra={
                 "event": "equipment_create_failed",
                 "user": current_user.username,
-                "equipment_name": equipment_data.name_equipment,
+                "equipment_name": equipment_data.equipment_name,
                 "error": str(e)
             }
         )

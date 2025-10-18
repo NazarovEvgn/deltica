@@ -116,14 +116,14 @@ const statusOptions = [
 ]
 
 const departmentOptions = [
-  { label: 'Группа СМ', value: 'sm' },
+  { label: 'Группа СМ', value: 'gruppa_sm' },
   { label: 'ГТЛ', value: 'gtl' },
   { label: 'ЛБР', value: 'lbr' },
   { label: 'ЛТР', value: 'ltr' },
-  { label: 'ЛХАиЭИ', value: 'lha' },
+  { label: 'ЛХАиЭИ', value: 'lhaiei' },
   { label: 'ОГМК', value: 'ogmk' },
-  { label: 'ОООПС', value: 'oii' },
-  { label: 'СМТСиК', value: 'smts' },
+  { label: 'ОИИ', value: 'oii' },
+  { label: 'СМТСиК', value: 'smtsik' },
   { label: 'СОИИ', value: 'soii' },
   { label: 'ТО', value: 'to' },
   { label: 'ТС', value: 'ts' },
@@ -377,11 +377,13 @@ const handleSave = async () => {
       await axios.post('http://localhost:8000/main-table/', payload)
     }
 
+    message.success(isEdit.value ? 'Данные успешно обновлены' : 'Оборудование успешно добавлено')
     emit('saved')
     handleClose()
   } catch (error) {
     console.error('Ошибка при сохранении:', error)
-    alert('Ошибка при сохранении данных')
+    const errorMessage = error.response?.data?.detail || 'Ошибка при сохранении данных'
+    message.error(errorMessage)
   }
 }
 

@@ -304,7 +304,12 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Communication**: Always respond in Russian ("Общайся на русском языке")
 - **Verification logic**: Verification dates and status calculations are critical business logic
 - **Data integrity**: Equipment deletion cascades to all related entities (verification, responsibility, finance)
-- **Fixed value lists**: Department (12 options) and responsible_person (19 options) enforced via frontend `<n-select>` only, NOT in DB constraints
+- **Fixed value lists**:
+  - **Departments**: 12 options stored as technical values (e.g., `lbr`, `gtl`, `smtsik`) but displayed as labels (e.g., 'ЛБР', 'ГТЛ', 'СМТСиК')
+  - **Responsible persons**: 19 options with technical values (e.g., `enazarov`) displayed as labels (e.g., 'Назаров Е.')
+  - Enforced via frontend `<n-select>` only, NOT in DB constraints
+  - Department mapping used in: EquipmentModal.vue, MainTable.vue, UserProfile.vue
+- **Laborant filtering**: Laborants see only equipment from their department (frontend filtering in MainTable.vue loadData)
 
 ## Known Issues
 

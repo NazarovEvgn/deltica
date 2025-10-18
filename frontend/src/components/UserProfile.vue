@@ -9,7 +9,7 @@
     >
       <n-button text style="font-size: 14px">
         <n-space :size="8" align="center">
-          <span style="color: #999; font-size: 13px">{{ currentUser?.department }}</span>
+          <span style="color: #999; font-size: 13px">{{ formattedDepartment }}</span>
           <span style="font-weight: 500">{{ formattedName }}</span>
           <n-icon :component="PersonCircleOutline" size="24" />
         </n-space>
@@ -56,6 +56,26 @@ const formattedName = computed(() => {
   if (!firstName) return lastName
 
   return `${lastName} ${firstName.charAt(0)}.`
+})
+
+// Форматирование department (техническое значение -> красивое название)
+const formattedDepartment = computed(() => {
+  const departmentMap = {
+    'gruppa_sm': 'Группа СМ',
+    'gtl': 'ГТЛ',
+    'lbr': 'ЛБР',
+    'ltr': 'ЛТР',
+    'lhaiei': 'ЛХАиЭИ',
+    'ogmk': 'ОГМК',
+    'oii': 'ОИИ',
+    'smtsik': 'СМТСиК',
+    'soii': 'СОИИ',
+    'to': 'ТО',
+    'ts': 'ТС',
+    'es': 'ЭС'
+  }
+  const dept = currentUser.value?.department || ''
+  return departmentMap[dept] || dept
 })
 
 // Название роли
