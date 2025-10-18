@@ -116,6 +116,8 @@ const dynamicColumns = computed(() => {
       prop: fieldKey,
       name: fieldDef?.label || fieldKey,
       size: columnSize,
+      sortable: true, // Включаем сортировку для всех колонок
+      filter: 'string', // Включаем фильтрацию с типом string по умолчанию
       // Убираем readonly для verification_due, несмотря на то что это computed поле
       readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }
@@ -423,45 +425,53 @@ defineExpose({
     <!-- Панель действий и поиска -->
     <div class="top-panel">
       <!-- Первая строка: логотип, дашборд и профиль -->
-      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
+      <div class="header-row">
         <!-- Левая часть: логотип -->
-        <AppLogo />
+        <div class="header-left">
+          <AppLogo />
+        </div>
 
         <!-- Центральная часть: Дашборд с метриками -->
-        <MetricsDashboard :metrics="metrics" />
+        <div class="header-center">
+          <MetricsDashboard :metrics="metrics" />
+        </div>
 
         <!-- Правая часть: UserProfile -->
-        <n-space :size="12" align="center">
+        <div class="header-right">
           <UserProfile @show-login="$emit('show-login')" />
-        </n-space>
+        </div>
       </div>
 
       <!-- Вторая строка: Кнопки, поиск по центру -->
-      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 12px;">
+      <div class="header-row" style="margin-top: 12px;">
         <!-- Левая часть: Фильтры, Документы и AdminPanel -->
-        <n-space :size="12" align="center">
-          <n-button v-if="isAdmin" type="primary" @click="showFilterDrawer = true">
-            Фильтры
-          </n-button>
-          <DocumentsPanel />
-          <AdminPanel
-            v-if="isAdmin"
-            @add-equipment="$emit('add-equipment')"
-            @show-archive="$emit('show-archive')"
-            @show-backup="backupPanelRef?.openModal()"
-            @show-monitor="systemMonitorRef?.openModal()"
-          />
-        </n-space>
+        <div class="header-left">
+          <n-space :size="12" align="center">
+            <n-button v-if="isAdmin" type="primary" @click="showFilterDrawer = true">
+              Фильтры
+            </n-button>
+            <DocumentsPanel />
+            <AdminPanel
+              v-if="isAdmin"
+              @add-equipment="$emit('add-equipment')"
+              @show-archive="$emit('show-archive')"
+              @show-backup="backupPanelRef?.openModal()"
+              @show-monitor="systemMonitorRef?.openModal()"
+            />
+          </n-space>
+        </div>
 
         <!-- Центральная часть: Поиск -->
-        <SearchBar
-          v-model="searchQuery"
-          :total-count="filterStats.total"
-          :filtered-count="filterStats.filtered"
-        />
+        <div class="header-center">
+          <SearchBar
+            v-model="searchQuery"
+            :total-count="filterStats.total"
+            :filtered-count="filterStats.filtered"
+          />
+        </div>
 
         <!-- Правая часть: пустой блок для симметрии -->
-        <div style="width: 120px;"></div>
+        <div class="header-right"></div>
       </div>
     </div>
 
@@ -474,6 +484,7 @@ defineExpose({
         theme="compact"
         :resize="true"
         :range="true"
+        :filter="true"
         :readonly="isLaborant"
         :row-headers="true"
         :can-focus="true"
@@ -526,6 +537,27 @@ defineExpose({
   gap: 12px;
 }
 
+/* Трёхколоночная сетка для центрирования */
+.header-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.header-left {
+  justify-self: start;
+}
+
+.header-center {
+  justify-self: center;
+}
+
+.header-right {
+  justify-self: end;
+}
+
 .hint-text {
   color: #888;
   font-size: 13px;
@@ -547,5 +579,23 @@ defineExpose({
   width: 100%;
   font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: #ffffff;
+}
+
+/* Показывать иконки сортировки и фильтрации при наведении */
+.table-wrapper :deep(.header-sortable),
+.table-wrapper :deep(.header-filter) {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.table-wrapper :deep(revogr-header-cell:hover .header-sortable),
+.table-wrapper :deep(revogr-header-cell:hover .header-filter) {
+  opacity: 1;
+}
+
+/* Всегда показывать активные иконки */
+.table-wrapper :deep(.header-sortable.active),
+.table-wrapper :deep(.header-filter.active) {
+  opacity: 1;
 }
 </style>

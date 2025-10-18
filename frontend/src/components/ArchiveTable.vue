@@ -25,15 +25,17 @@ const formatDate = (dateString) => {
 
 // Определение колонок для RevoGrid
 const columns = ref([
-  { prop: 'equipment_name', name: 'Наименование', size: 200, readonly: true },
-  { prop: 'equipment_model', name: 'Модель', size: 150, readonly: true },
-  { prop: 'factory_number', name: 'Заводской номер', size: 150, readonly: true },
-  { prop: 'inventory_number', name: 'Инвентарный номер', size: 150, readonly: true },
+  { prop: 'equipment_name', name: 'Наименование', size: 200, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'equipment_model', name: 'Модель', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'factory_number', name: 'Заводской номер', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'inventory_number', name: 'Инвентарный номер', size: 150, readonly: true, sortable: true, filter: 'string' },
   {
     prop: 'equipment_type',
     name: 'Тип',
     size: 100,
     readonly: true,
+    sortable: true,
+    filter: 'string',
     cellTemplate: (createElement, props) => {
       const typeMap = { 'SI': 'СИ', 'IO': 'ИО' }
       const currentValue = props.model[props.prop] || ''
@@ -48,6 +50,8 @@ const columns = ref([
     name: 'Дата архивирования',
     size: 180,
     readonly: true,
+    sortable: true,
+    filter: 'string',
     cellTemplate: (createElement, props) => {
       const dateStr = props.model[props.prop]
       if (!dateStr) return createElement('span', { textContent: '' })
@@ -64,6 +68,8 @@ const columns = ref([
     name: 'Причина списания',
     size: 200,
     readonly: true,
+    sortable: true,
+    filter: 'string',
     cellTemplate: (createElement, props) => {
       return createElement('span', {
         textContent: props.model[props.prop] || '—',
@@ -76,6 +82,7 @@ const columns = ref([
     name: 'Действия',
     size: 250,
     readonly: true,
+    sortable: false,
     cellTemplate: (createElement, props) => {
       const archivedId = props.model.id
       return createElement('div', {
@@ -207,6 +214,7 @@ onMounted(() => {
         :columns="columns"
         theme="compact"
         :resize="true"
+        :filter="true"
         :readonly="true"
         :row-headers="true"
       />
@@ -275,5 +283,23 @@ onMounted(() => {
   width: 100%;
   font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: #ffffff;
+}
+
+/* Показывать иконки сортировки и фильтрации при наведении */
+.table-wrapper :deep(.header-sortable),
+.table-wrapper :deep(.header-filter) {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.table-wrapper :deep(revogr-header-cell:hover .header-sortable),
+.table-wrapper :deep(revogr-header-cell:hover .header-filter) {
+  opacity: 1;
+}
+
+/* Всегда показывать активные иконки */
+.table-wrapper :deep(.header-sortable.active),
+.table-wrapper :deep(.header-filter.active) {
+  opacity: 1;
 }
 </style>

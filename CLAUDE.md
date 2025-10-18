@@ -262,7 +262,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 **12. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
 - **Layout Structure**:
   - Row 1: AppLogo (left) → MetricsDashboard (center) → UserProfile (right)
-  - Row 2: Buttons (left: Filters, Documents, Admin Panel) → SearchBar (center) → Empty spacer (right)
+  - Row 2: Buttons (left: Filters, Documents, Admin Panel) → SearchBar (center, 600px) → Empty spacer (right)
+  - CSS Grid layout (1fr auto 1fr) ensures true centering regardless of side content
   - Main table below with white background on light gray (#f5f5f5) page
 - **AppLogo Component**: 24x24px favicon + "Deltica" text (black #333, bold), 6px gap
 - **Metrics Dashboard**: Monochrome design (#333), no colored indicators, increased font sizes (value: 17px, label: 11px)
@@ -290,6 +291,12 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - Document links: Primary Blue (#0071BC)
   - Section dividers: Primary Blue (#0071BC)
 - **Background**: Light gray (#f5f5f5) for body, white (#ffffff) for tables
+- **RevoGrid Table Features**:
+  - Sorting: `sortable: true` on all data columns, click header to sort ascending/descending
+  - Filtering: `filter: 'string'` on all data columns, conditional filters (contains, begins, eq, etc.)
+  - Filter plugin enabled with `:filter="true"` on v-grid component
+  - Both sort and filter icons visible on hover (opacity: 0.3 by default, 1.0 on hover or when active)
+  - Column resizing enabled with `:resize="true"`
 
 ## Important Notes
 
