@@ -35,7 +35,7 @@ const showArchive = ref(false)
 const showLoginModal = ref(false)
 
 // Инициализация аутентификации
-const { initialize } = useAuth()
+const { initialize, isAuthenticated } = useAuth()
 
 onMounted(async () => {
   // Проверяем наличие сохраненного токена и восстанавливаем сессию
@@ -90,30 +90,46 @@ const handleLoginSuccess = () => {
     <n-message-provider>
       <n-dialog-provider>
         <div id="app">
-          <MainTable
-            v-if="!showArchive"
-            ref="mainTableRef"
-            @add-equipment="handleAddEquipment"
-            @edit-equipment="handleEditEquipment"
-            @view-equipment="handleViewEquipment"
-            @show-archive="toggleArchive"
-            @show-login="showLogin"
-          />
-          <ArchiveTable
-            v-else
-            @back-to-main="toggleArchive"
-            @restored="handleSaved"
-          />
-          <EquipmentModal
-            v-model:show="showModal"
-            :equipment-id="editingEquipmentId"
-            :read-only="isViewMode"
-            @saved="handleSaved"
-          />
-          <LoginModal
-            v-model:show="showLoginModal"
-            @login-success="handleLoginSuccess"
-          />
+          <!-- Страница авторизации (если пользователь не авторизован) -->
+          <div v-if="!isAuthenticated" class="login-page">
+            <div class="login-container">
+              <!-- Логотип и название -->
+              <div class="login-header">
+                <img src="/favicon.png" alt="Deltica" class="login-logo" />
+                <h1 class="login-title">Deltica</h1>
+              </div>
+              <!-- Форма входа -->
+              <LoginModal
+                :show="true"
+                :embedded="true"
+                @login-success="handleLoginSuccess"
+              />
+            </div>
+          </div>
+
+          <!-- Основное приложение (если пользователь авторизован) -->
+          <template v-else>
+            <MainTable
+              v-if="!showArchive"
+              ref="mainTableRef"
+              @add-equipment="handleAddEquipment"
+              @edit-equipment="handleEditEquipment"
+              @view-equipment="handleViewEquipment"
+              @show-archive="toggleArchive"
+              @show-login="showLogin"
+            />
+            <ArchiveTable
+              v-else
+              @back-to-main="toggleArchive"
+              @restored="handleSaved"
+            />
+            <EquipmentModal
+              v-model:show="showModal"
+              :equipment-id="editingEquipmentId"
+              :read-only="isViewMode"
+              @saved="handleSaved"
+            />
+          </template>
         </div>
       </n-dialog-provider>
     </n-message-provider>
@@ -124,5 +140,43 @@ const handleLoginSuccess = () => {
 #app {
   height: 100vh;
   overflow: hidden;
+}
+
+/* Страница авторизации */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.login-container {
+  background: white;
+  padding: 48px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 400px;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.login-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.login-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
 }
 </style>

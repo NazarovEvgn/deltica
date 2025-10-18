@@ -19,9 +19,9 @@
     <!-- Кнопка входа (если не авторизован) -->
     <n-button
       v-else
-      type="primary"
       @click="$emit('show-login')"
       :loading="isLoading"
+      style="background-color: #333; color: white; border: 1px solid #333;"
     >
       <template #icon>
         <n-icon :component="LogInOutline" />

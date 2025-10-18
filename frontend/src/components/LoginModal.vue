@@ -1,5 +1,68 @@
 <template>
+  <!-- Встроенная форма (без модального окна) -->
+  <div v-if="embedded" class="embedded-form">
+    <n-form
+      ref="formRef"
+      :model="formValue"
+      :rules="rules"
+      size="large"
+      label-placement="top"
+    >
+      <n-form-item label="Логин" path="username">
+        <n-input
+          v-model:value="formValue.username"
+          placeholder="Введите логин"
+          :disabled="isLoading"
+          @keyup.enter="handleLogin"
+        >
+          <template #prefix>
+            <n-icon :component="PersonOutline" />
+          </template>
+        </n-input>
+      </n-form-item>
+
+      <n-form-item label="Пароль" path="password">
+        <n-input
+          v-model:value="formValue.password"
+          type="password"
+          show-password-on="click"
+          placeholder="Введите пароль"
+          :disabled="isLoading"
+          @keyup.enter="handleLogin"
+        >
+          <template #prefix>
+            <n-icon :component="LockClosedOutline" />
+          </template>
+        </n-input>
+      </n-form-item>
+
+      <!-- Отображение ошибки -->
+      <n-alert
+        v-if="authError"
+        type="error"
+        :title="authError"
+        closable
+        @close="clearError"
+        style="margin-bottom: 16px"
+      />
+
+      <!-- Кнопка входа -->
+      <n-button
+        block
+        size="large"
+        @click="handleLogin"
+        :loading="isLoading"
+        :disabled="!formValue.username || !formValue.password"
+        style="background-color: #333; color: white; border: 1px solid #333;"
+      >
+        Войти
+      </n-button>
+    </n-form>
+  </div>
+
+  <!-- Модальное окно (стандартный режим) -->
   <n-modal
+    v-else
     v-model:show="visible"
     preset="card"
     title="Вход в систему"
@@ -87,6 +150,10 @@ import { useAuth } from '../composables/useAuth'
 
 const props = defineProps({
   show: {
+    type: Boolean,
+    default: false
+  },
+  embedded: {
     type: Boolean,
     default: false
   }

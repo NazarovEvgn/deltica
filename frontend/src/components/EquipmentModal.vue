@@ -430,6 +430,54 @@ watch([() => formValue.value.verification_date, () => formValue.value.verificati
   }
 })
 
+// Функции для получения меток из options
+const getEquipmentTypeLabel = (value) => {
+  const option = equipmentTypeOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
+const getVerificationTypeLabel = (value) => {
+  const option = verificationTypeOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
+const getVerificationStateLabel = (value) => {
+  const option = verificationStateOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
+const getStatusLabel = (value) => {
+  const option = statusOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
+const getDepartmentLabel = (value) => {
+  const option = departmentOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
+const getResponsiblePersonLabel = (value) => {
+  const option = responsiblePersonOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
+// Функции для форматирования дат
+const formatDisplayDate = (timestamp) => {
+  if (!timestamp) return 'Не указано'
+  const date = new Date(timestamp)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
+const formatDisplayMonth = (timestamp) => {
+  if (!timestamp) return 'Не указано'
+  const date = new Date(timestamp)
+  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+  return `${months[date.getMonth()]} ${date.getFullYear()}`
+}
+
 // Наблюдение за изменением show и equipmentId
 watch(() => props.show, (newValue) => {
   if (newValue) {
@@ -454,7 +502,140 @@ watch(() => props.show, (newValue) => {
     style="width: 90%; max-width: 1200px;"
     :segmented="{ content: 'soft', footer: 'soft' }"
   >
-    <n-form :model="formValue" label-placement="top">
+    <!-- Текстовый вид для readOnly режима -->
+    <div v-if="readOnly" class="info-view">
+      <!-- Секция: Оборудование -->
+      <div class="info-section">
+        <h3>Оборудование</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Наименование:</span>
+            <span class="info-value">{{ formValue.equipment_name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Модель:</span>
+            <span class="info-value">{{ formValue.equipment_model }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Тип оборудования:</span>
+            <span class="info-value">{{ getEquipmentTypeLabel(formValue.equipment_type) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Заводской номер:</span>
+            <span class="info-value">{{ formValue.factory_number }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Инвентарный номер:</span>
+            <span class="info-value">{{ formValue.inventory_number }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Год выпуска:</span>
+            <span class="info-value">{{ formValue.equipment_year }}</span>
+          </div>
+          <div class="info-item" v-if="formValue.equipment_specs">
+            <span class="info-label">Спецификация:</span>
+            <span class="info-value">{{ formValue.equipment_specs }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Секция: Верификация -->
+      <div class="info-section">
+        <h3>Верификация</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Тип верификации:</span>
+            <span class="info-value">{{ getVerificationTypeLabel(formValue.verification_type) }}</span>
+          </div>
+          <div class="info-item" v-if="formValue.registry_number">
+            <span class="info-label">Номер в реестре:</span>
+            <span class="info-value">{{ formValue.registry_number }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Интервал (месяцы):</span>
+            <span class="info-value">{{ formValue.verification_interval }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Дата верификации:</span>
+            <span class="info-value">{{ formatDisplayDate(formValue.verification_date) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Действует до:</span>
+            <span class="info-value">{{ formatDisplayDate(formValue.verification_due) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">План верификации:</span>
+            <span class="info-value">{{ formatDisplayMonth(formValue.verification_plan) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Состояние:</span>
+            <span class="info-value">{{ getVerificationStateLabel(formValue.verification_state) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Статус:</span>
+            <span class="info-value">{{ getStatusLabel(formValue.status) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Секция: Ответственные лица -->
+      <div class="info-section">
+        <h3>Ответственные лица</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Подразделение:</span>
+            <span class="info-value">{{ getDepartmentLabel(formValue.department) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ответственное лицо:</span>
+            <span class="info-value">{{ getResponsiblePersonLabel(formValue.responsible_person) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Организация-поверитель:</span>
+            <span class="info-value">{{ formValue.verifier_org }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Секция: Прикрепленные файлы -->
+      <div class="info-section" v-if="isEdit">
+        <h3>Прикрепленные файлы</h3>
+        <n-list v-if="equipmentFiles.length > 0" bordered>
+          <n-list-item v-for="file in equipmentFiles" :key="file.id">
+            <n-thing>
+              <template #avatar>
+                <n-icon size="24" :component="DocumentIcon" />
+              </template>
+              <template #header>
+                <a
+                  href="#"
+                  @click.prevent="openFile(file.id, file.file_name)"
+                  style="color: #0071BC; text-decoration: none; cursor: pointer;"
+                  @mouseover="$event.target.style.textDecoration = 'underline'"
+                  @mouseleave="$event.target.style.textDecoration = 'none'"
+                >
+                  {{ file.file_name }}
+                </a>
+              </template>
+              <template #description>
+                {{ getFileTypeLabel(file.file_type) }} • {{ formatFileSize(file.file_size) }}
+              </template>
+              <template #action>
+                <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                  Скачать
+                </n-button>
+              </template>
+            </n-thing>
+          </n-list-item>
+        </n-list>
+        <n-text v-else depth="3" style="display: block;">
+          Файлы не загружены
+        </n-text>
+      </div>
+    </div>
+
+    <!-- Форма для редактирования (не readOnly) -->
+    <n-form v-else :model="formValue" label-placement="top">
       <n-grid :cols="3" :x-gap="24">
         <!-- Секция: Оборудование -->
         <n-grid-item :span="3">
@@ -463,43 +644,43 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Наименование" required>
-            <n-input v-model:value="formValue.equipment_name" placeholder="Введите наименование" :disabled="readOnly" />
+            <n-input v-model:value="formValue.equipment_name" placeholder="Введите наименование" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Модель" required>
-            <n-input v-model:value="formValue.equipment_model" placeholder="Введите модель" :disabled="readOnly" />
+            <n-input v-model:value="formValue.equipment_model" placeholder="Введите модель" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Тип оборудования" required>
-            <n-select v-model:value="formValue.equipment_type" :options="equipmentTypeOptions" :disabled="readOnly" />
+            <n-select v-model:value="formValue.equipment_type" :options="equipmentTypeOptions" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Заводской номер" required>
-            <n-input v-model:value="formValue.factory_number" placeholder="Введите заводской номер" :disabled="readOnly" />
+            <n-input v-model:value="formValue.factory_number" placeholder="Введите заводской номер" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Инвентарный номер" required>
-            <n-input v-model:value="formValue.inventory_number" placeholder="Введите инвентарный номер" :disabled="readOnly" />
+            <n-input v-model:value="formValue.inventory_number" placeholder="Введите инвентарный номер" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Год выпуска" required>
-            <n-input-number v-model:value="formValue.equipment_year" :min="1900" :max="2100" style="width: 100%" :disabled="readOnly" />
+            <n-input-number v-model:value="formValue.equipment_year" :min="1900" :max="2100" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item :span="3">
           <n-form-item label="Спецификация">
-            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите спецификацию" :disabled="readOnly" />
+            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите спецификацию" />
           </n-form-item>
         </n-grid-item>
 
@@ -510,13 +691,13 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Тип верификации" required>
-            <n-select v-model:value="formValue.verification_type" :options="verificationTypeOptions" :disabled="readOnly" />
+            <n-select v-model:value="formValue.verification_type" :options="verificationTypeOptions" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Номер в реестре">
-            <n-input v-model:value="formValue.registry_number" placeholder="Введите номер" :disabled="readOnly" />
+            <n-input v-model:value="formValue.registry_number" placeholder="Введите номер" />
           </n-form-item>
         </n-grid-item>
 
@@ -528,7 +709,6 @@ watch(() => props.show, (newValue) => {
               :step="12"
               @blur="handleIntervalChange(formValue.verification_interval)"
               style="width: 100%"
-              :disabled="readOnly"
             />
           </n-form-item>
         </n-grid-item>
@@ -540,7 +720,6 @@ watch(() => props.show, (newValue) => {
               type="date"
               format="dd/MM/yyyy"
               style="width: 100%"
-              :disabled="readOnly"
             />
           </n-form-item>
         </n-grid-item>
@@ -564,14 +743,13 @@ watch(() => props.show, (newValue) => {
               type="month"
               format="MMM yyyy"
               style="width: 100%"
-              :disabled="readOnly"
             />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Состояние" required>
-            <n-select v-model:value="formValue.verification_state" :options="verificationStateOptions" :disabled="readOnly" />
+            <n-select v-model:value="formValue.verification_state" :options="verificationStateOptions" />
           </n-form-item>
         </n-grid-item>
 
@@ -588,66 +766,66 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Подразделение" required>
-            <n-select v-model:value="formValue.department" :options="departmentOptions" placeholder="Выберите подразделение" :disabled="readOnly" />
+            <n-select v-model:value="formValue.department" :options="departmentOptions" placeholder="Выберите подразделение" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Ответственное лицо" required>
-            <n-select v-model:value="formValue.responsible_person" :options="responsiblePersonOptions" placeholder="Выберите ответственное лицо" :disabled="readOnly" />
+            <n-select v-model:value="formValue.responsible_person" :options="responsiblePersonOptions" placeholder="Выберите ответственное лицо" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
           <n-form-item label="Организация-поверитель" required>
-            <n-input v-model:value="formValue.verifier_org" placeholder="Введите организацию" :disabled="readOnly" />
+            <n-input v-model:value="formValue.verifier_org" placeholder="Введите организацию" />
           </n-form-item>
         </n-grid-item>
 
         <!-- Секция: Финансы -->
-        <n-grid-item :span="3" v-if="!readOnly">
+        <n-grid-item :span="3">
           <h3>Финансы</h3>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Расценка">
-            <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
+            <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Количество" required>
-            <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" :disabled="readOnly" />
+            <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Коэффициент">
-            <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
+            <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Общая стоимость">
-            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
+            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Номер счета">
-            <n-input v-model:value="formValue.invoice_number" placeholder="Введите номер счета" :disabled="readOnly" />
+            <n-input v-model:value="formValue.invoice_number" placeholder="Введите номер счета" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Оплачено">
-            <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
+            <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item v-if="!readOnly">
+        <n-grid-item>
           <n-form-item label="Дата оплаты">
-            <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable :disabled="readOnly" />
+            <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable />
           </n-form-item>
         </n-grid-item>
 
@@ -773,17 +951,36 @@ h3 {
   padding-bottom: 8px;
 }
 
-/* Убираем серый фон у disabled полей в режиме просмотра */
-:deep(.n-input.n-input--disabled),
-:deep(.n-input-number.n-input-number--disabled),
-:deep(.n-base-selection.n-base-selection--disabled) {
-  background-color: #ffffff !important;
+/* Стили для текстового вида информации (readOnly режим) */
+.info-view {
+  font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-:deep(.n-input.n-input--disabled .n-input__input-el),
-:deep(.n-input-number.n-input-number--disabled .n-input__input-el),
-:deep(.n-base-selection.n-base-selection--disabled .n-base-selection-label) {
-  color: #333 !important;
-  -webkit-text-fill-color: #333 !important;
+.info-section {
+  margin-bottom: 24px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 24px;
+}
+
+.info-item {
+  display: flex;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #666;
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: #333;
+  word-break: break-word;
 }
 </style>
