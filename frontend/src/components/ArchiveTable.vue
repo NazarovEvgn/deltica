@@ -80,13 +80,13 @@ const columns = ref([
   {
     prop: 'actions',
     name: 'Действия',
-    size: 250,
+    size: 260,
     readonly: true,
     sortable: false,
     cellTemplate: (createElement, props) => {
       const archivedId = props.model.id
       return createElement('div', {
-        style: { display: 'flex', gap: '8px', padding: '4px' }
+        style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px' }
       }, [
         createElement('button', {
           textContent: 'Восстановить',

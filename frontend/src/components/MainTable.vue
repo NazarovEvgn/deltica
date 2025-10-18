@@ -101,14 +101,32 @@ const dynamicColumns = computed(() => {
     let columnSize = 150 // дефолтный размер
     if (fieldKey === 'equipment_name') {
       columnSize = 250 // увеличенная ширина для наименования
+    } else if (fieldKey === 'equipment_type') {
+      columnSize = 160 // "Тип оборудования"
     } else if (fieldKey === 'verification_interval') {
       columnSize = 100 // уменьшенный размер для интервала
     } else if (fieldKey === 'verification_plan') {
       columnSize = 130 // ширина по содержимому (например: "Октябрь 2025")
-    } else if (fieldKey === 'verification_due' || fieldKey === 'verification_date') {
-      columnSize = 120 // минимальная ширина для дат (по ширине названия)
+    } else if (fieldKey === 'verification_date') {
+      columnSize = 160 // "Дата верификации"
+    } else if (fieldKey === 'verification_due') {
+      columnSize = 140 // "Действует до"
+    } else if (fieldKey === 'verification_type') {
+      columnSize = 160 // "Тип верификации"
+    } else if (fieldKey === 'registry_number') {
+      columnSize = 160 // "Номер в реестре"
+    } else if (fieldKey === 'verifier_org') {
+      columnSize = 220 // "Организация-поверитель"
+    } else if (fieldKey === 'cost_rate') {
+      columnSize = 180 // "Стоимость за единицу"
+    } else if (fieldKey === 'total_cost') {
+      columnSize = 160 // "Общая стоимость"
     } else if (fieldKey === 'status') {
       columnSize = 130 // ширина по содержимому (например: "На верификации")
+    } else if (fieldKey === 'department') {
+      columnSize = 170 // "Подразделение"
+    } else if (fieldKey === 'responsible_person') {
+      columnSize = 170 // "Ответственный"
     }
 
     // Базовая конфигурация колонки
@@ -201,11 +219,11 @@ const columnsWithActions = computed(() => {
     columns.push({
       prop: 'actions',
       name: 'Действия',
-      size: 200,
+      size: 210,
       cellTemplate: (createElement, props) => {
         const equipmentId = props.model.equipment_id
         return createElement('div', {
-          style: { display: 'flex', gap: '8px', padding: '4px' }
+          style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px' }
         }, [
           createElement('button', {
             textContent: 'Редактировать',
@@ -242,11 +260,11 @@ const columnsWithActions = computed(() => {
     columns.push({
       prop: 'actions',
       name: 'Действия',
-      size: 120,
+      size: 130,
       cellTemplate: (createElement, props) => {
         const equipmentId = props.model.equipment_id
         return createElement('div', {
-          style: { display: 'flex', gap: '8px', padding: '4px', justifyContent: 'center' }
+          style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px', justifyContent: 'center' }
         }, [
           createElement('button', {
             textContent: 'Просмотр',
