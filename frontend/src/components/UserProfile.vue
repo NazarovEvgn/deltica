@@ -8,20 +8,10 @@
       @select="handleSelect"
     >
       <n-button text style="font-size: 14px">
-        <template #icon>
-          <n-icon :component="PersonCircleOutline" size="24" />
-        </template>
-        <n-space :size="4" align="center" style="margin-left: 8px">
-          <span style="font-weight: 500">{{ currentUser?.full_name }}</span>
-          <n-tag
-            :type="currentUser?.role === 'admin' ? 'success' : 'info'"
-            size="small"
-            :bordered="false"
-            round
-          >
-            {{ roleLabel }}
-          </n-tag>
+        <n-space :size="8" align="center">
           <span style="color: #999; font-size: 13px">{{ currentUser?.department }}</span>
+          <span style="font-weight: 500">{{ formattedName }}</span>
+          <n-icon :component="PersonCircleOutline" size="24" />
         </n-space>
       </n-button>
     </n-dropdown>
@@ -44,7 +34,7 @@
 <script setup>
 import { computed, h } from 'vue'
 import { NButton, NSpace, NIcon, NTag, NDropdown, useDialog, useMessage } from 'naive-ui'
-import { PersonCircleOutline, LogInOutline, LogOutOutline, InformationCircleOutline } from '@vicons/ionicons5'
+import { PersonCircleOutline, LogInOutline, LogOutOutline } from '@vicons/ionicons5'
 import { useAuth } from '../composables/useAuth'
 
 defineEmits(['show-login'])
@@ -53,6 +43,21 @@ const dialog = useDialog()
 const message = useMessage()
 const { currentUser, isAuthenticated, isLoading, logout } = useAuth()
 
+// Форматирование ФИО в формат "Фамилия И."
+const formattedName = computed(() => {
+  if (!currentUser.value?.full_name) return ''
+
+  const nameParts = currentUser.value.full_name.trim().split(' ')
+  if (nameParts.length === 0) return ''
+
+  const lastName = nameParts[0]
+  const firstName = nameParts[1]
+
+  if (!firstName) return lastName
+
+  return `${lastName} ${firstName.charAt(0)}.`
+})
+
 // Название роли
 const roleLabel = computed(() => {
   return currentUser.value?.role === 'admin' ? 'Администратор' : 'Лаборант'
@@ -60,15 +65,6 @@ const roleLabel = computed(() => {
 
 // Опции выпадающего меню
 const dropdownOptions = computed(() => [
-  {
-    label: 'Информация о профиле',
-    key: 'profile',
-    icon: () => h(NIcon, { component: InformationCircleOutline })
-  },
-  {
-    type: 'divider',
-    key: 'd1'
-  },
   {
     label: 'Выйти',
     key: 'logout',
@@ -80,8 +76,6 @@ const dropdownOptions = computed(() => [
 const handleSelect = (key) => {
   if (key === 'logout') {
     handleLogout()
-  } else if (key === 'profile') {
-    showProfileInfo()
   }
 }
 
@@ -96,33 +90,6 @@ const handleLogout = () => {
       logout()
       message.info('Вы вышли из системы')
     }
-  })
-}
-
-// Показ информации о профиле
-const showProfileInfo = () => {
-  dialog.info({
-    title: 'Профиль пользователя',
-    content: () => {
-      return h('div', { style: 'line-height: 1.8' }, [
-        h('p', [h('strong', 'ФИО: '), currentUser.value?.full_name]),
-        h('p', [h('strong', 'Логин: '), currentUser.value?.username]),
-        h('p', [h('strong', 'Подразделение: '), currentUser.value?.department]),
-        h('p', [
-          h('strong', 'Роль: '),
-          currentUser.value?.role === 'admin' ? 'Администратор' : 'Лаборант'
-        ]),
-        h('p', [
-          h('strong', 'Статус: '),
-          currentUser.value?.is_active ? 'Активен' : 'Деактивирован'
-        ]),
-        h('p', { style: 'color: #999; font-size: 13px; margin-top: 12px' }, [
-          'Дата создания: ',
-          new Date(currentUser.value?.created_at).toLocaleString('ru-RU')
-        ])
-      ])
-    },
-    positiveText: 'OK'
   })
 }
 </script>

@@ -416,7 +416,7 @@ defineExpose({
   <div class="main-table-container">
     <!-- Панель действий и поиска -->
     <div class="top-panel">
-      <!-- Первая строка: кнопки, метрики, поиск и профиль -->
+      <!-- Первая строка: кнопки и профиль -->
       <n-space :size="16" align="center" justify="space-between" style="width: 100%">
         <n-space :size="16" align="center">
           <!-- Кнопки управления -->
@@ -424,51 +424,42 @@ defineExpose({
             <n-button type="primary" @click="$emit('add-equipment')">
               Добавить оборудование
             </n-button>
-            <n-button @click="loadData">
-              Обновить
-            </n-button>
             <n-button type="warning" @click="$emit('show-archive')">
               Архив
             </n-button>
             <BackupPanel />
             <SystemMonitor />
             <n-button secondary @click="showFilterDrawer = true">
-              Фильтры и колонки
-            </n-button>
-          </n-space>
-
-          <n-space v-else-if="isAuthenticated">
-            <n-button @click="loadData">
-              Обновить
-            </n-button>
-            <n-button secondary @click="showFilterDrawer = true">
-              Фильтры и колонки
+              Фильтры
             </n-button>
           </n-space>
 
           <!-- Дашборд с метриками -->
           <MetricsDashboard :metrics="metrics" />
-
-          <!-- Поиск -->
-          <SearchBar
-            v-model="searchQuery"
-            :total-count="filterStats.total"
-            :filtered-count="filterStats.filtered"
-          />
         </n-space>
 
-        <!-- DocumentsPanel и UserProfile компоненты справа -->
+        <!-- UserProfile компонент справа -->
         <n-space :size="12" align="center">
-          <DocumentsPanel />
           <UserProfile @show-login="$emit('show-login')" />
         </n-space>
       </n-space>
 
+      <!-- Вторая строка: DocumentsPanel слева и поиск по центру -->
+      <div style="display: flex; justify-content: center; align-items: center; margin-top: 12px; position: relative;">
+        <!-- DocumentsPanel слева -->
+        <div style="position: absolute; left: 0;">
+          <DocumentsPanel />
+        </div>
+        <!-- Поиск по центру -->
+        <SearchBar
+          v-model="searchQuery"
+          :total-count="filterStats.total"
+          :filtered-count="filterStats.filtered"
+        />
+      </div>
+
       <div class="hint-text" v-if="isAdmin">
         Двойной клик по строке для редактирования. Можно копировать данные (Ctrl+C / Ctrl+V)
-      </div>
-      <div class="hint-text" v-else-if="isLaborant">
-        Отображается оборудование подразделения: {{ currentUser?.department }}
       </div>
     </div>
 

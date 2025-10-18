@@ -7,10 +7,22 @@ import EquipmentModal from './components/EquipmentModal.vue'
 import LoginModal from './components/LoginModal.vue'
 import { useAuth } from './composables/useAuth'
 
-// Настройка темы Naive UI для использования PT Astra Sans
+// Настройка темы Naive UI для использования PT Astra Sans и корпоративных цветов
 const themeOverrides = {
   common: {
-    fontFamily: 'PT Astra Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif'
+    fontFamily: 'PT Astra Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif',
+    primaryColor: '#0071BC',           // Основной синий Газпром Нефти
+    primaryColorHover: '#005a9c',      // Темнее при наведении
+    primaryColorPressed: '#004a7c',    // Темнее при нажатии
+    infoColor: '#00A6E4',              // Светло-голубой
+    infoColorHover: '#0086b8',
+    infoColorPressed: '#006890',
+    warningColor: '#F7941D',           // Оранжевый
+    warningColorHover: '#d77a16',
+    warningColorPressed: '#b76512',
+    successColor: '#8BC53F',           // Зеленый
+    successColorHover: '#76a835',
+    successColorPressed: '#5f8829'
   }
 }
 

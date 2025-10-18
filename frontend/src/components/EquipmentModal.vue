@@ -448,7 +448,7 @@ watch(() => props.show, (newValue) => {
     :show="show"
     @update:show="handleClose"
     preset="card"
-    :title="readOnly ? 'Просмотр оборудования' : (isEdit ? 'Редактировать оборудование' : 'Добавить оборудование')"
+    :title="readOnly ? 'Полная информация по оборудованию и закрепленные файлы' : (isEdit ? 'Редактировать оборудование' : 'Добавить оборудование')"
     style="width: 90%; max-width: 1200px;"
     :segmented="{ content: 'soft', footer: 'soft' }"
   >
@@ -456,7 +456,7 @@ watch(() => props.show, (newValue) => {
       <n-grid :cols="3" :x-gap="24">
         <!-- Секция: Оборудование -->
         <n-grid-item :span="3">
-          <h3>Информация об оборудовании</h3>
+          <h3>Оборудование</h3>
         </n-grid-item>
 
         <n-grid-item>
@@ -503,7 +503,7 @@ watch(() => props.show, (newValue) => {
 
         <!-- Секция: Верификация -->
         <n-grid-item :span="3">
-          <h3>Информация о верификации</h3>
+          <h3>Верификация</h3>
         </n-grid-item>
 
         <n-grid-item>
@@ -581,7 +581,7 @@ watch(() => props.show, (newValue) => {
 
         <!-- Секция: Ответственность -->
         <n-grid-item :span="3">
-          <h3>Информация об ответственности</h3>
+          <h3>Ответственные лица</h3>
         </n-grid-item>
 
         <n-grid-item>
@@ -603,47 +603,47 @@ watch(() => props.show, (newValue) => {
         </n-grid-item>
 
         <!-- Секция: Финансы -->
-        <n-grid-item :span="3">
-          <h3>Финансовая информация</h3>
+        <n-grid-item :span="3" v-if="!readOnly">
+          <h3>Финансы</h3>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Расценка">
             <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Количество" required>
             <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Коэффициент">
             <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Общая стоимость">
             <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Номер счета">
             <n-input v-model:value="formValue.invoice_number" placeholder="Введите номер счета" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Оплачено">
             <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" :disabled="readOnly" />
           </n-form-item>
         </n-grid-item>
 
-        <n-grid-item>
+        <n-grid-item v-if="!readOnly">
           <n-form-item label="Дата оплаты">
             <n-date-picker v-model:value="formValue.payment_date" type="date" style="width: 100%" clearable :disabled="readOnly" />
           </n-form-item>
@@ -767,7 +767,21 @@ h3 {
   font-size: 16px;
   font-weight: 600;
   color: #333;
-  border-bottom: 2px solid #18a058;
+  border-bottom: 2px solid var(--gpn-blue-primary, #0071BC);
   padding-bottom: 8px;
+}
+
+/* Убираем серый фон у disabled полей в режиме просмотра */
+:deep(.n-input.n-input--disabled),
+:deep(.n-input-number.n-input-number--disabled),
+:deep(.n-base-selection.n-base-selection--disabled) {
+  background-color: #ffffff !important;
+}
+
+:deep(.n-input.n-input--disabled .n-input__input-el),
+:deep(.n-input-number.n-input-number--disabled .n-input__input-el),
+:deep(.n-base-selection.n-base-selection--disabled .n-base-selection-label) {
+  color: #333 !important;
+  -webkit-text-fill-color: #333 !important;
 }
 </style>
