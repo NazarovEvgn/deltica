@@ -91,11 +91,25 @@ const dynamicColumns = computed(() => {
   return visibleColumns.value.map(fieldKey => {
     const fieldDef = fieldDefinitions[fieldKey]
 
+    // Определяем размер колонки в зависимости от поля
+    let columnSize = 150 // дефолтный размер
+    if (fieldKey === 'equipment_name') {
+      columnSize = 250 // увеличенная ширина для наименования
+    } else if (fieldKey === 'verification_interval') {
+      columnSize = 100 // уменьшенный размер для интервала
+    } else if (fieldKey === 'verification_plan') {
+      columnSize = 130 // ширина по содержимому (например: "Октябрь 2025")
+    } else if (fieldKey === 'verification_due' || fieldKey === 'verification_date') {
+      columnSize = 120 // минимальная ширина для дат (по ширине названия)
+    } else if (fieldKey === 'status') {
+      columnSize = 130 // ширина по содержимому (например: "На верификации")
+    }
+
     // Базовая конфигурация колонки
     const columnConfig = {
       prop: fieldKey,
       name: fieldDef?.label || fieldKey,
-      size: 150,
+      size: columnSize,
       // Убираем readonly для verification_due, несмотря на то что это computed поле
       readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }
@@ -180,7 +194,6 @@ const columnsWithActions = computed(() => {
       prop: 'actions',
       name: 'Действия',
       size: 200,
-      readonly: true,
       cellTemplate: (createElement, props) => {
         const equipmentId = props.model.equipment_id
         return createElement('div', {
@@ -222,7 +235,6 @@ const columnsWithActions = computed(() => {
       prop: 'actions',
       name: 'Действия',
       size: 120,
-      readonly: true,
       cellTemplate: (createElement, props) => {
         const equipmentId = props.model.equipment_id
         return createElement('div', {
@@ -233,9 +245,9 @@ const columnsWithActions = computed(() => {
             style: {
               padding: '4px 12px',
               cursor: 'pointer',
-              border: '1px solid #1890ff',
+              border: '1px solid #8c8c8c',
               borderRadius: '3px',
-              background: '#1890ff',
+              background: '#8c8c8c',
               color: 'white',
               fontSize: '12px'
             },

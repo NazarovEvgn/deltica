@@ -449,7 +449,9 @@ export function useEquipmentFilters(sourceData) {
 
     if (savedColumns) {
       try {
-        visibleColumns.value = JSON.parse(savedColumns)
+        const parsed = JSON.parse(savedColumns)
+        // Фильтруем verification_date из сохраненных колонок
+        visibleColumns.value = parsed.filter(col => col !== 'verification_date')
       } catch (e) {
         console.warn('Failed to load saved columns:', e)
       }
