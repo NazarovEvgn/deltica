@@ -6,26 +6,59 @@ import { ref, computed, watch } from 'vue'
 /**
  * Composable для управления поиском и фильтрацией данных об оборудовании
  * @param {Ref} sourceData - реактивный массив данных оборудования
+ * @param {Ref} isLaborant - признак, является ли пользователь лаборантом
  * @returns {Object} - объект с методами и реактивными свойствами фильтрации
  */
-export function useEquipmentFilters(sourceData) {
+export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
   // ==================== СОСТОЯНИЕ ====================
 
   // Поисковый запрос
   const searchQuery = ref('')
 
-  // Активные колонки для отображения (дефолтные из текущей таблицы)
-  const visibleColumns = ref([
-    'equipment_name',
-    'equipment_model',
-    'factory_number',
-    'inventory_number',
-    'verification_type',
-    'verification_interval',
-    'verification_due',
-    'verification_plan',
-    'status'
-  ])
+  // Функция для получения дефолтных колонок в зависимости от роли
+  const getDefaultColumns = () => {
+    return isLaborant.value
+      ? [
+          'equipment_name',
+          'equipment_model',
+          'factory_number',
+          'inventory_number',
+          'verification_type',
+          'verification_date',
+          'verification_due',
+          'verification_plan',
+          'status'
+        ]
+      : [
+          'equipment_name',
+          'equipment_model',
+          'factory_number',
+          'inventory_number',
+          'verification_type',
+          'verification_interval',
+          'verification_due',
+          'verification_plan',
+          'status'
+        ]
+  }
+
+  const visibleColumns = ref(getDefaultColumns())
+
+  // Отслеживаем изменение роли пользователя и перезагружаем настройки для новой роли
+  watch(isLaborant, () => {
+    const role = isLaborant.value ? 'laborant' : 'admin'
+    const savedColumns = localStorage.getItem(`equipment_visible_columns_${role}`)
+
+    if (savedColumns) {
+      try {
+        visibleColumns.value = JSON.parse(savedColumns)
+      } catch (e) {
+        visibleColumns.value = getDefaultColumns()
+      }
+    } else {
+      visibleColumns.value = getDefaultColumns()
+    }
+  })
 
   // Динамические фильтры (используется Naive UI Data Table filter format)
   const activeFilters = ref({})
@@ -365,18 +398,8 @@ export function useEquipmentFilters(sourceData) {
   const resetFilters = () => {
     searchQuery.value = ''
     activeFilters.value = {}
-    // Возвращаем дефолтные колонки
-    visibleColumns.value = [
-      'equipment_name',
-      'equipment_model',
-      'factory_number',
-      'inventory_number',
-      'verification_type',
-      'verification_interval',
-      'verification_due',
-      'verification_plan',
-      'status'
-    ]
+    // Возвращаем дефолтные колонки в зависимости от роли
+    visibleColumns.value = getDefaultColumns()
   }
 
   /**
@@ -436,25 +459,30 @@ export function useEquipmentFilters(sourceData) {
 
   // ==================== СОХРАНЕНИЕ НАСТРОЕК ====================
 
-  // Сохраняем настройки фильтров в localStorage
+  // Сохраняем настройки фильтров в localStorage (раздельно для админа и лаборанта)
   watch([visibleColumns, activeFilters], () => {
-    localStorage.setItem('equipment_visible_columns', JSON.stringify(visibleColumns.value))
-    localStorage.setItem('equipment_active_filters', JSON.stringify(activeFilters.value))
+    const role = isLaborant.value ? 'laborant' : 'admin'
+    localStorage.setItem(`equipment_visible_columns_${role}`, JSON.stringify(visibleColumns.value))
+    localStorage.setItem(`equipment_active_filters_${role}`, JSON.stringify(activeFilters.value))
   }, { deep: true })
 
   // Загружаем сохраненные настройки при инициализации
   const loadSavedSettings = () => {
-    const savedColumns = localStorage.getItem('equipment_visible_columns')
-    const savedFilters = localStorage.getItem('equipment_active_filters')
+    const role = isLaborant.value ? 'laborant' : 'admin'
+    const savedColumns = localStorage.getItem(`equipment_visible_columns_${role}`)
+    const savedFilters = localStorage.getItem(`equipment_active_filters_${role}`)
 
     if (savedColumns) {
       try {
-        const parsed = JSON.parse(savedColumns)
-        // Фильтруем verification_date из сохраненных колонок
-        visibleColumns.value = parsed.filter(col => col !== 'verification_date')
+        visibleColumns.value = JSON.parse(savedColumns)
       } catch (e) {
         console.warn('Failed to load saved columns:', e)
+        // При ошибке используем дефолтные колонки
+        visibleColumns.value = getDefaultColumns()
       }
+    } else {
+      // Если нет сохраненных настроек - используем дефолтные
+      visibleColumns.value = getDefaultColumns()
     }
 
     if (savedFilters) {

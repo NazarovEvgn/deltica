@@ -37,7 +37,7 @@ const {
   resetFilters,
   applyQuickFilter,
   loadSavedSettings
-} = useEquipmentFilters(source)
+} = useEquipmentFilters(source, isLaborant)
 
 // Инициализация метрик (на основе данных из БД, уже отфильтрованных по department для лаборанта)
 const { metrics } = useEquipmentMetrics(source)
@@ -135,7 +135,7 @@ const dynamicColumns = computed(() => {
       name: fieldDef?.label || fieldKey,
       size: columnSize,
       sortable: true, // Включаем сортировку для всех колонок
-      filter: 'string', // Включаем фильтрацию с типом string по умолчанию
+      filter: isAdmin.value ? 'string' : false, // Фильтрация только для администратора
       // Убираем readonly для verification_due, несмотря на то что это computed поле
       readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }

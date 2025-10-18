@@ -67,10 +67,10 @@
           Отмена
         </n-button>
         <n-button
-          type="primary"
           @click="handleLogin"
           :loading="isLoading"
           :disabled="!formValue.username || !formValue.password"
+          style="background-color: #333; color: white; border: 1px solid #333;"
         >
           Войти
         </n-button>
