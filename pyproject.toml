@@ -19,4 +19,5 @@ dependencies = [
     "bcrypt>=4.0.0",
     "python-multipart>=0.0.20",
     "pyyaml>=6.0.3",
+    "psutil>=6.1.1",
 ]

@@ -1,5 +1,6 @@
 # deltica/backend/routes/backup.py
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -7,6 +8,8 @@ from backend.core.database import get_db
 from backend.app.schemas import BackupHistoryResponse, BackupCreateResponse
 from backend.services.backup import BackupService
 from backend.utils.auth import get_current_active_admin
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/backup", tags=["Резервное копирование"])
 
@@ -24,11 +27,29 @@ def create_backup(
     try:
         # Создаем backup
         backup = service.create_backup(db, current_user.username)
+        logger.info(
+            f"Backup created successfully: {backup.file_name}",
+            extra={
+                "event": "backup_created",
+                "user": current_user.username,
+                "backup_id": backup.id,
+                "file_name": backup.file_name,
+                "file_size": backup.file_size
+            }
+        )
         return BackupCreateResponse(
             message="Резервная копия успешно создана",
             backup=BackupHistoryResponse.model_validate(backup)
         )
     except Exception as e:
+        logger.error(
+            f"Backup creation failed: {str(e)}",
+            extra={
+                "event": "backup_failed",
+                "user": current_user.username,
+                "error": str(e)
+            }
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
@@ -81,9 +102,27 @@ def delete_backup(
     service = BackupService()
 
     if not service.delete_backup(db, backup_id):
+        logger.warning(
+            f"Backup deletion failed - not found: ID {backup_id}",
+            extra={
+                "event": "backup_delete_failed",
+                "user": current_user.username,
+                "backup_id": backup_id,
+                "reason": "not_found"
+            }
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Резервная копия с ID {backup_id} не найдена"
         )
+
+    logger.info(
+        f"Backup deleted: ID {backup_id}",
+        extra={
+            "event": "backup_deleted",
+            "user": current_user.username,
+            "backup_id": backup_id
+        }
+    )
 
     return None

@@ -9,6 +9,7 @@ import UserProfile from './UserProfile.vue'
 import DocumentsPanel from './DocumentsPanel.vue'
 import MetricsDashboard from './MetricsDashboard.vue'
 import BackupPanel from './BackupPanel.vue'
+import SystemMonitor from './SystemMonitor.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
@@ -369,6 +370,7 @@ defineExpose({
               Архив
             </n-button>
             <BackupPanel />
+            <SystemMonitor />
             <n-button secondary @click="showFilterDrawer = true">
               Фильтры и колонки
             </n-button>

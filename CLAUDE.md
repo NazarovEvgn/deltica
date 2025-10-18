@@ -165,6 +165,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - `/archive/*` - Archive/restore/delete with explicit deletion (no FK CASCADE)
 - `/auth/*` - JWT authentication (24-hour expiration), bcrypt password hashing
 - `/pinned-documents/*` - Shared PDF documents (view/download for all, upload/delete admin-only)
+- `/backup/*` - Database backup operations (admin-only, uses pg_dump)
+- `/health/*` - System monitoring and health checks (admin-only)
 
 ### Critical Development Patterns
 
@@ -219,6 +221,27 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Metrics are reactive and update automatically when data is reloaded
 - Location: Between action buttons and search bar in MainTable
 - Compact card design with color coding and hover effects
+
+**9. Database Backup** (`backend/routes/backup.py`, `backend/services/backup.py`, `frontend/src/components/BackupPanel.vue`):
+- Admin-only functionality using pg_dump for PostgreSQL backups
+- Auto-detects PostgreSQL installation (supports versions 13-17 on Windows)
+- Backups stored in `backend/backups/` with timestamp naming
+- History tracking in `backup_history` table (file name, size, status, creator)
+- Frontend: Simple log-style interface showing backup history
+- No frequency limitations - admin can create backups on demand
+- Location: Button in admin panel next to Archive button
+
+**10. Logging and Monitoring** (`backend/core/logging_config.py`, `backend/middleware/logging_middleware.py`, `backend/routes/health.py`, `frontend/src/components/SystemMonitor.vue`):
+- **Structured JSON logging** with automatic rotation (daily, 30-day retention)
+- **LoggingMiddleware**: Auto-logs all HTTP requests (method, path, status, duration, user, IP)
+- **Event logging**: Auth events (login success/failure), CRUD operations, backup operations
+- **Health endpoints**: `/health/` (public), `/health/system` (admin - system metrics), `/health/logs` (admin - log viewing)
+- **SystemMonitor component**: Two-tab interface (System Status + Logs)
+  - System Status: DB connection, CPU/memory/disk usage, log file statistics
+  - Logs: Last 100 entries with JSON parsing, color-coded by level (INFO/WARNING/ERROR)
+- **Log storage**: `backend/logs/deltica.log` (JSON format, UTF-8)
+- **Dependencies**: psutil for system metrics
+- Location: "Мониторинг" button in admin panel next to Backup button
 
 ## Important Notes
 

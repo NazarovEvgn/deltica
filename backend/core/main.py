@@ -8,6 +8,12 @@ from backend.routes.archive import router as archive_router
 from backend.routes.auth import router as auth_router
 from backend.routes.pinned_documents import router as pinned_documents_router
 from backend.routes.backup import router as backup_router
+from backend.routes.health import router as health_router
+from backend.core.logging_config import setup_logging
+from backend.middleware.logging_middleware import LoggingMiddleware
+
+# Инициализация системы логирования
+setup_logging()
 
 app = FastAPI(title="Deltica API", version="1.0.0")
 
@@ -19,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware для логирования HTTP запросов
+app.add_middleware(LoggingMiddleware)
 
 @app.get("/")
 def get_root():
@@ -34,3 +43,4 @@ app.include_router(files_router)
 app.include_router(archive_router)
 app.include_router(pinned_documents_router)
 app.include_router(backup_router)
+app.include_router(health_router)
