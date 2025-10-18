@@ -1,11 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { NMessageProvider, NDialogProvider } from 'naive-ui'
+import { NMessageProvider, NDialogProvider, NConfigProvider } from 'naive-ui'
 import MainTable from './components/MainTable.vue'
 import ArchiveTable from './components/ArchiveTable.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
 import LoginModal from './components/LoginModal.vue'
 import { useAuth } from './composables/useAuth'
+
+// Настройка темы Naive UI для использования PT Astra Sans
+const themeOverrides = {
+  common: {
+    fontFamily: 'PT Astra Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif'
+  }
+}
 
 const showModal = ref(false)
 const editingEquipmentId = ref(null)
@@ -56,47 +63,40 @@ const handleLoginSuccess = () => {
 </script>
 
 <template>
-  <n-message-provider>
-    <n-dialog-provider>
-      <div id="app">
-        <MainTable
-          v-if="!showArchive"
-          ref="mainTableRef"
-          @add-equipment="handleAddEquipment"
-          @edit-equipment="handleEditEquipment"
-          @show-archive="toggleArchive"
-          @show-login="showLogin"
-        />
-        <ArchiveTable
-          v-else
-          @back-to-main="toggleArchive"
-          @restored="handleSaved"
-        />
-        <EquipmentModal
-          v-model:show="showModal"
-          :equipment-id="editingEquipmentId"
-          @saved="handleSaved"
-        />
-        <LoginModal
-          v-model:show="showLoginModal"
-          @login-success="handleLoginSuccess"
-        />
-      </div>
-    </n-dialog-provider>
-  </n-message-provider>
+  <n-config-provider :theme-overrides="themeOverrides">
+    <n-message-provider>
+      <n-dialog-provider>
+        <div id="app">
+          <MainTable
+            v-if="!showArchive"
+            ref="mainTableRef"
+            @add-equipment="handleAddEquipment"
+            @edit-equipment="handleEditEquipment"
+            @show-archive="toggleArchive"
+            @show-login="showLogin"
+          />
+          <ArchiveTable
+            v-else
+            @back-to-main="toggleArchive"
+            @restored="handleSaved"
+          />
+          <EquipmentModal
+            v-model:show="showModal"
+            :equipment-id="editingEquipmentId"
+            @saved="handleSaved"
+          />
+          <LoginModal
+            v-model:show="showLoginModal"
+            @login-success="handleLoginSuccess"
+          />
+        </div>
+      </n-dialog-provider>
+    </n-message-provider>
+  </n-config-provider>
 </template>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 #app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   height: 100vh;
   overflow: hidden;
 }

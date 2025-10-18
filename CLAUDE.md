@@ -18,6 +18,8 @@ Deltica is a metrology equipment management system for oil & gas companies. It t
   - **UI Library**: Naive UI (components: NButton, NSpace, NSelect, NModal, etc.)
   - **Data Grid**: RevoGrid (@revolist/vue3-datagrid) for main table with Excel-like features
   - **HTTP Client**: Axios for API requests
+  - **Typography**: PT Astra Sans (Regular, Bold, Italic) - applied globally via NConfigProvider
+  - **Branding**: Custom favicon.png in `frontend/public/`
 - **Backend**: FastAPI with Python 3.13 managed by uv
 - **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
 - **Target Platform**: Tauri desktop application (planned)
@@ -242,6 +244,17 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Log storage**: `backend/logs/deltica.log` (JSON format, UTF-8)
 - **Dependencies**: psutil for system metrics
 - Location: "Мониторинг" button in admin panel next to Backup button
+
+**11. Typography and Branding** (`frontend/public/fonts/`, `frontend/src/assets/styles/`):
+- **Font**: PT Astra Sans (Regular 400, Bold 700, Italic 400) - TTF format
+- **Font loading**: `@font-face` declarations in `frontend/src/assets/styles/fonts.css`
+- **Global application**: Applied via `NConfigProvider` themeOverrides in `App.vue`
+- **RevoGrid tables**: Font explicitly set in MainTable.vue and ArchiveTable.vue styles
+- **Favicon**: Custom PNG favicon in `frontend/public/favicon.png`
+- **Styling structure**:
+  - `frontend/src/assets/styles/fonts.css` - Font declarations
+  - `frontend/src/assets/styles/global.css` - Global styles (body, #app, reset)
+  - Imported in `frontend/src/main.js`
 
 ## Important Notes
 
