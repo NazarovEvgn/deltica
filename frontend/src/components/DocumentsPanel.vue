@@ -184,7 +184,7 @@ const formatDate = (dateString) => {
 <template>
   <div>
     <!-- Кнопка для открытия панели -->
-    <n-button @click="handleOpen" type="info">
+    <n-button @click="handleOpen" type="primary">
       <template #icon>
         <n-icon :component="FolderIcon" />
       </template>

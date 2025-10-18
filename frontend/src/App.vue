@@ -11,6 +11,7 @@ import { useAuth } from './composables/useAuth'
 const themeOverrides = {
   common: {
     fontFamily: 'PT Astra Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif',
+    borderRadius: '6px',               // Увеличен радиус скругления до 6px (одинаково с таблицей)
     primaryColor: '#0071BC',           // Основной синий Газпром Нефти
     primaryColorHover: '#005a9c',      // Темнее при наведении
     primaryColorPressed: '#004a7c',    // Темнее при нажатии

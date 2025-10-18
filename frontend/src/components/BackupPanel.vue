@@ -81,11 +81,6 @@ defineExpose({
 
 <template>
   <div>
-    <!-- Кнопка для открытия панели backup -->
-    <n-button type="info" @click="openModal">
-      Резервные копии
-    </n-button>
-
     <!-- Модальное окно с управлением backup -->
     <n-modal
       v-model:show="showModal"

@@ -60,7 +60,7 @@ const clearSearch = () => {
         v-model:value="localValue"
         :placeholder="placeholder"
         clearable
-        size="large"
+        size="medium"
         @clear="clearSearch"
       >
         <template #prefix>

@@ -260,19 +260,36 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - Imported in `frontend/src/main.js`
 
 **12. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
+- **Layout Structure**:
+  - Row 1: AppLogo (left) → MetricsDashboard (center) → UserProfile (right)
+  - Row 2: Buttons (left: Filters, Documents, Admin Panel) → SearchBar (center) → Empty spacer (right)
+  - Main table below with white background on light gray (#f5f5f5) page
+- **AppLogo Component**: 24x24px favicon + "Deltica" text (black #333, bold), 6px gap
 - **Metrics Dashboard**: Monochrome design (#333), no colored indicators, increased font sizes (value: 17px, label: 11px)
 - **User Profile Display**: Format "Department Surname I." with icon at right, no role tag, dropdown menu contains only "Logout"
-- **Documents Button**: Positioned at search bar level, left-aligned
+- **Admin Panel Component** (`AdminPanel.vue`):
+  - NDropdown with hover trigger, Primary button style
+  - Menu items: "Добавить оборудование", "Архив", "Backup БД", "Мониторинг"
+  - Consolidates all admin actions in one place
+  - BackupPanel and SystemMonitor components have buttons removed, controlled via refs and `openModal()` method
+- **Button Styles**:
+  - All action buttons use `type="primary"` (Filters, Documents, Admin Panel)
+  - Border radius: 6px (unified with tables and inputs)
+  - Table action buttons (Edit/Delete/View): gray (#8c8c8c)
+- **Documents Button**: Positioned in button row (row 2), `type="primary"`
 - **Documents Modal**: Title "Документы по метрологическому обеспечению в филиале", displays date only (no time/author)
 - **Equipment View Modal**:
   - Title: "Полная информация по оборудованию и закрепленные файлы"
   - Section names: "Оборудование", "Верификация", "Ответственные лица", "Финансы"
   - Finance section hidden in read-only mode (laborants)
   - Disabled fields: white background with black text (no gray) for readability
+- **Border Radius**: Unified 6px for all elements (buttons, inputs, tables via `App.vue` themeOverrides)
 - **Corporate Colors**: Applied throughout via `App.vue` themeOverrides and individual components
-  - View button: gray (#8c8c8c), not corporate blue
+  - All action buttons: Primary Blue (#0071BC)
+  - Table action buttons: Corporate gray (#8c8c8c)
   - Document links: Primary Blue (#0071BC)
   - Section dividers: Primary Blue (#0071BC)
+- **Background**: Light gray (#f5f5f5) for body, white (#ffffff) for tables
 
 ## Important Notes
 

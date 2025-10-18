@@ -125,11 +125,6 @@ defineExpose({
 
 <template>
   <div>
-    <!-- Кнопка для открытия монитора -->
-    <n-button type="info" @click="openModal">
-      Мониторинг
-    </n-button>
-
     <!-- Модальное окно с мониторингом -->
     <n-modal
       v-model:show="showModal"

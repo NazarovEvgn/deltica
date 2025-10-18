@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { NButton, NSpace, NEmpty, useMessage, useDialog } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
+import AppLogo from './AppLogo.vue'
 
 const emit = defineEmits(['back-to-main', 'restored'])
 const message = useMessage()
@@ -181,7 +182,10 @@ onMounted(() => {
   <div class="archive-table-container">
     <div class="action-panel">
       <div class="header">
-        <h2>Архив оборудования</h2>
+        <n-space :size="16" align="center">
+          <AppLogo />
+          <h2>Архив оборудования</h2>
+        </n-space>
         <n-space>
           <n-button @click="loadData">
             Обновить
@@ -260,7 +264,7 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   background: white;
 }
@@ -270,5 +274,6 @@ onMounted(() => {
   height: 100%;
   width: 100%;
   font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #ffffff;
 }
 </style>

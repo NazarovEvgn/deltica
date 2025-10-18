@@ -10,6 +10,8 @@ import DocumentsPanel from './DocumentsPanel.vue'
 import MetricsDashboard from './MetricsDashboard.vue'
 import BackupPanel from './BackupPanel.vue'
 import SystemMonitor from './SystemMonitor.vue'
+import AppLogo from './AppLogo.vue'
+import AdminPanel from './AdminPanel.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
@@ -42,6 +44,10 @@ const { metrics } = useEquipmentMetrics(source)
 
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
+
+// Refs для BackupPanel и SystemMonitor
+const backupPanelRef = ref(null)
+const systemMonitorRef = ref(null)
 
 // Функция форматирования даты в dd.mm.yyyy
 const formatDate = (dateString) => {
@@ -204,9 +210,9 @@ const columnsWithActions = computed(() => {
             style: {
               padding: '4px 12px',
               cursor: 'pointer',
-              border: '1px solid #18a058',
+              border: '1px solid #8c8c8c',
               borderRadius: '3px',
-              background: '#18a058',
+              background: '#8c8c8c',
               color: 'white',
               fontSize: '12px'
             },
@@ -217,9 +223,9 @@ const columnsWithActions = computed(() => {
             style: {
               padding: '4px 12px',
               cursor: 'pointer',
-              border: '1px solid #d03050',
+              border: '1px solid #8c8c8c',
               borderRadius: '3px',
-              background: '#d03050',
+              background: '#8c8c8c',
               color: 'white',
               fontSize: '12px'
             },
@@ -416,50 +422,46 @@ defineExpose({
   <div class="main-table-container">
     <!-- Панель действий и поиска -->
     <div class="top-panel">
-      <!-- Первая строка: кнопки и профиль -->
-      <n-space :size="16" align="center" justify="space-between" style="width: 100%">
-        <n-space :size="16" align="center">
-          <!-- Кнопки управления -->
-          <n-space v-if="isAdmin">
-            <n-button type="primary" @click="$emit('add-equipment')">
-              Добавить оборудование
-            </n-button>
-            <n-button type="warning" @click="$emit('show-archive')">
-              Архив
-            </n-button>
-            <BackupPanel />
-            <SystemMonitor />
-            <n-button secondary @click="showFilterDrawer = true">
-              Фильтры
-            </n-button>
-          </n-space>
+      <!-- Первая строка: логотип, дашборд и профиль -->
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
+        <!-- Левая часть: логотип -->
+        <AppLogo />
 
-          <!-- Дашборд с метриками -->
-          <MetricsDashboard :metrics="metrics" />
-        </n-space>
+        <!-- Центральная часть: Дашборд с метриками -->
+        <MetricsDashboard :metrics="metrics" />
 
-        <!-- UserProfile компонент справа -->
+        <!-- Правая часть: UserProfile -->
         <n-space :size="12" align="center">
           <UserProfile @show-login="$emit('show-login')" />
         </n-space>
-      </n-space>
+      </div>
 
-      <!-- Вторая строка: DocumentsPanel слева и поиск по центру -->
-      <div style="display: flex; justify-content: center; align-items: center; margin-top: 12px; position: relative;">
-        <!-- DocumentsPanel слева -->
-        <div style="position: absolute; left: 0;">
+      <!-- Вторая строка: Кнопки, поиск по центру -->
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 12px;">
+        <!-- Левая часть: Фильтры, Документы и AdminPanel -->
+        <n-space :size="12" align="center">
+          <n-button v-if="isAdmin" type="primary" @click="showFilterDrawer = true">
+            Фильтры
+          </n-button>
           <DocumentsPanel />
-        </div>
-        <!-- Поиск по центру -->
+          <AdminPanel
+            v-if="isAdmin"
+            @add-equipment="$emit('add-equipment')"
+            @show-archive="$emit('show-archive')"
+            @show-backup="backupPanelRef?.openModal()"
+            @show-monitor="systemMonitorRef?.openModal()"
+          />
+        </n-space>
+
+        <!-- Центральная часть: Поиск -->
         <SearchBar
           v-model="searchQuery"
           :total-count="filterStats.total"
           :filtered-count="filterStats.filtered"
         />
-      </div>
 
-      <div class="hint-text" v-if="isAdmin">
-        Двойной клик по строке для редактирования. Можно копировать данные (Ctrl+C / Ctrl+V)
+        <!-- Правая часть: пустой блок для симметрии -->
+        <div style="width: 120px;"></div>
       </div>
     </div>
 
@@ -500,6 +502,10 @@ defineExpose({
         />
       </n-drawer-content>
     </n-drawer>
+
+    <!-- Модальные окна для BackupPanel и SystemMonitor -->
+    <BackupPanel ref="backupPanelRef" />
+    <SystemMonitor ref="systemMonitorRef" />
   </div>
 </template>
 
@@ -530,8 +536,9 @@ defineExpose({
   flex: 1;
   min-height: 0;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
+  background-color: #ffffff;
 }
 
 /* RevoGrid стили */
@@ -539,5 +546,6 @@ defineExpose({
   height: 100%;
   width: 100%;
   font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #ffffff;
 }
 </style>
