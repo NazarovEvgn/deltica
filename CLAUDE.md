@@ -19,7 +19,9 @@ Deltica is a metrology equipment management system for oil & gas companies. It t
   - **Data Grid**: RevoGrid (@revolist/vue3-datagrid) for main table with Excel-like features
   - **HTTP Client**: Axios for API requests
   - **Typography**: PT Astra Sans (Regular, Bold, Italic) - applied globally via NConfigProvider
-  - **Branding**: Custom favicon.png in `frontend/public/`
+  - **Branding**: Custom favicon.png in `frontend/public/`, corporate colors from `poster.png`
+  - **Corporate Colors**: Gazprom Neft palette defined in `frontend/src/assets/styles/colors.css`
+    - Primary Blue: `#0071BC`, Info Blue: `#00A6E4`, Orange: `#F7941D`, Green: `#8BC53F`
 - **Backend**: FastAPI with Python 3.13 managed by uv
 - **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
 - **Target Platform**: Tauri desktop application (planned)
@@ -254,7 +256,23 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Styling structure**:
   - `frontend/src/assets/styles/fonts.css` - Font declarations
   - `frontend/src/assets/styles/global.css` - Global styles (body, #app, reset)
+  - `frontend/src/assets/styles/colors.css` - Corporate color constants
   - Imported in `frontend/src/main.js`
+
+**12. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
+- **Metrics Dashboard**: Monochrome design (#333), no colored indicators, increased font sizes (value: 17px, label: 11px)
+- **User Profile Display**: Format "Department Surname I." with icon at right, no role tag, dropdown menu contains only "Logout"
+- **Documents Button**: Positioned at search bar level, left-aligned
+- **Documents Modal**: Title "Документы по метрологическому обеспечению в филиале", displays date only (no time/author)
+- **Equipment View Modal**:
+  - Title: "Полная информация по оборудованию и закрепленные файлы"
+  - Section names: "Оборудование", "Верификация", "Ответственные лица", "Финансы"
+  - Finance section hidden in read-only mode (laborants)
+  - Disabled fields: white background with black text (no gray) for readability
+- **Corporate Colors**: Applied throughout via `App.vue` themeOverrides and individual components
+  - View button: gray (#8c8c8c), not corporate blue
+  - Document links: Primary Blue (#0071BC)
+  - Section dividers: Primary Blue (#0071BC)
 
 ## Important Notes
 
