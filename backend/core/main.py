@@ -7,6 +7,7 @@ from backend.routes.files import router as files_router
 from backend.routes.archive import router as archive_router
 from backend.routes.auth import router as auth_router
 from backend.routes.pinned_documents import router as pinned_documents_router
+from backend.routes.backup import router as backup_router
 
 app = FastAPI(title="Deltica API", version="1.0.0")
 
@@ -32,3 +33,4 @@ app.include_router(main_table_router)
 app.include_router(files_router)
 app.include_router(archive_router)
 app.include_router(pinned_documents_router)
+app.include_router(backup_router)

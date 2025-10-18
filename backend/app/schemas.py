@@ -288,3 +288,31 @@ class PinnedDocumentResponse(PinnedDocumentBase):
 
     class Config:
         from_attributes = True
+
+
+# ==================== СХЕМЫ ДЛЯ РЕЗЕРВНОГО КОПИРОВАНИЯ ====================
+
+class BackupStatusEnum(str, Enum):
+    success = "success"
+    failed = "failed"
+
+
+class BackupHistoryResponse(BaseModel):
+    """Ответ с данными о резервной копии"""
+    id: int
+    file_name: str
+    file_path: str
+    file_size: int
+    created_at: datetime
+    created_by: str
+    status: BackupStatusEnum
+    error_message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class BackupCreateResponse(BaseModel):
+    """Ответ на создание резервной копии"""
+    message: str
+    backup: BackupHistoryResponse
