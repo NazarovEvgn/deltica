@@ -207,26 +207,38 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
     },
 
     // Финансы
+    budget_item: {
+      label: 'Статья бюджета',
+      group: 'finance',
+      type: 'string',
+      searchable: true
+    },
+    code_rate: {
+      label: 'Тариф',
+      group: 'finance',
+      type: 'string',
+      searchable: true
+    },
     cost_rate: {
-      label: 'Стоимость за единицу',
+      label: 'Стоимость по тарифу (без НДС)',
       group: 'finance',
       type: 'number',
       searchable: false
     },
     quantity: {
-      label: 'Количество',
+      label: 'Кол-во',
       group: 'finance',
       type: 'number',
       searchable: false
     },
     coefficient: {
-      label: 'Коэффициент',
+      label: 'Доп. коэффициент',
       group: 'finance',
       type: 'number',
       searchable: false
     },
     total_cost: {
-      label: 'Общая стоимость',
+      label: 'Итоговая стоимость (без НДС)',
       group: 'finance',
       type: 'number',
       searchable: false
@@ -238,7 +250,7 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
       searchable: true
     },
     paid_amount: {
-      label: 'Оплачено',
+      label: 'Факт оплаты',
       group: 'finance',
       type: 'number',
       searchable: false

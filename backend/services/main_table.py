@@ -79,11 +79,21 @@ class MainTableService:
                 Verification.status,
                 Responsibility.department,
                 Responsibility.responsible_person,
-                Responsibility.verifier_org
+                Responsibility.verifier_org,
+                Finance.budget_item,
+                Finance.code_rate,
+                Finance.cost_rate,
+                Finance.quantity,
+                Finance.coefficient,
+                Finance.total_cost,
+                Finance.invoice_number,
+                Finance.paid_amount,
+                Finance.payment_date
             )
             .select_from(Equipment)
             .join(Verification, Equipment.id == Verification.equipment_id, isouter=True)
             .join(Responsibility, Equipment.id == Responsibility.equipment_id, isouter=True)
+            .join(Finance, Equipment.id == Finance.equipment_model_id, isouter=True)
         )
 
         result = self.db.execute(query).fetchall()
@@ -106,7 +116,16 @@ class MainTableService:
                 status=row.status or "",
                 department=row.department,
                 responsible_person=row.responsible_person,
-                verifier_org=row.verifier_org
+                verifier_org=row.verifier_org,
+                budget_item=row.budget_item,
+                code_rate=row.code_rate,
+                cost_rate=row.cost_rate,
+                quantity=row.quantity,
+                coefficient=row.coefficient,
+                total_cost=row.total_cost,
+                invoice_number=row.invoice_number,
+                paid_amount=row.paid_amount,
+                payment_date=row.payment_date
             )
             for row in result
         ]
@@ -165,6 +184,8 @@ class MainTableService:
         # Создаем финансы
         finance = Finance(
             equipment_model_id=equipment.id,
+            budget_item=data.budget_item,
+            code_rate=data.code_rate,
             cost_rate=data.cost_rate,
             quantity=data.quantity,
             coefficient=data.coefficient,
@@ -245,6 +266,8 @@ class MainTableService:
         # Обновляем финансы
         finance = self.db.query(Finance).filter(Finance.equipment_model_id == equipment_id).first()
         if finance:
+            finance.budget_item = data.budget_item
+            finance.code_rate = data.code_rate
             finance.cost_rate = data.cost_rate
             finance.quantity = data.quantity
             finance.coefficient = data.coefficient
@@ -385,6 +408,8 @@ class MainTableService:
             "verifier_org": responsibility.verifier_org if responsibility else "",
 
             # Finance fields
+            "budget_item": finance.budget_item if finance else "",
+            "code_rate": finance.code_rate if finance else "",
             "cost_rate": finance.cost_rate if finance else None,
             "quantity": finance.quantity if finance else 1,
             "coefficient": finance.coefficient if finance else 1.0,

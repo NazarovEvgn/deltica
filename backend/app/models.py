@@ -69,6 +69,8 @@ class Finance(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     equipment_model_id = Column(Integer, ForeignKey("equipment.id"), nullable=False)
+    budget_item = Column(String, nullable=False)  # Статья бюджета (обязательное поле)
+    code_rate = Column(String)  # Тариф (опциональное поле)
     cost_rate = Column(Float)
     quantity = Column(Integer, nullable=False)
     coefficient = Column(Float, default=1.0)
@@ -170,6 +172,8 @@ class ArchivedFinance(Base):
     id = Column(Integer, primary_key=True, index=True)
     archived_equipment_id = Column(Integer, ForeignKey("archived_equipment.id", ondelete="CASCADE"), nullable=False)
     original_equipment_id = Column(Integer, nullable=False)
+    budget_item = Column(String, nullable=False)  # Статья бюджета (обязательное поле)
+    code_rate = Column(String)  # Тариф (опциональное поле)
     cost_rate = Column(Float)
     quantity = Column(Integer, nullable=False)
     coefficient = Column(Float, default=1.0)

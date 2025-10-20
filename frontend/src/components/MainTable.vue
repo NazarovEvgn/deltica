@@ -117,10 +117,16 @@ const dynamicColumns = computed(() => {
       columnSize = 160 // "Номер в реестре"
     } else if (fieldKey === 'verifier_org') {
       columnSize = 220 // "Организация-поверитель"
+    } else if (fieldKey === 'budget_item') {
+      columnSize = 150 // "Статья бюджета"
+    } else if (fieldKey === 'code_rate') {
+      columnSize = 140 // "Тариф"
     } else if (fieldKey === 'cost_rate') {
-      columnSize = 180 // "Стоимость за единицу"
+      columnSize = 200 // "Стоимость по тарифу (без НДС)"
     } else if (fieldKey === 'total_cost') {
-      columnSize = 160 // "Общая стоимость"
+      columnSize = 200 // "Итоговая стоимость (без НДС)"
+    } else if (fieldKey === 'paid_amount') {
+      columnSize = 140 // "Факт оплаты"
     } else if (fieldKey === 'status') {
       columnSize = 130 // ширина по содержимому (например: "На верификации")
     } else if (fieldKey === 'department') {

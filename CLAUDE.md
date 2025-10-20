@@ -147,6 +147,8 @@ backend/
 - **Equipment** → **Verification** (one-to-many)
 - **Equipment** → **Responsibility** (one-to-one, via equipment_id FK)
 - **Equipment** → **Finance** (one-to-one, via equipment_model_id FK) ⚠️ Note: inconsistent FK naming
+  - **Finance fields**: budget_item (NOT NULL), code_rate, cost_rate, quantity, coefficient, total_cost, invoice_number, paid_amount, payment_date
+  - **total_cost**: Auto-calculated on frontend (cost_rate * quantity * coefficient)
 - **Equipment** → **EquipmentFile** (one-to-many, CASCADE DELETE)
 
 **Archive entities:** Mirror structure of main tables (ArchivedEquipment, ArchivedVerification, ArchivedResponsibility, ArchivedFinance, ArchivedEquipmentFile)
@@ -164,7 +166,7 @@ backend/
 All routes documented in Swagger UI at `http://localhost:8000/docs`
 
 **Key endpoints:**
-- `/main-table/*` - CRUD operations for equipment with joined verification/responsibility data
+- `/main-table/*` - CRUD operations for equipment with joined verification/responsibility/finance data
 - `/files/*` - File upload/download/view with Cyrillic support (RFC 5987 headers)
 - `/archive/*` - Archive/restore/delete with explicit deletion (no FK CASCADE)
 - `/auth/*` - JWT authentication (24-hour expiration), bcrypt password hashing
@@ -201,7 +203,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Use dependency injection via `get_db()` in routes
 - Service layer handles business logic, routes handle HTTP concerns
 - Full entity CRUD: Service methods create/update/delete across all related tables
-- Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility
+- Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility/finance
+- **Finance data**: Included in main table response via LEFT JOIN (backend/services/main_table.py)
 
 **6. Authentication Flow**:
 - JWT tokens stored in localStorage
@@ -282,7 +285,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Equipment View Modal**:
   - Title: "Полная информация по оборудованию и закрепленные файлы"
   - Section names: "Оборудование", "Верификация", "Ответственные лица", "Финансы"
-  - Finance section hidden in read-only mode (laborants)
+  - Finance section visible only for admins (`v-if="isAdmin"`) in both read-only and edit modes
+  - Finance field labels: "Статья бюджета" (required), "Тариф", "Стоимость по тарифу (без НДС)", "Кол-во", "Доп. коэффициент", "Итоговая стоимость (без НДС)" (auto-calculated, disabled), "Номер счета", "Факт оплаты", "Дата оплаты"
   - Disabled fields: white background with black text (no gray) for readability
 - **Border Radius**: Unified 6px for all elements (buttons, inputs, tables via `App.vue` themeOverrides)
 - **Corporate Colors**: Applied throughout via `App.vue` themeOverrides and individual components

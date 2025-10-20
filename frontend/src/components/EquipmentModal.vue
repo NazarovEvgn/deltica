@@ -29,9 +29,13 @@ import {
 } from 'naive-ui'
 import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon } from '@vicons/ionicons5'
 import axios from 'axios'
+import { useAuth } from '@/composables/useAuth'
 
 const message = useMessage()
 const dialog = useDialog()
+
+// Аутентификация
+const { isAdmin } = useAuth()
 
 const props = defineProps({
   show: {
@@ -77,6 +81,8 @@ const formValue = ref({
   verifier_org: '',
 
   // Finance
+  budget_item: '',
+  code_rate: '',
   cost_rate: null,
   quantity: 1,
   coefficient: 1.0,
@@ -430,6 +436,19 @@ watch([() => formValue.value.verification_date, () => formValue.value.verificati
   }
 })
 
+// Автоматический расчет total_cost: cost_rate * quantity * coefficient
+watch([() => formValue.value.cost_rate, () => formValue.value.quantity, () => formValue.value.coefficient],
+  ([costRate, quantity, coefficient]) => {
+    if (costRate && quantity && coefficient) {
+      formValue.value.total_cost = costRate * quantity * coefficient
+    } else if (costRate && quantity) {
+      formValue.value.total_cost = costRate * quantity
+    } else {
+      formValue.value.total_cost = null
+    }
+  }
+)
+
 // Функции для получения меток из options
 const getEquipmentTypeLabel = (value) => {
   const option = equipmentTypeOptions.find(opt => opt.value === value)
@@ -593,6 +612,49 @@ watch(() => props.show, (newValue) => {
           <div class="info-item">
             <span class="info-label">Организация-поверитель:</span>
             <span class="info-value">{{ formValue.verifier_org }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Секция: Финансы (только для админов) -->
+      <div class="info-section" v-if="isAdmin">
+        <h3>Финансы</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Статья бюджета:</span>
+            <span class="info-value">{{ formValue.budget_item || 'Не указано' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Тариф:</span>
+            <span class="info-value">{{ formValue.code_rate || 'Не указано' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Стоимость по тарифу (без НДС):</span>
+            <span class="info-value">{{ formValue.cost_rate ? formValue.cost_rate.toFixed(2) + ' ₽' : 'Не указано' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Кол-во:</span>
+            <span class="info-value">{{ formValue.quantity }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Доп. коэффициент:</span>
+            <span class="info-value">{{ formValue.coefficient }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Итоговая стоимость (без НДС):</span>
+            <span class="info-value">{{ formValue.total_cost ? formValue.total_cost.toFixed(2) + ' ₽' : 'Не указано' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Номер счета:</span>
+            <span class="info-value">{{ formValue.invoice_number || 'Не указано' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Факт оплаты:</span>
+            <span class="info-value">{{ formValue.paid_amount ? formValue.paid_amount.toFixed(2) + ' ₽' : 'Не указано' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Дата оплаты:</span>
+            <span class="info-value">{{ formatDisplayDate(formValue.payment_date) }}</span>
           </div>
         </div>
       </div>
@@ -788,26 +850,38 @@ watch(() => props.show, (newValue) => {
         </n-grid-item>
 
         <n-grid-item>
-          <n-form-item label="Расценка">
+          <n-form-item label="Статья бюджета" required>
+            <n-input v-model:value="formValue.budget_item" placeholder="Например: 11.03.02.1." />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Тариф">
+            <n-input v-model:value="formValue.code_rate" placeholder="Например: 23ПВ0341" />
+          </n-form-item>
+        </n-grid-item>
+
+        <n-grid-item>
+          <n-form-item label="Стоимость по тарифу (без НДС)">
             <n-input-number v-model:value="formValue.cost_rate" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
-          <n-form-item label="Количество" required>
+          <n-form-item label="Кол-во" required>
             <n-input-number v-model:value="formValue.quantity" :min="1" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
-          <n-form-item label="Коэффициент">
+          <n-form-item label="Доп. коэффициент">
             <n-input-number v-model:value="formValue.coefficient" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
 
         <n-grid-item>
-          <n-form-item label="Общая стоимость">
-            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" />
+          <n-form-item label="Итоговая стоимость (без НДС)">
+            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" disabled />
           </n-form-item>
         </n-grid-item>
 
@@ -818,7 +892,7 @@ watch(() => props.show, (newValue) => {
         </n-grid-item>
 
         <n-grid-item>
-          <n-form-item label="Оплачено">
+          <n-form-item label="Факт оплаты">
             <n-input-number v-model:value="formValue.paid_amount" :precision="2" :min="0" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
