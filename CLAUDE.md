@@ -364,6 +364,45 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - verification_state, verification_type, equipment_type, department columns now display Russian labels instead of technical values
 - Data integrity maintained - technical values remain in database
 
+### RevoGrid Filtering with Russian Labels (2025-10-20)
+**Problem**: RevoGrid filters only worked with technical values (lbr, state_work), not Russian labels (ЛБР, В работе).
+
+**Solution**: Data transformation approach instead of cellTemplate:
+- Created `transformedSource` computed property that transforms data BEFORE passing to RevoGrid
+- All enum fields and dates are converted to human-readable format in the data itself
+- Added reverse mapping functions to convert back to technical values when saving
+- Benefits: Filters, sorting, and search all work with Russian labels
+
+**Implementation** (`frontend/src/components/MainTable.vue`):
+- **Value Maps**: departmentMap, verificationStateMap, verificationTypeMap, equipmentTypeMap, statusMap
+- **Reverse Maps**: reverseDepartmentMap, reverseVerificationStateMap, etc.
+- **Transform Function**: `reverseTransformValue(prop, value)` - converts display values back to technical for API
+- **Date Handling**: `parseDateFromDisplay()`, `parseMonthYearFromDisplay()` - bidirectional date conversion
+- **Usage**: v-grid uses `:source="transformedSource"` instead of `:source="filteredData"`
+
+### Archive Operations - Finance Fields (2025-10-20)
+**Problem**: Archiving and restoring equipment failed due to missing budget_item and code_rate fields.
+
+**Fixes Applied** (`backend/services/archive.py`):
+1. **archive_equipment()** (lines 89-90): Added budget_item and code_rate when copying to ArchivedFinance
+2. **restore_equipment()** (lines 214-215): Added budget_item (with default '00.00.00.0' for NULL) and code_rate when restoring
+   - Default value handles old archived records created before these fields were required
+
+### Equipment Modal Finance Data (2025-10-20)
+**Problem**: Finance section fields (budget_item, code_rate) showed empty in edit modal.
+
+**Fix** (`frontend/src/components/EquipmentModal.vue` lines 286-287):
+- Added budget_item and code_rate to loadEquipmentData() function
+- Fields now properly load when editing existing equipment
+
+### Archive UI/UX Improvements (2025-10-20)
+**Changes** (`frontend/src/components/ArchiveTable.vue`):
+- Removed hint text "Архивное оборудование можно восстановить или удалить навсегда"
+- Removed "Обновить" button (unnecessary auto-refresh)
+- Changed title "Архив оборудования" to black (#333333) and repositioned under logo
+- Changed "Восстановить" and "Удалить навсегда" buttons to gray (#8c8c8c) for consistency with main table
+- Logo and title now in vertical layout (logo-title-section class)
+
 ## Known Issues
 
 - **Alembic config**: `alembic.ini` line 87 has hardcoded database credentials (should use `.env`)
