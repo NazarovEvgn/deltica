@@ -262,7 +262,29 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - `frontend/src/assets/styles/colors.css` - Corporate color constants
   - Imported in `frontend/src/main.js`
 
-**12. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
+**12. Data Import from Excel** (`backend/scripts/import_equipment_data.py`, `docs/data_import_guide.md`):
+- **Purpose**: Import equipment data from Excel files into PostgreSQL database
+- **Value Mappings**: Russian → English enum conversion (поверка→verification, ЛБР→lbr, СИ→SI)
+- **NULL Handling**: Default values for required fields (equipment_year: 2000, quantity: 1, etc.)
+- **Date Processing**: Auto-fix malformed dates, calculate verification_plan from date + interval
+- **Department Mapping**: Critical for user filtering - Russian labels converted to technical values
+- **Scripts**:
+  - `import_equipment_data.py` - reads Excel, generates SQL with value mapping
+  - `execute_import_sql.py` - executes SQL via SQLAlchemy with transaction safety
+- **Documentation**: `docs/data_import_guide.md` contains comprehensive import guide with all mappings and troubleshooting
+
+**13. Table Display Labels** (`frontend/src/components/MainTable.vue`):
+- **cellTemplate Pattern**: Custom rendering for enum columns to display Russian labels instead of technical values
+- **Mapped Columns**:
+  - `verification_state`: state_work → "В работе", state_storage → "На консервации"
+  - `verification_type`: verification → "Поверка", calibration → "Калибровка"
+  - `equipment_type`: SI → "СИ", IO → "ИО"
+  - `department`: lbr → "ЛБР", gtl → "ГТЛ" (12 departments total)
+  - `status`: Already has color-coded mapping
+- **Implementation**: Each mapped column uses `cellTemplate` with createElement to render custom span with display text
+- **Consistency**: Same mappings used across MainTable, EquipmentModal, FilterPanel, and composables
+
+**14. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
 - **Layout Structure**:
   - Row 1: AppLogo (left) → MetricsDashboard (center) → UserProfile (right)
   - Row 2: Buttons (left: Filters, Documents, Admin Panel) → SearchBar (center, 600px) → Empty spacer (right)
@@ -314,6 +336,33 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - Enforced via frontend `<n-select>` only, NOT in DB constraints
   - Department mapping used in: EquipmentModal.vue, MainTable.vue, UserProfile.vue
 - **Laborant filtering**: Laborants see only equipment from their department (frontend filtering in MainTable.vue loadData)
+
+## Recent Fixes
+
+### Equipment Creation/Update Finance Data (2025-10-20)
+**Problem**: Equipment creation/update was failing silently or not returning finance data in response.
+
+**Root Causes**:
+1. Frontend: Missing `budget_item` and `code_rate` fields in form initialization (EquipmentModal.vue resetForm())
+2. Backend: `create_equipment_full()` and `update_equipment_full()` methods were not including finance fields in MainTableResponse
+
+**Fixes Applied**:
+- `frontend/src/components/EquipmentModal.vue` (lines 323-324): Added `budget_item: ''` and `code_rate: null` to resetForm()
+- `backend/services/main_table.py`:
+  - `create_equipment_full()` (lines 219-227): Added all 9 finance fields to response
+  - `update_equipment_full()` (lines 308-316): Added all 9 finance fields with null checks to response
+- Enhanced error handling in EquipmentModal to display Pydantic validation errors with field names
+
+**Validation**: Budget_item is required (MainTableCreate schema), code_rate is optional. Both are now properly initialized and returned.
+
+### Terminology Consistency (2025-10-20)
+**Change**: Replaced all instances of "на хранении" with "На консервации" across 6 files:
+- MainTable.vue, EquipmentModal.vue, useEquipmentFilters.js, useEquipmentMetrics.js, MetricsDashboard.vue, FilterPanel.vue
+
+### UI Label Display (2025-10-20)
+**Enhancement**: Added cellTemplate mappings in MainTable.vue for human-readable labels:
+- verification_state, verification_type, equipment_type, department columns now display Russian labels instead of technical values
+- Data integrity maintained - technical values remain in database
 
 ## Known Issues
 

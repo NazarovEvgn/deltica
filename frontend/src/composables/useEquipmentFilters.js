@@ -165,7 +165,7 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
       searchable: true,
       options: [
         { label: 'В работе', value: 'state_work' },
-        { label: 'На хранении', value: 'state_storage' },
+        { label: 'На консервации', value: 'state_storage' },
         { label: 'На верификации', value: 'state_verification' },
         { label: 'В ремонте', value: 'state_repair' },
         { label: 'Архивировано', value: 'state_archived' }
@@ -180,7 +180,7 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
         { label: 'Годен', value: 'status_fit' },
         { label: 'Просрочен', value: 'status_expired' },
         { label: 'Истекает', value: 'status_expiring' },
-        { label: 'На хранении', value: 'status_storage' },
+        { label: 'На консервации', value: 'status_storage' },
         { label: 'На верификации', value: 'status_verification' },
         { label: 'На ремонте', value: 'status_repair' }
       ]

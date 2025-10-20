@@ -47,7 +47,7 @@ const displayMetrics = computed(() => [
     key: 'onVerification'
   },
   {
-    label: 'На хранении',
+    label: 'На консервации',
     value: props.metrics.inStorage,
     color: metricColors.inStorage,
     key: 'inStorage'

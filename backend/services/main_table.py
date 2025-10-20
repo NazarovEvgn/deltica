@@ -215,7 +215,16 @@ class MainTableService:
             status=verification.status,
             department=responsibility.department,
             responsible_person=responsibility.responsible_person,
-            verifier_org=responsibility.verifier_org
+            verifier_org=responsibility.verifier_org,
+            budget_item=finance.budget_item,
+            code_rate=finance.code_rate,
+            cost_rate=finance.cost_rate,
+            quantity=finance.quantity,
+            coefficient=finance.coefficient,
+            total_cost=finance.total_cost,
+            invoice_number=finance.invoice_number,
+            paid_amount=finance.paid_amount,
+            payment_date=finance.payment_date
         )
 
     def update_equipment_full(self, equipment_id: int, data: MainTableUpdate) -> Optional[MainTableResponse]:
@@ -295,7 +304,16 @@ class MainTableService:
             status=verification.status if verification else "",
             department=responsibility.department if responsibility else None,
             responsible_person=responsibility.responsible_person if responsibility else None,
-            verifier_org=responsibility.verifier_org if responsibility else None
+            verifier_org=responsibility.verifier_org if responsibility else None,
+            budget_item=finance.budget_item if finance else None,
+            code_rate=finance.code_rate if finance else None,
+            cost_rate=finance.cost_rate if finance else None,
+            quantity=finance.quantity if finance else None,
+            coefficient=finance.coefficient if finance else None,
+            total_cost=finance.total_cost if finance else None,
+            invoice_number=finance.invoice_number if finance else None,
+            paid_amount=finance.paid_amount if finance else None,
+            payment_date=finance.payment_date if finance else None
         )
 
     def delete_equipment_full(self, equipment_id: int) -> bool:

@@ -200,13 +200,96 @@ const dynamicColumns = computed(() => {
           style: { padding: '0 4px' }
         })
       }
+    } else if (fieldKey === 'equipment_type') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        const typeMap = {
+          'SI': 'СИ',
+          'IO': 'ИО'
+        }
+
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = typeMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: {
+            padding: '0 4px'
+          }
+        })
+      }
+    } else if (fieldKey === 'verification_type') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        const typeMap = {
+          'verification': 'Поверка',
+          'calibration': 'Калибровка',
+          'certification': 'Аттестация'
+        }
+
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = typeMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: {
+            padding: '0 4px'
+          }
+        })
+      }
+    } else if (fieldKey === 'verification_state') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        const stateMap = {
+          'state_work': 'В работе',
+          'state_storage': 'На консервации',
+          'state_verification': 'На верификации',
+          'state_repair': 'В ремонте',
+          'state_archived': 'В архиве'
+        }
+
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = stateMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: {
+            padding: '0 4px'
+          }
+        })
+      }
+    } else if (fieldKey === 'department') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        const departmentMap = {
+          'gruppa_sm': 'Группа СМ',
+          'gtl': 'ГТЛ',
+          'lbr': 'ЛБР',
+          'ltr': 'ЛТР',
+          'lhaiei': 'ЛХАиЭИ',
+          'ogmk': 'ОГМК',
+          'oii': 'ОИИ',
+          'ooops': 'ОООПС',
+          'smtsik': 'СМТСиК',
+          'soii': 'СОИИ',
+          'to': 'ТО',
+          'ts': 'ТС',
+          'es': 'ЭС'
+        }
+
+        const currentValue = props.model[props.prop] || ''
+        const displayValue = departmentMap[currentValue] || currentValue
+
+        return createElement('span', {
+          textContent: displayValue,
+          style: {
+            padding: '0 4px'
+          }
+        })
+      }
     } else if (fieldKey === 'status') {
       columnConfig.cellTemplate = (createElement, props) => {
         const statusMap = {
           'status_fit': 'Годен',
           'status_expired': 'Просрочен',
           'status_expiring': 'Истекает',
-          'status_storage': 'На хранении',
+          'status_storage': 'На консервации',
           'status_verification': 'На верификации',
           'status_repair': 'На ремонте'
         }

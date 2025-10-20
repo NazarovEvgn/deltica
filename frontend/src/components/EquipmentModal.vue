@@ -106,7 +106,7 @@ const verificationTypeOptions = [
 
 const verificationStateOptions = [
   { label: 'В работе', value: 'state_work' },
-  { label: 'На хранении', value: 'state_storage' },
+  { label: 'На консервации', value: 'state_storage' },
   { label: 'На верификации', value: 'state_verification' },
   { label: 'В ремонте', value: 'state_repair' },
   { label: 'В архиве', value: 'state_archived' }
@@ -116,7 +116,7 @@ const statusOptions = [
   { label: 'Годен', value: 'status_fit' },
   { label: 'Просрочен', value: 'status_expired' },
   { label: 'Истекает', value: 'status_expiring' },
-  { label: 'На хранении', value: 'status_storage' },
+  { label: 'На консервации', value: 'status_storage' },
   { label: 'На верификации', value: 'status_verification' },
   { label: 'В ремонте', value: 'status_repair' }
 ]
@@ -320,6 +320,8 @@ const resetForm = () => {
     responsible_person: '',
     verifier_org: '',
 
+    budget_item: '',
+    code_rate: null,
     cost_rate: null,
     quantity: 1,
     coefficient: 1.0,
@@ -388,7 +390,25 @@ const handleSave = async () => {
     handleClose()
   } catch (error) {
     console.error('Ошибка при сохранении:', error)
-    const errorMessage = error.response?.data?.detail || 'Ошибка при сохранении данных'
+    console.error('Полный ответ ошибки:', error.response)
+
+    let errorMessage = 'Ошибка при сохранении данных'
+
+    if (error.response?.data?.detail) {
+      // Если detail - это массив (validation errors от Pydantic)
+      if (Array.isArray(error.response.data.detail)) {
+        const errors = error.response.data.detail.map(err => {
+          const field = err.loc?.[err.loc.length - 1] || 'field'
+          return `${field}: ${err.msg}`
+        }).join('; ')
+        errorMessage = `Ошибки валидации: ${errors}`
+      } else {
+        errorMessage = error.response.data.detail
+      }
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+
     message.error(errorMessage)
   }
 }
@@ -881,7 +901,14 @@ watch(() => props.show, (newValue) => {
 
         <n-grid-item>
           <n-form-item label="Итоговая стоимость (без НДС)">
-            <n-input-number v-model:value="formValue.total_cost" :precision="2" :min="0" style="width: 100%" disabled />
+            <n-input-number
+              v-model:value="formValue.total_cost"
+              :precision="2"
+              :min="0"
+              style="width: 100%"
+              disabled
+              :input-props="{ style: 'background-color: white; color: black;' }"
+            />
           </n-form-item>
         </n-grid-item>
 
