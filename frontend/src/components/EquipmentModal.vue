@@ -283,6 +283,8 @@ const loadEquipmentData = async () => {
       responsible_person: data.responsible_person || '',
       verifier_org: data.verifier_org || '',
 
+      budget_item: data.budget_item || '',
+      code_rate: data.code_rate || '',
       cost_rate: data.cost_rate,
       quantity: data.quantity || 1,
       coefficient: data.coefficient || 1.0,

@@ -72,6 +72,51 @@ const formatMonthYear = (dateString) => {
   return `${month} ${year}`
 }
 
+// Маппинги для преобразования технических значений в человекочитаемые
+const departmentMap = {
+  'gruppa_sm': 'Группа СМ',
+  'gtl': 'ГТЛ',
+  'lbr': 'ЛБР',
+  'ltr': 'ЛТР',
+  'lhaiei': 'ЛХАиЭИ',
+  'ogmk': 'ОГМК',
+  'oii': 'ОИИ',
+  'ooops': 'ОООПС',
+  'smtsik': 'СМТСиК',
+  'soii': 'СОИИ',
+  'to': 'ТО',
+  'ts': 'ТС',
+  'es': 'ЭС'
+}
+
+const verificationStateMap = {
+  'state_work': 'В работе',
+  'state_storage': 'На консервации',
+  'state_verification': 'На верификации',
+  'state_repair': 'В ремонте',
+  'state_archived': 'В архиве'
+}
+
+const verificationTypeMap = {
+  'calibration': 'Калибровка',
+  'verification': 'Поверка',
+  'certification': 'Аттестация'
+}
+
+const equipmentTypeMap = {
+  'SI': 'СИ',
+  'IO': 'ИО'
+}
+
+const statusMap = {
+  'status_fit': 'Годен',
+  'status_expired': 'Просрочен',
+  'status_expiring': 'Истекает',
+  'status_storage': 'На консервации',
+  'status_verification': 'На верификации',
+  'status_repair': 'На ремонте'
+}
+
 // Загрузка данных с бэкенда
 const loadData = async () => {
   loading.value = true
@@ -91,6 +136,97 @@ const loadData = async () => {
     loading.value = false
   }
 }
+
+// Обратные маппинги (для преобразования обратно в технические значения)
+const reverseDepartmentMap = Object.fromEntries(
+  Object.entries(departmentMap).map(([key, value]) => [value, key])
+)
+
+const reverseVerificationStateMap = Object.fromEntries(
+  Object.entries(verificationStateMap).map(([key, value]) => [value, key])
+)
+
+const reverseVerificationTypeMap = Object.fromEntries(
+  Object.entries(verificationTypeMap).map(([key, value]) => [value, key])
+)
+
+const reverseEquipmentTypeMap = Object.fromEntries(
+  Object.entries(equipmentTypeMap).map(([key, value]) => [value, key])
+)
+
+// Функция для преобразования даты из dd.mm.yyyy в yyyy-mm-dd
+const parseDateFromDisplay = (dateString) => {
+  if (!dateString || dateString === '') return null
+
+  // Если уже в формате yyyy-mm-dd
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) return dateString
+
+  // Если в формате dd.mm.yyyy
+  const match = dateString.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+  if (match) {
+    const [, day, month, year] = match
+    return `${year}-${month}-${day}`
+  }
+
+  return dateString
+}
+
+// Функция для преобразования месяца из "Октябрь 2025" в yyyy-mm-dd
+const parseMonthYearFromDisplay = (monthYearString) => {
+  if (!monthYearString || monthYearString === '') return null
+
+  const monthNames = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ]
+
+  const parts = monthYearString.split(' ')
+  if (parts.length === 2) {
+    const monthIndex = monthNames.indexOf(parts[0])
+    if (monthIndex !== -1) {
+      const year = parts[1]
+      const month = String(monthIndex + 1).padStart(2, '0')
+      return `${year}-${month}-01`
+    }
+  }
+
+  return monthYearString
+}
+
+// Функция для преобразования человекочитаемого значения обратно в техническое
+const reverseTransformValue = (prop, value) => {
+  if (prop === 'department') return reverseDepartmentMap[value] || value
+  if (prop === 'verification_state') return reverseVerificationStateMap[value] || value
+  if (prop === 'verification_type') return reverseVerificationTypeMap[value] || value
+  if (prop === 'equipment_type') return reverseEquipmentTypeMap[value] || value
+
+  // Обработка дат
+  if (prop === 'verification_date' || prop === 'verification_due' || prop === 'payment_date') {
+    return parseDateFromDisplay(value)
+  }
+  if (prop === 'verification_plan') {
+    return parseMonthYearFromDisplay(value)
+  }
+
+  return value
+}
+
+// Трансформированные данные для RevoGrid (с человекочитаемыми значениями)
+const transformedSource = computed(() => {
+  return filteredData.value.map(item => ({
+    ...item,
+    department: departmentMap[item.department] || item.department,
+    verification_state: verificationStateMap[item.verification_state] || item.verification_state,
+    verification_type: verificationTypeMap[item.verification_type] || item.verification_type,
+    equipment_type: equipmentTypeMap[item.equipment_type] || item.equipment_type,
+    status_display: statusMap[item.status] || item.status,
+    // Форматирование дат
+    verification_date: formatDate(item.verification_date),
+    verification_due: formatDate(item.verification_due),
+    verification_plan: formatMonthYear(item.verification_plan),
+    payment_date: formatDate(item.payment_date)
+  }))
+})
 
 // Динамические колонки на основе видимых полей
 const dynamicColumns = computed(() => {
@@ -146,155 +282,12 @@ const dynamicColumns = computed(() => {
       readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }
 
-    // Добавляем cellTemplate для форматирования
-    if (fieldKey === 'department') {
+    // Добавляем cellTemplate для форматирования только для status (с цветовым кодированием)
+    if (fieldKey === 'status') {
+      // Изменяем prop на status_display для отображения
+      columnConfig.prop = 'status_display'
       columnConfig.cellTemplate = (createElement, props) => {
-        const departmentMap = {
-          'gruppa_sm': 'Группа СМ',
-          'gtl': 'ГТЛ',
-          'lbr': 'ЛБР',
-          'ltr': 'ЛТР',
-          'lhaiei': 'ЛХАиЭИ',
-          'ogmk': 'ОГМК',
-          'oii': 'ОИИ',
-          'smtsik': 'СМТСиК',
-          'soii': 'СОИИ',
-          'to': 'ТО',
-          'ts': 'ТС',
-          'es': 'ЭС'
-        }
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = departmentMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'verification_date' || fieldKey === 'verification_due' || fieldKey === 'payment_date') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        return createElement('span', {
-          textContent: formatDate(props.model[props.prop]),
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'verification_plan') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        return createElement('span', {
-          textContent: formatMonthYear(props.model[props.prop]),
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'verification_type') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        const verificationTypeMap = {
-          'calibration': 'Калибровка',
-          'verification': 'Поверка',
-          'certification': 'Аттестация'
-        }
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = verificationTypeMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'equipment_type') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        const typeMap = {
-          'SI': 'СИ',
-          'IO': 'ИО'
-        }
-
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = typeMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: {
-            padding: '0 4px'
-          }
-        })
-      }
-    } else if (fieldKey === 'verification_type') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        const typeMap = {
-          'verification': 'Поверка',
-          'calibration': 'Калибровка',
-          'certification': 'Аттестация'
-        }
-
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = typeMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: {
-            padding: '0 4px'
-          }
-        })
-      }
-    } else if (fieldKey === 'verification_state') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        const stateMap = {
-          'state_work': 'В работе',
-          'state_storage': 'На консервации',
-          'state_verification': 'На верификации',
-          'state_repair': 'В ремонте',
-          'state_archived': 'В архиве'
-        }
-
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = stateMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: {
-            padding: '0 4px'
-          }
-        })
-      }
-    } else if (fieldKey === 'department') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        const departmentMap = {
-          'gruppa_sm': 'Группа СМ',
-          'gtl': 'ГТЛ',
-          'lbr': 'ЛБР',
-          'ltr': 'ЛТР',
-          'lhaiei': 'ЛХАиЭИ',
-          'ogmk': 'ОГМК',
-          'oii': 'ОИИ',
-          'ooops': 'ОООПС',
-          'smtsik': 'СМТСиК',
-          'soii': 'СОИИ',
-          'to': 'ТО',
-          'ts': 'ТС',
-          'es': 'ЭС'
-        }
-
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = departmentMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: {
-            padding: '0 4px'
-          }
-        })
-      }
-    } else if (fieldKey === 'status') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        const statusMap = {
-          'status_fit': 'Годен',
-          'status_expired': 'Просрочен',
-          'status_expiring': 'Истекает',
-          'status_storage': 'На консервации',
-          'status_verification': 'На верификации',
-          'status_repair': 'На ремонте'
-        }
-
-        // Карта цветов для статусов
+        // Карта цветов для статусов (используем оригинальное значение status)
         const statusColors = {
           'status_fit': '#52c41a',           // зеленый
           'status_expired': '#f5222d',       // красный
@@ -304,9 +297,9 @@ const dynamicColumns = computed(() => {
           'status_repair': '#fadb14'         // желтый
         }
 
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = statusMap[currentValue] || currentValue
-        const color = statusColors[currentValue] || '#000'
+        const displayValue = props.model.status_display || ''
+        const originalStatus = props.model.status || ''
+        const color = statusColors[originalStatus] || '#000'
 
         return createElement('span', {
           textContent: displayValue,
@@ -407,10 +400,10 @@ const handleCellDblClick = (event) => {
   // Попробуем разные способы получить данные строки
   if (event.detail) {
     const rowIndex = event.detail.rowIndex ?? event.detail.y
-    console.log('Row index:', rowIndex, 'Source:', source.value)
+    console.log('Row index:', rowIndex, 'FilteredData:', filteredData.value)
 
-    if (rowIndex !== undefined && source.value[rowIndex]) {
-      const row = source.value[rowIndex]
+    if (rowIndex !== undefined && filteredData.value[rowIndex]) {
+      const row = filteredData.value[rowIndex]
       console.log('Row data:', row)
       const equipmentId = row.equipment_id
 
@@ -425,20 +418,32 @@ const handleCellDblClick = (event) => {
 // Функция для сохранения одной ячейки на сервер
 const saveCellToServer = async (equipmentId, prop, val) => {
   try {
+    console.log(`[saveCellToServer] Saving: equipmentId=${equipmentId}, prop=${prop}, val=${val}, type=${typeof val}`)
+
     // Получаем полные данные для обновления
     const fullDataResponse = await axios.get(`http://localhost:8000/main-table/${equipmentId}/full`)
     const fullData = fullDataResponse.data
 
+    console.log(`[saveCellToServer] Full data received:`, fullData)
+
+    // Преобразуем человекочитаемое значение обратно в техническое
+    const technicalValue = reverseTransformValue(prop, val)
+
+    console.log(`[saveCellToServer] Transformed: ${prop} = ${technicalValue} (from ${val})`)
+
     // Обновляем измененное поле
-    fullData[prop] = val
+    fullData[prop] = technicalValue
+
+    console.log(`[saveCellToServer] Sending PUT request with:`, fullData)
 
     // Отправляем обновление на сервер
     await axios.put(`http://localhost:8000/main-table/${equipmentId}`, fullData)
 
-    console.log(`Successfully saved ${prop} = ${val} for equipment ${equipmentId}`)
+    console.log(`[saveCellToServer] Successfully saved ${prop} = ${technicalValue}`)
     return true
   } catch (error) {
-    console.error('Ошибка при сохранении изменений:', error)
+    console.error('[saveCellToServer] Error:', error)
+    console.error('[saveCellToServer] Error response:', error.response?.data)
     throw error
   }
 }
@@ -449,13 +454,19 @@ const handleAfterEdit = async (event) => {
 
   if (event.detail) {
     const { rowIndex, prop, val } = event.detail
-    const row = source.value[rowIndex]
+    const row = filteredData.value[rowIndex]
 
     if (row && row.equipment_id) {
       console.log(`Cell edited: row ${rowIndex}, field ${prop}, new value: ${val}`)
 
-      // Обновляем локальные данные
-      row[prop] = val
+      // Преобразуем человекочитаемое значение обратно в техническое
+      const technicalValue = reverseTransformValue(prop, val)
+
+      // Обновляем локальные данные (оригинальные данные в source)
+      const sourceRow = source.value.find(item => item.equipment_id === row.equipment_id)
+      if (sourceRow) {
+        sourceRow[prop] = technicalValue
+      }
 
       // Автосохранение на сервер
       try {
@@ -610,7 +621,7 @@ defineExpose({
     <div class="table-wrapper">
       <v-grid
         ref="grid"
-        :source="filteredData"
+        :source="transformedSource"
         :columns="columnsWithActions"
         theme="compact"
         :resize="true"

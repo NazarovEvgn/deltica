@@ -86,6 +86,8 @@ class ArchiveService:
             archived_finance = models.ArchivedFinance(
                 archived_equipment_id=archived_equipment.id,
                 original_equipment_id=equipment_id,
+                budget_item=finance.budget_item,
+                code_rate=finance.code_rate,
                 cost_rate=finance.cost_rate,
                 quantity=finance.quantity,
                 coefficient=finance.coefficient,
