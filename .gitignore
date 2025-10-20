@@ -22,3 +22,10 @@ docs/
 
 # Uploaded files
 backend/uploads/
+
+# Import data files
+export_equipment_db.xlsx
+import_equipment_data.sql
+
+# Backup files
+backend/backups/
