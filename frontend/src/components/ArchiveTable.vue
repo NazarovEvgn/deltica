@@ -93,9 +93,9 @@ const columns = ref([
           style: {
             padding: '4px 12px',
             cursor: 'pointer',
-            border: '1px solid #18a058',
+            border: '1px solid #8c8c8c',
             borderRadius: '3px',
-            background: '#18a058',
+            background: '#8c8c8c',
             color: 'white',
             fontSize: '12px'
           },
@@ -106,9 +106,9 @@ const columns = ref([
           style: {
             padding: '4px 12px',
             cursor: 'pointer',
-            border: '1px solid #d03050',
+            border: '1px solid #8c8c8c',
             borderRadius: '3px',
-            background: '#d03050',
+            background: '#8c8c8c',
             color: 'white',
             fontSize: '12px'
           },
@@ -189,21 +189,15 @@ onMounted(() => {
   <div class="archive-table-container">
     <div class="action-panel">
       <div class="header">
-        <n-space :size="16" align="center">
+        <div class="logo-title-section">
           <AppLogo />
-          <h2>Архив оборудования</h2>
-        </n-space>
+          <h2 style="color: #333333; font-weight: bold; margin: 0;">Архив оборудования</h2>
+        </div>
         <n-space>
-          <n-button @click="loadData">
-            Обновить
-          </n-button>
           <n-button type="primary" @click="$emit('back-to-main')">
             ← Вернуться к основной таблице
           </n-button>
         </n-space>
-      </div>
-      <div class="hint-text">
-        Архивное оборудование можно восстановить или удалить навсегда
       </div>
     </div>
 
@@ -252,14 +246,22 @@ onMounted(() => {
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
+}
+
+.logo-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .header h2 {
   margin: 0;
-  font-size: 24px;
-  color: #e88b00;
+  font-size: 20px;
+  color: #333333;
+  font-weight: bold;
 }
 
 .hint-text {
