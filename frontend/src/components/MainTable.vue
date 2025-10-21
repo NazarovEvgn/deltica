@@ -10,11 +10,13 @@ import DocumentsPanel from './DocumentsPanel.vue'
 import MetricsDashboard from './MetricsDashboard.vue'
 import BackupPanel from './BackupPanel.vue'
 import SystemMonitor from './SystemMonitor.vue'
+import AppLogo from './AppLogo.vue'
+import AdminPanel from './AdminPanel.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
 
-const emit = defineEmits(['add-equipment', 'edit-equipment', 'show-archive', 'show-login'])
+const emit = defineEmits(['add-equipment', 'edit-equipment', 'view-equipment', 'show-archive', 'show-login'])
 
 // Аутентификация
 const { currentUser, isAuthenticated, isAdmin, isLaborant } = useAuth()
@@ -35,13 +37,17 @@ const {
   resetFilters,
   applyQuickFilter,
   loadSavedSettings
-} = useEquipmentFilters(source)
+} = useEquipmentFilters(source, isLaborant)
 
 // Инициализация метрик (на основе данных из БД, уже отфильтрованных по department для лаборанта)
 const { metrics } = useEquipmentMetrics(source)
 
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
+
+// Refs для BackupPanel и SystemMonitor
+const backupPanelRef = ref(null)
+const systemMonitorRef = ref(null)
 
 // Функция форматирования даты в dd.mm.yyyy
 const formatDate = (dateString) => {
@@ -66,6 +72,51 @@ const formatMonthYear = (dateString) => {
   return `${month} ${year}`
 }
 
+// Маппинги для преобразования технических значений в человекочитаемые
+const departmentMap = {
+  'gruppa_sm': 'Группа СМ',
+  'gtl': 'ГТЛ',
+  'lbr': 'ЛБР',
+  'ltr': 'ЛТР',
+  'lhaiei': 'ЛХАиЭИ',
+  'ogmk': 'ОГМК',
+  'oii': 'ОИИ',
+  'ooops': 'ОООПС',
+  'smtsik': 'СМТСиК',
+  'soii': 'СОИИ',
+  'to': 'ТО',
+  'ts': 'ТС',
+  'es': 'ЭС'
+}
+
+const verificationStateMap = {
+  'state_work': 'В работе',
+  'state_storage': 'На консервации',
+  'state_verification': 'На верификации',
+  'state_repair': 'В ремонте',
+  'state_archived': 'В архиве'
+}
+
+const verificationTypeMap = {
+  'calibration': 'Калибровка',
+  'verification': 'Поверка',
+  'certification': 'Аттестация'
+}
+
+const equipmentTypeMap = {
+  'SI': 'СИ',
+  'IO': 'ИО'
+}
+
+const statusMap = {
+  'status_fit': 'Годен',
+  'status_expired': 'Просрочен',
+  'status_expiring': 'Истекает',
+  'status_storage': 'На консервации',
+  'status_verification': 'На верификации',
+  'status_repair': 'На ремонте'
+}
+
 // Загрузка данных с бэкенда
 const loadData = async () => {
   loading.value = true
@@ -86,67 +137,177 @@ const loadData = async () => {
   }
 }
 
+// Обратные маппинги (для преобразования обратно в технические значения)
+const reverseDepartmentMap = Object.fromEntries(
+  Object.entries(departmentMap).map(([key, value]) => [value, key])
+)
+
+const reverseVerificationStateMap = Object.fromEntries(
+  Object.entries(verificationStateMap).map(([key, value]) => [value, key])
+)
+
+const reverseVerificationTypeMap = Object.fromEntries(
+  Object.entries(verificationTypeMap).map(([key, value]) => [value, key])
+)
+
+const reverseEquipmentTypeMap = Object.fromEntries(
+  Object.entries(equipmentTypeMap).map(([key, value]) => [value, key])
+)
+
+// Функция для преобразования даты из dd.mm.yyyy в yyyy-mm-dd
+const parseDateFromDisplay = (dateString) => {
+  if (!dateString || dateString === '') return null
+
+  // Если уже в формате yyyy-mm-dd
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) return dateString
+
+  // Если в формате dd.mm.yyyy
+  const match = dateString.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+  if (match) {
+    const [, day, month, year] = match
+    return `${year}-${month}-${day}`
+  }
+
+  return dateString
+}
+
+// Функция для преобразования месяца из "Октябрь 2025" в yyyy-mm-dd
+const parseMonthYearFromDisplay = (monthYearString) => {
+  if (!monthYearString || monthYearString === '') return null
+
+  const monthNames = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ]
+
+  const parts = monthYearString.split(' ')
+  if (parts.length === 2) {
+    const monthIndex = monthNames.indexOf(parts[0])
+    if (monthIndex !== -1) {
+      const year = parts[1]
+      const month = String(monthIndex + 1).padStart(2, '0')
+      return `${year}-${month}-01`
+    }
+  }
+
+  return monthYearString
+}
+
+// Функция для преобразования человекочитаемого значения обратно в техническое
+const reverseTransformValue = (prop, value) => {
+  if (prop === 'department') return reverseDepartmentMap[value] || value
+  if (prop === 'verification_state') return reverseVerificationStateMap[value] || value
+  if (prop === 'verification_type') return reverseVerificationTypeMap[value] || value
+  if (prop === 'equipment_type') return reverseEquipmentTypeMap[value] || value
+
+  // Обработка дат
+  if (prop === 'verification_date' || prop === 'verification_due' || prop === 'payment_date') {
+    return parseDateFromDisplay(value)
+  }
+  if (prop === 'verification_plan') {
+    return parseMonthYearFromDisplay(value)
+  }
+
+  return value
+}
+
+// Трансформированные данные для RevoGrid (с человекочитаемыми значениями)
+const transformedSource = computed(() => {
+  return filteredData.value.map(item => ({
+    ...item,
+    department: departmentMap[item.department] || item.department,
+    verification_state: verificationStateMap[item.verification_state] || item.verification_state,
+    verification_type: verificationTypeMap[item.verification_type] || item.verification_type,
+    equipment_type: equipmentTypeMap[item.equipment_type] || item.equipment_type,
+    status_display: statusMap[item.status] || item.status,
+    // Форматирование дат
+    verification_date: formatDate(item.verification_date),
+    verification_due: formatDate(item.verification_due),
+    verification_plan: formatMonthYear(item.verification_plan),
+    payment_date: formatDate(item.payment_date)
+  }))
+})
+
 // Динамические колонки на основе видимых полей
 const dynamicColumns = computed(() => {
   return visibleColumns.value.map(fieldKey => {
     const fieldDef = fieldDefinitions[fieldKey]
 
+    // Определяем размер колонки в зависимости от поля
+    let columnSize = 150 // дефолтный размер
+    if (fieldKey === 'equipment_name') {
+      columnSize = 250 // увеличенная ширина для наименования
+    } else if (fieldKey === 'equipment_type') {
+      columnSize = 160 // "Тип оборудования"
+    } else if (fieldKey === 'verification_interval') {
+      columnSize = 100 // уменьшенный размер для интервала
+    } else if (fieldKey === 'verification_plan') {
+      columnSize = 130 // ширина по содержимому (например: "Октябрь 2025")
+    } else if (fieldKey === 'verification_date') {
+      columnSize = 160 // "Дата верификации"
+    } else if (fieldKey === 'verification_due') {
+      columnSize = 140 // "Действует до"
+    } else if (fieldKey === 'verification_type') {
+      columnSize = 160 // "Тип верификации"
+    } else if (fieldKey === 'registry_number') {
+      columnSize = 160 // "Номер в реестре"
+    } else if (fieldKey === 'verifier_org') {
+      columnSize = 220 // "Организация-поверитель"
+    } else if (fieldKey === 'budget_item') {
+      columnSize = 150 // "Статья бюджета"
+    } else if (fieldKey === 'code_rate') {
+      columnSize = 140 // "Тариф"
+    } else if (fieldKey === 'cost_rate') {
+      columnSize = 200 // "Стоимость по тарифу (без НДС)"
+    } else if (fieldKey === 'total_cost') {
+      columnSize = 200 // "Итоговая стоимость (без НДС)"
+    } else if (fieldKey === 'paid_amount') {
+      columnSize = 140 // "Факт оплаты"
+    } else if (fieldKey === 'status') {
+      columnSize = 130 // ширина по содержимому (например: "На верификации")
+    } else if (fieldKey === 'department') {
+      columnSize = 170 // "Подразделение"
+    } else if (fieldKey === 'responsible_person') {
+      columnSize = 170 // "Ответственный"
+    }
+
     // Базовая конфигурация колонки
     const columnConfig = {
       prop: fieldKey,
       name: fieldDef?.label || fieldKey,
-      size: 150,
-      readonly: fieldDef?.computed || false
+      size: columnSize,
+      sortable: true, // Включаем сортировку для всех колонок
+      filter: isAdmin.value ? 'string' : false, // Фильтрация только для администратора
+      // Убираем readonly для verification_due, несмотря на то что это computed поле
+      readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }
 
-    // Добавляем cellTemplate для форматирования
-    if (fieldKey === 'verification_date' || fieldKey === 'verification_due' || fieldKey === 'payment_date') {
+    // Добавляем cellTemplate для форматирования только для status (с цветовым кодированием)
+    if (fieldKey === 'status') {
+      // Изменяем prop на status_display для отображения
+      columnConfig.prop = 'status_display'
       columnConfig.cellTemplate = (createElement, props) => {
-        return createElement('span', {
-          textContent: formatDate(props.model[props.prop]),
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'verification_plan') {
-      columnConfig.cellTemplate = (createElement, props) => {
-        return createElement('span', {
-          textContent: formatMonthYear(props.model[props.prop]),
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'verification_type') {
-      columnConfig.readonly = true
-      columnConfig.cellTemplate = (createElement, props) => {
-        const verificationTypeMap = {
-          'calibration': 'Калибровка',
-          'verification': 'Поверка',
-          'certification': 'Аттестация'
+        // Карта цветов для статусов (используем оригинальное значение status)
+        const statusColors = {
+          'status_fit': '#52c41a',           // зеленый
+          'status_expired': '#f5222d',       // красный
+          'status_expiring': '#fa8c16',      // оранжевый
+          'status_storage': '#1890ff',       // синий
+          'status_verification': '#722ed1',  // фиолетовый
+          'status_repair': '#fadb14'         // желтый
         }
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = verificationTypeMap[currentValue] || currentValue
+
+        const displayValue = props.model.status_display || ''
+        const originalStatus = props.model.status || ''
+        const color = statusColors[originalStatus] || '#000'
 
         return createElement('span', {
           textContent: displayValue,
-          style: { padding: '0 4px' }
-        })
-      }
-    } else if (fieldKey === 'status') {
-      columnConfig.readonly = true
-      columnConfig.cellTemplate = (createElement, props) => {
-        const statusMap = {
-          'status_fit': 'Годен',
-          'status_expired': 'Просрочен',
-          'status_expiring': 'Истекает',
-          'status_storage': 'На хранении',
-          'status_verification': 'На верификации',
-          'status_repair': 'На ремонте'
-        }
-        const currentValue = props.model[props.prop] || ''
-        const displayValue = statusMap[currentValue] || currentValue
-
-        return createElement('span', {
-          textContent: displayValue,
-          style: { padding: '0 4px' }
+          style: {
+            padding: '0 4px',
+            color: color,
+            fontWeight: '600'
+          }
         })
       }
     }
@@ -155,30 +316,29 @@ const dynamicColumns = computed(() => {
   })
 })
 
-// Добавляем колонку действий в конец (только для администратора)
+// Добавляем колонку действий в конец
 const columnsWithActions = computed(() => {
   const columns = [...dynamicColumns.value]
 
-  // Колонка действий только для администратора
+  // Колонка действий для администратора
   if (isAdmin.value) {
     columns.push({
       prop: 'actions',
       name: 'Действия',
-      size: 200,
-      readonly: true,
+      size: 210,
       cellTemplate: (createElement, props) => {
         const equipmentId = props.model.equipment_id
         return createElement('div', {
-          style: { display: 'flex', gap: '8px', padding: '4px' }
+          style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px' }
         }, [
           createElement('button', {
             textContent: 'Редактировать',
             style: {
               padding: '4px 12px',
               cursor: 'pointer',
-              border: '1px solid #18a058',
+              border: '1px solid #8c8c8c',
               borderRadius: '3px',
-              background: '#18a058',
+              background: '#8c8c8c',
               color: 'white',
               fontSize: '12px'
             },
@@ -189,13 +349,41 @@ const columnsWithActions = computed(() => {
             style: {
               padding: '4px 12px',
               cursor: 'pointer',
-              border: '1px solid #d03050',
+              border: '1px solid #8c8c8c',
               borderRadius: '3px',
-              background: '#d03050',
+              background: '#8c8c8c',
               color: 'white',
               fontSize: '12px'
             },
             onClick: () => deleteEquipment(equipmentId)
+          })
+        ])
+      }
+    })
+  }
+  // Колонка действий для лаборанта (только просмотр)
+  else if (isLaborant.value) {
+    columns.push({
+      prop: 'actions',
+      name: 'Действия',
+      size: 130,
+      cellTemplate: (createElement, props) => {
+        const equipmentId = props.model.equipment_id
+        return createElement('div', {
+          style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px', justifyContent: 'center' }
+        }, [
+          createElement('button', {
+            textContent: 'Просмотр',
+            style: {
+              padding: '4px 12px',
+              cursor: 'pointer',
+              border: '1px solid #8c8c8c',
+              borderRadius: '3px',
+              background: '#8c8c8c',
+              color: 'white',
+              fontSize: '12px'
+            },
+            onClick: () => viewEquipment(equipmentId)
           })
         ])
       }
@@ -212,10 +400,10 @@ const handleCellDblClick = (event) => {
   // Попробуем разные способы получить данные строки
   if (event.detail) {
     const rowIndex = event.detail.rowIndex ?? event.detail.y
-    console.log('Row index:', rowIndex, 'Source:', source.value)
+    console.log('Row index:', rowIndex, 'FilteredData:', filteredData.value)
 
-    if (rowIndex !== undefined && source.value[rowIndex]) {
-      const row = source.value[rowIndex]
+    if (rowIndex !== undefined && filteredData.value[rowIndex]) {
+      const row = filteredData.value[rowIndex]
       console.log('Row data:', row)
       const equipmentId = row.equipment_id
 
@@ -230,20 +418,32 @@ const handleCellDblClick = (event) => {
 // Функция для сохранения одной ячейки на сервер
 const saveCellToServer = async (equipmentId, prop, val) => {
   try {
+    console.log(`[saveCellToServer] Saving: equipmentId=${equipmentId}, prop=${prop}, val=${val}, type=${typeof val}`)
+
     // Получаем полные данные для обновления
     const fullDataResponse = await axios.get(`http://localhost:8000/main-table/${equipmentId}/full`)
     const fullData = fullDataResponse.data
 
+    console.log(`[saveCellToServer] Full data received:`, fullData)
+
+    // Преобразуем человекочитаемое значение обратно в техническое
+    const technicalValue = reverseTransformValue(prop, val)
+
+    console.log(`[saveCellToServer] Transformed: ${prop} = ${technicalValue} (from ${val})`)
+
     // Обновляем измененное поле
-    fullData[prop] = val
+    fullData[prop] = technicalValue
+
+    console.log(`[saveCellToServer] Sending PUT request with:`, fullData)
 
     // Отправляем обновление на сервер
     await axios.put(`http://localhost:8000/main-table/${equipmentId}`, fullData)
 
-    console.log(`Successfully saved ${prop} = ${val} for equipment ${equipmentId}`)
+    console.log(`[saveCellToServer] Successfully saved ${prop} = ${technicalValue}`)
     return true
   } catch (error) {
-    console.error('Ошибка при сохранении изменений:', error)
+    console.error('[saveCellToServer] Error:', error)
+    console.error('[saveCellToServer] Error response:', error.response?.data)
     throw error
   }
 }
@@ -254,13 +454,19 @@ const handleAfterEdit = async (event) => {
 
   if (event.detail) {
     const { rowIndex, prop, val } = event.detail
-    const row = source.value[rowIndex]
+    const row = filteredData.value[rowIndex]
 
     if (row && row.equipment_id) {
       console.log(`Cell edited: row ${rowIndex}, field ${prop}, new value: ${val}`)
 
-      // Обновляем локальные данные
-      row[prop] = val
+      // Преобразуем человекочитаемое значение обратно в техническое
+      const technicalValue = reverseTransformValue(prop, val)
+
+      // Обновляем локальные данные (оригинальные данные в source)
+      const sourceRow = source.value.find(item => item.equipment_id === row.equipment_id)
+      if (sourceRow) {
+        sourceRow[prop] = technicalValue
+      }
 
       // Автосохранение на сервер
       try {
@@ -340,6 +546,11 @@ const editEquipment = (equipmentId) => {
   emit('edit-equipment', equipmentId)
 }
 
+// Просмотр оборудования (для лаборанта)
+const viewEquipment = (equipmentId) => {
+  emit('view-equipment', equipmentId)
+}
+
 onMounted(() => {
   loadData()
   loadSavedSettings()
@@ -355,59 +566,54 @@ defineExpose({
   <div class="main-table-container">
     <!-- Панель действий и поиска -->
     <div class="top-panel">
-      <!-- Первая строка: кнопки, метрики, поиск и профиль -->
-      <n-space :size="16" align="center" justify="space-between" style="width: 100%">
-        <n-space :size="16" align="center">
-          <!-- Кнопки управления -->
-          <n-space v-if="isAdmin">
-            <n-button type="primary" @click="$emit('add-equipment')">
-              Добавить оборудование
-            </n-button>
-            <n-button @click="loadData">
-              Обновить
-            </n-button>
-            <n-button type="warning" @click="$emit('show-archive')">
-              Архив
-            </n-button>
-            <BackupPanel />
-            <SystemMonitor />
-            <n-button secondary @click="showFilterDrawer = true">
-              Фильтры и колонки
-            </n-button>
-          </n-space>
+      <!-- Первая строка: логотип, дашборд и профиль -->
+      <div class="header-row">
+        <!-- Левая часть: логотип -->
+        <div class="header-left">
+          <AppLogo />
+        </div>
 
-          <n-space v-else-if="isAuthenticated">
-            <n-button @click="loadData">
-              Обновить
-            </n-button>
-            <n-button secondary @click="showFilterDrawer = true">
-              Фильтры и колонки
-            </n-button>
-          </n-space>
-
-          <!-- Дашборд с метриками -->
+        <!-- Центральная часть: Дашборд с метриками -->
+        <div class="header-center">
           <MetricsDashboard :metrics="metrics" />
+        </div>
 
-          <!-- Поиск -->
+        <!-- Правая часть: UserProfile -->
+        <div class="header-right">
+          <UserProfile @show-login="$emit('show-login')" />
+        </div>
+      </div>
+
+      <!-- Вторая строка: Кнопки, поиск по центру -->
+      <div class="header-row" style="margin-top: 12px;">
+        <!-- Левая часть: Фильтры, Документы и AdminPanel -->
+        <div class="header-left">
+          <n-space :size="12" align="center">
+            <n-button v-if="isAdmin" type="primary" @click="showFilterDrawer = true">
+              Фильтры
+            </n-button>
+            <DocumentsPanel />
+            <AdminPanel
+              v-if="isAdmin"
+              @add-equipment="$emit('add-equipment')"
+              @show-archive="$emit('show-archive')"
+              @show-backup="backupPanelRef?.openModal()"
+              @show-monitor="systemMonitorRef?.openModal()"
+            />
+          </n-space>
+        </div>
+
+        <!-- Центральная часть: Поиск -->
+        <div class="header-center">
           <SearchBar
             v-model="searchQuery"
             :total-count="filterStats.total"
             :filtered-count="filterStats.filtered"
           />
-        </n-space>
+        </div>
 
-        <!-- DocumentsPanel и UserProfile компоненты справа -->
-        <n-space :size="12" align="center">
-          <DocumentsPanel />
-          <UserProfile @show-login="$emit('show-login')" />
-        </n-space>
-      </n-space>
-
-      <div class="hint-text" v-if="isAdmin">
-        Двойной клик по строке для редактирования. Можно копировать данные (Ctrl+C / Ctrl+V)
-      </div>
-      <div class="hint-text" v-else-if="isLaborant">
-        Отображается оборудование подразделения: {{ currentUser?.department }}
+        <!-- Правая часть: пустой блок для симметрии -->
+        <div class="header-right"></div>
       </div>
     </div>
 
@@ -415,11 +621,12 @@ defineExpose({
     <div class="table-wrapper">
       <v-grid
         ref="grid"
-        :source="filteredData"
+        :source="transformedSource"
         :columns="columnsWithActions"
         theme="compact"
         :resize="true"
         :range="true"
+        :filter="true"
         :readonly="isLaborant"
         :row-headers="true"
         :can-focus="true"
@@ -448,6 +655,10 @@ defineExpose({
         />
       </n-drawer-content>
     </n-drawer>
+
+    <!-- Модальные окна для BackupPanel и SystemMonitor -->
+    <BackupPanel ref="backupPanelRef" />
+    <SystemMonitor ref="systemMonitorRef" />
   </div>
 </template>
 
@@ -468,6 +679,27 @@ defineExpose({
   gap: 12px;
 }
 
+/* Трёхколоночная сетка для центрирования */
+.header-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.header-left {
+  justify-self: start;
+}
+
+.header-center {
+  justify-self: center;
+}
+
+.header-right {
+  justify-self: end;
+}
+
 .hint-text {
   color: #888;
   font-size: 13px;
@@ -478,14 +710,34 @@ defineExpose({
   flex: 1;
   min-height: 0;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
+  background-color: #ffffff;
 }
 
 /* RevoGrid стили */
 .table-wrapper :deep(revo-grid) {
   height: 100%;
   width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+/* Показывать иконки сортировки и фильтрации при наведении */
+.table-wrapper :deep(.header-sortable),
+.table-wrapper :deep(.header-filter) {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.table-wrapper :deep(revogr-header-cell:hover .header-sortable),
+.table-wrapper :deep(revogr-header-cell:hover .header-filter) {
+  opacity: 1;
+}
+
+/* Всегда показывать активные иконки */
+.table-wrapper :deep(.header-sortable.active),
+.table-wrapper :deep(.header-filter.active) {
+  opacity: 1;
 }
 </style>

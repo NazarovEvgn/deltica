@@ -6,27 +6,59 @@ import { ref, computed, watch } from 'vue'
 /**
  * Composable для управления поиском и фильтрацией данных об оборудовании
  * @param {Ref} sourceData - реактивный массив данных оборудования
+ * @param {Ref} isLaborant - признак, является ли пользователь лаборантом
  * @returns {Object} - объект с методами и реактивными свойствами фильтрации
  */
-export function useEquipmentFilters(sourceData) {
+export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
   // ==================== СОСТОЯНИЕ ====================
 
   // Поисковый запрос
   const searchQuery = ref('')
 
-  // Активные колонки для отображения (дефолтные из текущей таблицы)
-  const visibleColumns = ref([
-    'equipment_name',
-    'equipment_model',
-    'factory_number',
-    'inventory_number',
-    'verification_type',
-    'verification_interval',
-    'verification_date',
-    'verification_due',
-    'verification_plan',
-    'status'
-  ])
+  // Функция для получения дефолтных колонок в зависимости от роли
+  const getDefaultColumns = () => {
+    return isLaborant.value
+      ? [
+          'equipment_name',
+          'equipment_model',
+          'factory_number',
+          'inventory_number',
+          'verification_type',
+          'verification_date',
+          'verification_due',
+          'verification_plan',
+          'status'
+        ]
+      : [
+          'equipment_name',
+          'equipment_model',
+          'factory_number',
+          'inventory_number',
+          'verification_type',
+          'verification_interval',
+          'verification_due',
+          'verification_plan',
+          'status'
+        ]
+  }
+
+  const visibleColumns = ref(getDefaultColumns())
+
+  // Отслеживаем изменение роли пользователя и перезагружаем настройки для новой роли
+  watch(isLaborant, () => {
+    const role = isLaborant.value ? 'laborant' : 'admin'
+    const savedColumns = localStorage.getItem(`equipment_visible_columns_${role}`)
+
+    if (savedColumns) {
+      try {
+        visibleColumns.value = JSON.parse(savedColumns)
+      } catch (e) {
+        visibleColumns.value = getDefaultColumns()
+      }
+    } else {
+      visibleColumns.value = getDefaultColumns()
+    }
+  })
 
   // Динамические фильтры (используется Naive UI Data Table filter format)
   const activeFilters = ref({})
@@ -65,13 +97,13 @@ export function useEquipmentFilters(sourceData) {
       searchable: true
     },
     factory_number: {
-      label: 'Заводской номер',
+      label: 'Зав. №',
       group: 'equipment',
       type: 'string',
       searchable: true
     },
     inventory_number: {
-      label: 'Инвентарный номер',
+      label: 'Инв. №',
       group: 'equipment',
       type: 'string',
       searchable: true
@@ -102,7 +134,7 @@ export function useEquipmentFilters(sourceData) {
       searchable: true
     },
     verification_interval: {
-      label: 'Интервал (мес)',
+      label: 'Интервал',
       group: 'verification',
       type: 'number',
       searchable: false
@@ -121,7 +153,7 @@ export function useEquipmentFilters(sourceData) {
       computed: true
     },
     verification_plan: {
-      label: 'План верификации',
+      label: 'План',
       group: 'verification',
       type: 'date',
       searchable: false
@@ -133,7 +165,7 @@ export function useEquipmentFilters(sourceData) {
       searchable: true,
       options: [
         { label: 'В работе', value: 'state_work' },
-        { label: 'На хранении', value: 'state_storage' },
+        { label: 'На консервации', value: 'state_storage' },
         { label: 'На верификации', value: 'state_verification' },
         { label: 'В ремонте', value: 'state_repair' },
         { label: 'Архивировано', value: 'state_archived' }
@@ -148,7 +180,7 @@ export function useEquipmentFilters(sourceData) {
         { label: 'Годен', value: 'status_fit' },
         { label: 'Просрочен', value: 'status_expired' },
         { label: 'Истекает', value: 'status_expiring' },
-        { label: 'На хранении', value: 'status_storage' },
+        { label: 'На консервации', value: 'status_storage' },
         { label: 'На верификации', value: 'status_verification' },
         { label: 'На ремонте', value: 'status_repair' }
       ]
@@ -175,26 +207,38 @@ export function useEquipmentFilters(sourceData) {
     },
 
     // Финансы
+    budget_item: {
+      label: 'Статья бюджета',
+      group: 'finance',
+      type: 'string',
+      searchable: true
+    },
+    code_rate: {
+      label: 'Тариф',
+      group: 'finance',
+      type: 'string',
+      searchable: true
+    },
     cost_rate: {
-      label: 'Стоимость за единицу',
+      label: 'Стоимость по тарифу (без НДС)',
       group: 'finance',
       type: 'number',
       searchable: false
     },
     quantity: {
-      label: 'Количество',
+      label: 'Кол-во',
       group: 'finance',
       type: 'number',
       searchable: false
     },
     coefficient: {
-      label: 'Коэффициент',
+      label: 'Доп. коэффициент',
       group: 'finance',
       type: 'number',
       searchable: false
     },
     total_cost: {
-      label: 'Общая стоимость',
+      label: 'Итоговая стоимость (без НДС)',
       group: 'finance',
       type: 'number',
       searchable: false
@@ -206,7 +250,7 @@ export function useEquipmentFilters(sourceData) {
       searchable: true
     },
     paid_amount: {
-      label: 'Оплачено',
+      label: 'Факт оплаты',
       group: 'finance',
       type: 'number',
       searchable: false
@@ -366,19 +410,8 @@ export function useEquipmentFilters(sourceData) {
   const resetFilters = () => {
     searchQuery.value = ''
     activeFilters.value = {}
-    // Возвращаем дефолтные колонки
-    visibleColumns.value = [
-      'equipment_name',
-      'equipment_model',
-      'factory_number',
-      'inventory_number',
-      'verification_type',
-      'verification_interval',
-      'verification_date',
-      'verification_due',
-      'verification_plan',
-      'status'
-    ]
+    // Возвращаем дефолтные колонки в зависимости от роли
+    visibleColumns.value = getDefaultColumns()
   }
 
   /**
@@ -438,23 +471,30 @@ export function useEquipmentFilters(sourceData) {
 
   // ==================== СОХРАНЕНИЕ НАСТРОЕК ====================
 
-  // Сохраняем настройки фильтров в localStorage
+  // Сохраняем настройки фильтров в localStorage (раздельно для админа и лаборанта)
   watch([visibleColumns, activeFilters], () => {
-    localStorage.setItem('equipment_visible_columns', JSON.stringify(visibleColumns.value))
-    localStorage.setItem('equipment_active_filters', JSON.stringify(activeFilters.value))
+    const role = isLaborant.value ? 'laborant' : 'admin'
+    localStorage.setItem(`equipment_visible_columns_${role}`, JSON.stringify(visibleColumns.value))
+    localStorage.setItem(`equipment_active_filters_${role}`, JSON.stringify(activeFilters.value))
   }, { deep: true })
 
   // Загружаем сохраненные настройки при инициализации
   const loadSavedSettings = () => {
-    const savedColumns = localStorage.getItem('equipment_visible_columns')
-    const savedFilters = localStorage.getItem('equipment_active_filters')
+    const role = isLaborant.value ? 'laborant' : 'admin'
+    const savedColumns = localStorage.getItem(`equipment_visible_columns_${role}`)
+    const savedFilters = localStorage.getItem(`equipment_active_filters_${role}`)
 
     if (savedColumns) {
       try {
         visibleColumns.value = JSON.parse(savedColumns)
       } catch (e) {
         console.warn('Failed to load saved columns:', e)
+        // При ошибке используем дефолтные колонки
+        visibleColumns.value = getDefaultColumns()
       }
+    } else {
+      // Если нет сохраненных настроек - используем дефолтные
+      visibleColumns.value = getDefaultColumns()
     }
 
     if (savedFilters) {

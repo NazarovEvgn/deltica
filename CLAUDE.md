@@ -18,6 +18,10 @@ Deltica is a metrology equipment management system for oil & gas companies. It t
   - **UI Library**: Naive UI (components: NButton, NSpace, NSelect, NModal, etc.)
   - **Data Grid**: RevoGrid (@revolist/vue3-datagrid) for main table with Excel-like features
   - **HTTP Client**: Axios for API requests
+  - **Typography**: PT Astra Sans (Regular, Bold, Italic) - applied globally via NConfigProvider
+  - **Branding**: Custom favicon.png in `frontend/public/`, corporate colors from `poster.png`
+  - **Corporate Colors**: Gazprom Neft palette defined in `frontend/src/assets/styles/colors.css`
+    - Primary Blue: `#0071BC`, Info Blue: `#00A6E4`, Orange: `#F7941D`, Green: `#8BC53F`
 - **Backend**: FastAPI with Python 3.13 managed by uv
 - **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
 - **Target Platform**: Tauri desktop application (planned)
@@ -143,6 +147,8 @@ backend/
 - **Equipment** → **Verification** (one-to-many)
 - **Equipment** → **Responsibility** (one-to-one, via equipment_id FK)
 - **Equipment** → **Finance** (one-to-one, via equipment_model_id FK) ⚠️ Note: inconsistent FK naming
+  - **Finance fields**: budget_item (NOT NULL), code_rate, cost_rate, quantity, coefficient, total_cost, invoice_number, paid_amount, payment_date
+  - **total_cost**: Auto-calculated on frontend (cost_rate * quantity * coefficient)
 - **Equipment** → **EquipmentFile** (one-to-many, CASCADE DELETE)
 
 **Archive entities:** Mirror structure of main tables (ArchivedEquipment, ArchivedVerification, ArchivedResponsibility, ArchivedFinance, ArchivedEquipmentFile)
@@ -160,7 +166,7 @@ backend/
 All routes documented in Swagger UI at `http://localhost:8000/docs`
 
 **Key endpoints:**
-- `/main-table/*` - CRUD operations for equipment with joined verification/responsibility data
+- `/main-table/*` - CRUD operations for equipment with joined verification/responsibility/finance data
 - `/files/*` - File upload/download/view with Cyrillic support (RFC 5987 headers)
 - `/archive/*` - Archive/restore/delete with explicit deletion (no FK CASCADE)
 - `/auth/*` - JWT authentication (24-hour expiration), bcrypt password hashing
@@ -197,7 +203,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Use dependency injection via `get_db()` in routes
 - Service layer handles business logic, routes handle HTTP concerns
 - Full entity CRUD: Service methods create/update/delete across all related tables
-- Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility
+- Main table queries use LEFT OUTER JOIN to include equipment without verification/responsibility/finance
+- **Finance data**: Included in main table response via LEFT JOIN (backend/services/main_table.py)
 
 **6. Authentication Flow**:
 - JWT tokens stored in localStorage
@@ -243,13 +250,158 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Dependencies**: psutil for system metrics
 - Location: "Мониторинг" button in admin panel next to Backup button
 
+**11. Typography and Branding** (`frontend/public/fonts/`, `frontend/src/assets/styles/`):
+- **Font**: PT Astra Sans (Regular 400, Bold 700, Italic 400) - TTF format
+- **Font loading**: `@font-face` declarations in `frontend/src/assets/styles/fonts.css`
+- **Global application**: Applied via `NConfigProvider` themeOverrides in `App.vue`
+- **RevoGrid tables**: Font explicitly set in MainTable.vue and ArchiveTable.vue styles
+- **Favicon**: Custom PNG favicon in `frontend/public/favicon.png`
+- **Styling structure**:
+  - `frontend/src/assets/styles/fonts.css` - Font declarations
+  - `frontend/src/assets/styles/global.css` - Global styles (body, #app, reset)
+  - `frontend/src/assets/styles/colors.css` - Corporate color constants
+  - Imported in `frontend/src/main.js`
+
+**12. Data Import from Excel** (`backend/scripts/import_equipment_data.py`, `docs/data_import_guide.md`):
+- **Purpose**: Import equipment data from Excel files into PostgreSQL database
+- **Value Mappings**: Russian → English enum conversion (поверка→verification, ЛБР→lbr, СИ→SI)
+- **NULL Handling**: Default values for required fields (equipment_year: 2000, quantity: 1, etc.)
+- **Date Processing**: Auto-fix malformed dates, calculate verification_plan from date + interval
+- **Department Mapping**: Critical for user filtering - Russian labels converted to technical values
+- **Scripts**:
+  - `import_equipment_data.py` - reads Excel, generates SQL with value mapping
+  - `execute_import_sql.py` - executes SQL via SQLAlchemy with transaction safety
+- **Documentation**: `docs/data_import_guide.md` contains comprehensive import guide with all mappings and troubleshooting
+
+**13. Table Display Labels** (`frontend/src/components/MainTable.vue`):
+- **cellTemplate Pattern**: Custom rendering for enum columns to display Russian labels instead of technical values
+- **Mapped Columns**:
+  - `verification_state`: state_work → "В работе", state_storage → "На консервации"
+  - `verification_type`: verification → "Поверка", calibration → "Калибровка"
+  - `equipment_type`: SI → "СИ", IO → "ИО"
+  - `department`: lbr → "ЛБР", gtl → "ГТЛ" (12 departments total)
+  - `status`: Already has color-coded mapping
+- **Implementation**: Each mapped column uses `cellTemplate` with createElement to render custom span with display text
+- **Consistency**: Same mappings used across MainTable, EquipmentModal, FilterPanel, and composables
+
+**14. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
+- **Layout Structure**:
+  - Row 1: AppLogo (left) → MetricsDashboard (center) → UserProfile (right)
+  - Row 2: Buttons (left: Filters, Documents, Admin Panel) → SearchBar (center, 600px) → Empty spacer (right)
+  - CSS Grid layout (1fr auto 1fr) ensures true centering regardless of side content
+  - Main table below with white background on light gray (#f5f5f5) page
+- **AppLogo Component**: 24x24px favicon + "Deltica" text (black #333, bold), 6px gap
+- **Metrics Dashboard**: Monochrome design (#333), no colored indicators, increased font sizes (value: 17px, label: 11px)
+- **User Profile Display**: Format "Department Surname I." with icon at right, no role tag, dropdown menu contains only "Logout"
+- **Admin Panel Component** (`AdminPanel.vue`):
+  - NDropdown with hover trigger, Primary button style
+  - Menu items: "Добавить оборудование", "Архив", "Backup БД", "Мониторинг"
+  - Consolidates all admin actions in one place
+  - BackupPanel and SystemMonitor components have buttons removed, controlled via refs and `openModal()` method
+- **Button Styles**:
+  - All action buttons use `type="primary"` (Filters, Documents, Admin Panel)
+  - Border radius: 6px (unified with tables and inputs)
+  - Table action buttons (Edit/Delete/View): gray (#8c8c8c)
+- **Documents Button**: Positioned in button row (row 2), `type="primary"`
+- **Documents Modal**: Title "Документы по метрологическому обеспечению в филиале", displays date only (no time/author)
+- **Equipment View Modal**:
+  - Title: "Полная информация по оборудованию и закрепленные файлы"
+  - Section names: "Оборудование", "Верификация", "Ответственные лица", "Финансы"
+  - Finance section visible only for admins (`v-if="isAdmin"`) in both read-only and edit modes
+  - Finance field labels: "Статья бюджета" (required), "Тариф", "Стоимость по тарифу (без НДС)", "Кол-во", "Доп. коэффициент", "Итоговая стоимость (без НДС)" (auto-calculated, disabled), "Номер счета", "Факт оплаты", "Дата оплаты"
+  - Disabled fields: white background with black text (no gray) for readability
+- **Border Radius**: Unified 6px for all elements (buttons, inputs, tables via `App.vue` themeOverrides)
+- **Corporate Colors**: Applied throughout via `App.vue` themeOverrides and individual components
+  - All action buttons: Primary Blue (#0071BC)
+  - Table action buttons: Corporate gray (#8c8c8c)
+  - Document links: Primary Blue (#0071BC)
+  - Section dividers: Primary Blue (#0071BC)
+- **Background**: Light gray (#f5f5f5) for body, white (#ffffff) for tables
+- **RevoGrid Table Features**:
+  - Sorting: `sortable: true` on all data columns, click header to sort ascending/descending
+  - Filtering: `filter: 'string'` on all data columns, conditional filters (contains, begins, eq, etc.)
+  - Filter plugin enabled with `:filter="true"` on v-grid component
+  - Both sort and filter icons visible on hover (opacity: 0.3 by default, 1.0 on hover or when active)
+  - Column resizing enabled with `:resize="true"`
+
 ## Important Notes
 
 - **Language**: Project documentation and code comments are in Russian (oil & gas industry domain)
 - **Communication**: Always respond in Russian ("Общайся на русском языке")
 - **Verification logic**: Verification dates and status calculations are critical business logic
 - **Data integrity**: Equipment deletion cascades to all related entities (verification, responsibility, finance)
-- **Fixed value lists**: Department (12 options) and responsible_person (19 options) enforced via frontend `<n-select>` only, NOT in DB constraints
+- **Fixed value lists**:
+  - **Departments**: 12 options stored as technical values (e.g., `lbr`, `gtl`, `smtsik`) but displayed as labels (e.g., 'ЛБР', 'ГТЛ', 'СМТСиК')
+  - **Responsible persons**: 19 options with technical values (e.g., `enazarov`) displayed as labels (e.g., 'Назаров Е.')
+  - Enforced via frontend `<n-select>` only, NOT in DB constraints
+  - Department mapping used in: EquipmentModal.vue, MainTable.vue, UserProfile.vue
+- **Laborant filtering**: Laborants see only equipment from their department (frontend filtering in MainTable.vue loadData)
+
+## Recent Fixes
+
+### Equipment Creation/Update Finance Data (2025-10-20)
+**Problem**: Equipment creation/update was failing silently or not returning finance data in response.
+
+**Root Causes**:
+1. Frontend: Missing `budget_item` and `code_rate` fields in form initialization (EquipmentModal.vue resetForm())
+2. Backend: `create_equipment_full()` and `update_equipment_full()` methods were not including finance fields in MainTableResponse
+
+**Fixes Applied**:
+- `frontend/src/components/EquipmentModal.vue` (lines 323-324): Added `budget_item: ''` and `code_rate: null` to resetForm()
+- `backend/services/main_table.py`:
+  - `create_equipment_full()` (lines 219-227): Added all 9 finance fields to response
+  - `update_equipment_full()` (lines 308-316): Added all 9 finance fields with null checks to response
+- Enhanced error handling in EquipmentModal to display Pydantic validation errors with field names
+
+**Validation**: Budget_item is required (MainTableCreate schema), code_rate is optional. Both are now properly initialized and returned.
+
+### Terminology Consistency (2025-10-20)
+**Change**: Replaced all instances of "на хранении" with "На консервации" across 6 files:
+- MainTable.vue, EquipmentModal.vue, useEquipmentFilters.js, useEquipmentMetrics.js, MetricsDashboard.vue, FilterPanel.vue
+
+### UI Label Display (2025-10-20)
+**Enhancement**: Added cellTemplate mappings in MainTable.vue for human-readable labels:
+- verification_state, verification_type, equipment_type, department columns now display Russian labels instead of technical values
+- Data integrity maintained - technical values remain in database
+
+### RevoGrid Filtering with Russian Labels (2025-10-20)
+**Problem**: RevoGrid filters only worked with technical values (lbr, state_work), not Russian labels (ЛБР, В работе).
+
+**Solution**: Data transformation approach instead of cellTemplate:
+- Created `transformedSource` computed property that transforms data BEFORE passing to RevoGrid
+- All enum fields and dates are converted to human-readable format in the data itself
+- Added reverse mapping functions to convert back to technical values when saving
+- Benefits: Filters, sorting, and search all work with Russian labels
+
+**Implementation** (`frontend/src/components/MainTable.vue`):
+- **Value Maps**: departmentMap, verificationStateMap, verificationTypeMap, equipmentTypeMap, statusMap
+- **Reverse Maps**: reverseDepartmentMap, reverseVerificationStateMap, etc.
+- **Transform Function**: `reverseTransformValue(prop, value)` - converts display values back to technical for API
+- **Date Handling**: `parseDateFromDisplay()`, `parseMonthYearFromDisplay()` - bidirectional date conversion
+- **Usage**: v-grid uses `:source="transformedSource"` instead of `:source="filteredData"`
+
+### Archive Operations - Finance Fields (2025-10-20)
+**Problem**: Archiving and restoring equipment failed due to missing budget_item and code_rate fields.
+
+**Fixes Applied** (`backend/services/archive.py`):
+1. **archive_equipment()** (lines 89-90): Added budget_item and code_rate when copying to ArchivedFinance
+2. **restore_equipment()** (lines 214-215): Added budget_item (with default '00.00.00.0' for NULL) and code_rate when restoring
+   - Default value handles old archived records created before these fields were required
+
+### Equipment Modal Finance Data (2025-10-20)
+**Problem**: Finance section fields (budget_item, code_rate) showed empty in edit modal.
+
+**Fix** (`frontend/src/components/EquipmentModal.vue` lines 286-287):
+- Added budget_item and code_rate to loadEquipmentData() function
+- Fields now properly load when editing existing equipment
+
+### Archive UI/UX Improvements (2025-10-20)
+**Changes** (`frontend/src/components/ArchiveTable.vue`):
+- Removed hint text "Архивное оборудование можно восстановить или удалить навсегда"
+- Removed "Обновить" button (unnecessary auto-refresh)
+- Changed title "Архив оборудования" to black (#333333) and repositioned under logo
+- Changed "Восстановить" and "Удалить навсегда" buttons to gray (#8c8c8c) for consistency with main table
+- Logo and title now in vertical layout (logo-title-section class)
 
 ## Known Issues
 

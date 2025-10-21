@@ -86,6 +86,8 @@ class ArchiveService:
             archived_finance = models.ArchivedFinance(
                 archived_equipment_id=archived_equipment.id,
                 original_equipment_id=equipment_id,
+                budget_item=finance.budget_item,
+                code_rate=finance.code_rate,
                 cost_rate=finance.cost_rate,
                 quantity=finance.quantity,
                 coefficient=finance.coefficient,
@@ -209,6 +211,8 @@ class ArchiveService:
         if archived_finance:
             finance = models.Finance(
                 equipment_model_id=equipment.id,
+                budget_item=archived_finance.budget_item or '00.00.00.0',  # Дефолтное значение если NULL
+                code_rate=archived_finance.code_rate,
                 cost_rate=archived_finance.cost_rate,
                 quantity=archived_finance.quantity,
                 coefficient=archived_finance.coefficient,

@@ -100,6 +100,8 @@ class Responsibility(ResponsibilityBase):
 
 class FinanceBase(BaseModel):
     equipment_model_id: int
+    budget_item: str  # Статья бюджета (обязательное поле)
+    code_rate: Optional[str] = None  # Тариф (опциональное поле)
     cost_rate: Optional[float]
     quantity: int
     coefficient: float = Field(default=1.0)
@@ -143,6 +145,16 @@ class MainTableResponse(BaseModel):
     department: Optional[str] = None
     responsible_person: Optional[str] = None
     verifier_org: Optional[str] = None
+    # Finance fields
+    budget_item: Optional[str] = None
+    code_rate: Optional[str] = None
+    cost_rate: Optional[float] = None
+    quantity: Optional[int] = None
+    coefficient: Optional[float] = None
+    total_cost: Optional[float] = None
+    invoice_number: Optional[str] = None
+    paid_amount: Optional[float] = None
+    payment_date: Optional[date] = None
 
     class Config:
         from_attributes = True
@@ -174,6 +186,8 @@ class MainTableCreate(BaseModel):
     verifier_org: str
 
     # Finance fields
+    budget_item: str  # Статья бюджета (обязательное поле)
+    code_rate: Optional[str] = None  # Тариф (опциональное поле)
     cost_rate: Optional[float] = None
     quantity: int
     coefficient: float = Field(default=1.0)

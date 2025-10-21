@@ -133,7 +133,7 @@ const quickFilters = ref([
   { label: 'Истекают', value: 'expiring', color: 'warning' },
   { label: 'Годные', value: 'fit', color: 'success' },
   { label: 'На верификации', value: 'on_verification', color: 'info' },
-  { label: 'На хранении', value: 'in_storage', color: 'default' },
+  { label: 'На консервации', value: 'in_storage', color: 'default' },
   { label: 'В ремонте', value: 'in_repair', color: 'default' }
 ])
 

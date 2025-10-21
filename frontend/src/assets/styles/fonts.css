@@ -1,0 +1,25 @@
+/* PT Astra Sans - основной шрифт приложения */
+
+@font-face {
+  font-family: 'PT Astra Sans';
+  src: url('/fonts/pt-astra-sans_regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PT Astra Sans';
+  src: url('/fonts/pt-astra-sans_bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PT Astra Sans';
+  src: url('/fonts/pt-astra-sans_italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}

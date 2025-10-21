@@ -170,15 +170,13 @@ const formatFileSize = (bytes) => {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
 }
 
-// Форматирование даты загрузки
+// Форматирование даты загрузки (только дата, без времени)
 const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    year: 'numeric'
   })
 }
 </script>
@@ -186,7 +184,7 @@ const formatDate = (dateString) => {
 <template>
   <div>
     <!-- Кнопка для открытия панели -->
-    <n-button @click="handleOpen" type="info">
+    <n-button @click="handleOpen" type="primary">
       <template #icon>
         <n-icon :component="FolderIcon" />
       </template>
@@ -197,7 +195,7 @@ const formatDate = (dateString) => {
     <n-modal
       v-model:show="showModal"
       preset="card"
-      title="Закрепленные документы"
+      title="Документы по метрологическому обеспечению в филиале"
       style="width: 800px;"
       :segmented="{ content: 'soft', footer: 'soft' }"
     >
@@ -238,7 +236,7 @@ const formatDate = (dateString) => {
               <a
                 href="#"
                 @click.prevent="openDocument(doc.id)"
-                style="color: #18a058; text-decoration: none; cursor: pointer; font-weight: 500;"
+                style="color: #0071BC; text-decoration: none; cursor: pointer; font-weight: 500;"
                 @mouseover="$event.target.style.textDecoration = 'underline'"
                 @mouseleave="$event.target.style.textDecoration = 'none'"
               >
@@ -247,7 +245,6 @@ const formatDate = (dateString) => {
             </template>
             <template #description>
               {{ formatFileSize(doc.file_size) }} • Загружен: {{ formatDate(doc.uploaded_at) }}
-              <span v-if="doc.uploaded_by"> • {{ doc.uploaded_by }}</span>
             </template>
             <template #action>
               <n-space>

@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { NButton, NSpace, NEmpty, useMessage, useDialog } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
+import AppLogo from './AppLogo.vue'
 
 const emit = defineEmits(['back-to-main', 'restored'])
 const message = useMessage()
@@ -24,15 +25,17 @@ const formatDate = (dateString) => {
 
 // Определение колонок для RevoGrid
 const columns = ref([
-  { prop: 'equipment_name', name: 'Наименование', size: 200, readonly: true },
-  { prop: 'equipment_model', name: 'Модель', size: 150, readonly: true },
-  { prop: 'factory_number', name: 'Заводской номер', size: 150, readonly: true },
-  { prop: 'inventory_number', name: 'Инвентарный номер', size: 150, readonly: true },
+  { prop: 'equipment_name', name: 'Наименование', size: 200, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'equipment_model', name: 'Модель', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'factory_number', name: 'Заводской номер', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'inventory_number', name: 'Инвентарный номер', size: 150, readonly: true, sortable: true, filter: 'string' },
   {
     prop: 'equipment_type',
     name: 'Тип',
     size: 100,
     readonly: true,
+    sortable: true,
+    filter: 'string',
     cellTemplate: (createElement, props) => {
       const typeMap = { 'SI': 'СИ', 'IO': 'ИО' }
       const currentValue = props.model[props.prop] || ''
@@ -47,6 +50,8 @@ const columns = ref([
     name: 'Дата архивирования',
     size: 180,
     readonly: true,
+    sortable: true,
+    filter: 'string',
     cellTemplate: (createElement, props) => {
       const dateStr = props.model[props.prop]
       if (!dateStr) return createElement('span', { textContent: '' })
@@ -63,6 +68,8 @@ const columns = ref([
     name: 'Причина списания',
     size: 200,
     readonly: true,
+    sortable: true,
+    filter: 'string',
     cellTemplate: (createElement, props) => {
       return createElement('span', {
         textContent: props.model[props.prop] || '—',
@@ -73,21 +80,22 @@ const columns = ref([
   {
     prop: 'actions',
     name: 'Действия',
-    size: 250,
+    size: 260,
     readonly: true,
+    sortable: false,
     cellTemplate: (createElement, props) => {
       const archivedId = props.model.id
       return createElement('div', {
-        style: { display: 'flex', gap: '8px', padding: '4px' }
+        style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px' }
       }, [
         createElement('button', {
           textContent: 'Восстановить',
           style: {
             padding: '4px 12px',
             cursor: 'pointer',
-            border: '1px solid #18a058',
+            border: '1px solid #8c8c8c',
             borderRadius: '3px',
-            background: '#18a058',
+            background: '#8c8c8c',
             color: 'white',
             fontSize: '12px'
           },
@@ -98,9 +106,9 @@ const columns = ref([
           style: {
             padding: '4px 12px',
             cursor: 'pointer',
-            border: '1px solid #d03050',
+            border: '1px solid #8c8c8c',
             borderRadius: '3px',
-            background: '#d03050',
+            background: '#8c8c8c',
             color: 'white',
             fontSize: '12px'
           },
@@ -181,18 +189,15 @@ onMounted(() => {
   <div class="archive-table-container">
     <div class="action-panel">
       <div class="header">
-        <h2>Архив оборудования</h2>
+        <div class="logo-title-section">
+          <AppLogo />
+          <h2 style="color: #333333; font-weight: bold; margin: 0; font-family: 'PT Astra Sans', sans-serif;">Архив оборудования</h2>
+        </div>
         <n-space>
-          <n-button @click="loadData">
-            Обновить
-          </n-button>
           <n-button type="primary" @click="$emit('back-to-main')">
             ← Вернуться к основной таблице
           </n-button>
         </n-space>
-      </div>
-      <div class="hint-text">
-        Архивное оборудование можно восстановить или удалить навсегда
       </div>
     </div>
 
@@ -203,6 +208,7 @@ onMounted(() => {
         :columns="columns"
         theme="compact"
         :resize="true"
+        :filter="true"
         :readonly="true"
         :row-headers="true"
       />
@@ -240,14 +246,22 @@ onMounted(() => {
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
+}
+
+.logo-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .header h2 {
   margin: 0;
-  font-size: 24px;
-  color: #e88b00;
+  font-size: 20px;
+  color: #333333;
+  font-weight: bold;
 }
 
 .hint-text {
@@ -260,7 +274,7 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   background: white;
 }
@@ -269,6 +283,25 @@ onMounted(() => {
 .table-wrapper :deep(revo-grid) {
   height: 100%;
   width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'PT Astra Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+/* Показывать иконки сортировки и фильтрации при наведении */
+.table-wrapper :deep(.header-sortable),
+.table-wrapper :deep(.header-filter) {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.table-wrapper :deep(revogr-header-cell:hover .header-sortable),
+.table-wrapper :deep(revogr-header-cell:hover .header-filter) {
+  opacity: 1;
+}
+
+/* Всегда показывать активные иконки */
+.table-wrapper :deep(.header-sortable.active),
+.table-wrapper :deep(.header-filter.active) {
+  opacity: 1;
 }
 </style>

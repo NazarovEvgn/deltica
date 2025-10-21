@@ -1,0 +1,14 @@
+/* Корпоративные цвета Газпром Нефти (из poster.png) */
+:root {
+  /* Основные корпоративные цвета */
+  --gpn-blue-primary: #0071BC;      /* Основной синий */
+  --gpn-blue-light: #00A6E4;        /* Светло-голубой */
+  --gpn-orange: #F7941D;            /* Акцентный оранжевый */
+  --gpn-green: #8BC53F;             /* Дополнительный зеленый */
+
+  /* Применение в UI */
+  --color-primary: var(--gpn-blue-primary);
+  --color-info: var(--gpn-blue-light);
+  --color-warning: var(--gpn-orange);
+  --color-success: var(--gpn-green);
+}

@@ -60,7 +60,7 @@ const clearSearch = () => {
         v-model:value="localValue"
         :placeholder="placeholder"
         clearable
-        size="large"
+        size="medium"
         @clear="clearSearch"
       >
         <template #prefix>
@@ -95,8 +95,7 @@ const clearSearch = () => {
 
 <style scoped>
 .search-bar-container {
-  width: 100%;
-  max-width: 500px;
+  width: 600px;
 }
 
 .search-stats {

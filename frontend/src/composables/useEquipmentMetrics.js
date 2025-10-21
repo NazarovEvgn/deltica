@@ -38,7 +38,7 @@ export function useEquipmentMetrics(filteredData) {
   })
 
   /**
-   * Количество оборудования на хранении/консервации (status_storage)
+   * Количество оборудования на консервации (status_storage)
    */
   const inStorageCount = computed(() => {
     return filteredData.value?.filter(item => item.status === 'status_storage').length || 0
