@@ -191,7 +191,7 @@ onMounted(() => {
       <div class="header">
         <div class="logo-title-section">
           <AppLogo />
-          <h2 style="color: #333333; font-weight: bold; margin: 0;">Архив оборудования</h2>
+          <h2 style="color: #333333; font-weight: bold; margin: 0; font-family: 'PT Astra Sans', sans-serif;">Архив оборудования</h2>
         </div>
         <n-space>
           <n-button type="primary" @click="$emit('back-to-main')">
