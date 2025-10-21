@@ -403,6 +403,66 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Changed "Восстановить" and "Удалить навсегда" buttons to gray (#8c8c8c) for consistency with main table
 - Logo and title now in vertical layout (logo-title-section class)
 
+### Contracts Balance Notebook (2025-10-21)
+**Feature**: Admin notebook for tracking contract balances with external vendors.
+
+**Implementation**:
+- Backend (`backend/routes/contracts.py`, `backend/app/models.py`):
+  - Contract model with 7 fields: executor_name, contract_number, valid_until, contract_amount, spent_amount, balance (computed), current_balance
+  - Full CRUD API endpoints (admin-only access)
+  - PostgreSQL computed column for automatic balance calculation
+- Frontend (`frontend/src/components/ContractsNotebook.vue`):
+  - RevoGrid editable table with auto-save on cell edit
+  - Add/Delete contract functionality
+  - Money and date formatting
+  - Modal window accessible from AdminPanel dropdown
+
+### Analytics Dashboard (2025-10-21)
+**Feature**: Admin analytics dashboard with verification calendar and statistics.
+
+**Implementation**:
+- Composable (`frontend/src/composables/useAnalytics.js`):
+  - Client-side calculation of verification calendar by department and month
+  - Statistics: total verifications, calibrations, certifications in current year
+  - Automatic year detection (works for any year without code changes)
+- Component (`frontend/src/components/AnalyticsDashboard.vue`):
+  - 4 statistical cards with monochrome design (#333, 24px font)
+  - Calendar table showing equipment count planned for verification by department/month
+  - Summary row with monthly totals
+  - Reactive updates when main table data changes (receives data via props)
+- Integration: "Аналитика" button in AdminPanel, admin-only access
+
+**Key Features**:
+- Uses verification_plan column from main table
+- Filters data by current year automatically
+- Displays Russian department labels
+- Real-time updates without separate API calls
+
+### MainTable Cell Editing Fix (2025-10-21)
+**Problem**: Double-click cell editing worked for some fields but failed for verification_plan and other transformed fields due to double value transformation.
+
+**Fix** (`frontend/src/components/MainTable.vue`):
+- Removed duplicate `reverseTransformValue()` call in `saveCellToServer()`
+- Now transformation happens once in `handleAfterEdit()` and `handleBeforeRangeEdit()`
+- Fixes editing of verification_plan (month/year format) and all mapped enum fields
+
+### Missing Fields in API Response (2025-10-21)
+**Problem**: Fields `registry_number` and `equipment_year` existed in database but were not displayed in frontend table (empty cells).
+
+**Root Cause**: Fields were missing from API response chain:
+1. Not selected in SQL query (`backend/services/main_table.py` get_all_data())
+2. Not included in Pydantic schema (`backend/app/schemas.py` MainTableResponse)
+3. Not returned in service methods (create, update)
+
+**Fixes Applied**:
+- `backend/services/main_table.py`:
+  - Added `Equipment.equipment_year` and `Verification.registry_number` to SQL SELECT query (lines 73, 75)
+  - Added fields to MainTableResponse construction in all methods (get_all, create_equipment_full, update_equipment_full)
+- `backend/app/schemas.py`:
+  - Added `equipment_year: int` and `registry_number: Optional[str]` to MainTableResponse schema (lines 138, 140)
+
+**Validation**: Confirmed 1337 records with equipment_year (100%) and 894 records with registry_number (66.9%) in database.
+
 ## Known Issues
 
 - **Alembic config**: `alembic.ini` line 87 has hardcoded database credentials (should use `.env`)

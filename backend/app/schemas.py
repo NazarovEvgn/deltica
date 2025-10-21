@@ -135,7 +135,9 @@ class MainTableResponse(BaseModel):
     equipment_type: EquipmentTypeEnum
     factory_number: str
     inventory_number: str
+    equipment_year: int
     verification_type: str
+    registry_number: Optional[str] = None
     verification_interval: int
     verification_date: date
     verification_due: date
