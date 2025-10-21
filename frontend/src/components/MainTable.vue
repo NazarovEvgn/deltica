@@ -11,6 +11,7 @@ import MetricsDashboard from './MetricsDashboard.vue'
 import BackupPanel from './BackupPanel.vue'
 import SystemMonitor from './SystemMonitor.vue'
 import ContractsNotebook from './ContractsNotebook.vue'
+import AnalyticsDashboard from './AnalyticsDashboard.vue'
 import AppLogo from './AppLogo.vue'
 import AdminPanel from './AdminPanel.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
@@ -46,10 +47,11 @@ const { metrics } = useEquipmentMetrics(source)
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
 
-// Refs для BackupPanel, SystemMonitor и ContractsNotebook
+// Refs для BackupPanel, SystemMonitor, ContractsNotebook и AnalyticsDashboard
 const backupPanelRef = ref(null)
 const systemMonitorRef = ref(null)
 const showContractsNotebook = ref(false)
+const showAnalyticsDashboard = ref(false)
 
 // Функция форматирования даты в dd.mm.yyyy
 const formatDate = (dateString) => {
@@ -418,6 +420,7 @@ const handleCellDblClick = (event) => {
 }
 
 // Функция для сохранения одной ячейки на сервер
+// val должно быть уже преобразовано в техническое значение вызывающей функцией
 const saveCellToServer = async (equipmentId, prop, val) => {
   try {
     console.log(`[saveCellToServer] Saving: equipmentId=${equipmentId}, prop=${prop}, val=${val}, type=${typeof val}`)
@@ -428,20 +431,15 @@ const saveCellToServer = async (equipmentId, prop, val) => {
 
     console.log(`[saveCellToServer] Full data received:`, fullData)
 
-    // Преобразуем человекочитаемое значение обратно в техническое
-    const technicalValue = reverseTransformValue(prop, val)
-
-    console.log(`[saveCellToServer] Transformed: ${prop} = ${technicalValue} (from ${val})`)
-
-    // Обновляем измененное поле
-    fullData[prop] = technicalValue
+    // Обновляем измененное поле (val уже должно быть в техническом формате)
+    fullData[prop] = val
 
     console.log(`[saveCellToServer] Sending PUT request with:`, fullData)
 
     // Отправляем обновление на сервер
     await axios.put(`http://localhost:8000/main-table/${equipmentId}`, fullData)
 
-    console.log(`[saveCellToServer] Successfully saved ${prop} = ${technicalValue}`)
+    console.log(`[saveCellToServer] Successfully saved ${prop} = ${val}`)
     return true
   } catch (error) {
     console.error('[saveCellToServer] Error:', error)
@@ -470,9 +468,9 @@ const handleAfterEdit = async (event) => {
         sourceRow[prop] = technicalValue
       }
 
-      // Автосохранение на сервер
+      // Автосохранение на сервер (передаем уже преобразованное техническое значение)
       try {
-        await saveCellToServer(row.equipment_id, prop, val)
+        await saveCellToServer(row.equipment_id, prop, technicalValue)
       } catch (error) {
         alert(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`)
         // Откатываем изменения при ошибке
@@ -510,9 +508,12 @@ const handleBeforeRangeEdit = async (event) => {
               const newValue = rowChanges[prop]
               console.log(`Range edit: field ${prop}, new value: ${newValue}`)
 
-              // Сохраняем на сервер
+              // Преобразуем человекочитаемое значение обратно в техническое
+              const technicalValue = reverseTransformValue(prop, newValue)
+
+              // Сохраняем на сервер (передаем техническое значение)
               try {
-                await saveCellToServer(rowModel.equipment_id, prop, newValue)
+                await saveCellToServer(rowModel.equipment_id, prop, technicalValue)
               } catch (error) {
                 console.error(`Failed to save row ${rowKey}, field ${prop}:`, error)
               }
@@ -602,6 +603,7 @@ defineExpose({
               @show-backup="backupPanelRef?.openModal()"
               @show-monitor="systemMonitorRef?.openModal()"
               @show-contracts="showContractsNotebook = true"
+              @show-analytics="showAnalyticsDashboard = true"
             />
           </n-space>
         </div>
@@ -659,10 +661,11 @@ defineExpose({
       </n-drawer-content>
     </n-drawer>
 
-    <!-- Модальные окна для BackupPanel, SystemMonitor и ContractsNotebook -->
+    <!-- Модальные окна для BackupPanel, SystemMonitor, ContractsNotebook и AnalyticsDashboard -->
     <BackupPanel ref="backupPanelRef" />
     <SystemMonitor ref="systemMonitorRef" />
     <ContractsNotebook v-model:show="showContractsNotebook" />
+    <AnalyticsDashboard v-model:show="showAnalyticsDashboard" :equipment-data="source" />
   </div>
 </template>
 
