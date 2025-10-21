@@ -463,6 +463,51 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 
 **Validation**: Confirmed 1337 records with equipment_year (100%) and 894 records with registry_number (66.9%) in database.
 
+### Status Calculation Trigger Bug Fix (2025-10-21)
+**Problem**: Equipment with state "На консервации" (state_storage) had status "Просрочен" (status_expired) instead of "На консервации" (status_storage). Same issue for equipment in verification and repair states.
+
+**Root Cause**: Bug in PostgreSQL trigger `update_verification_status()` - it checked verification due date FIRST, then checked state. This caused expired equipment in storage/verification/repair to get status_expired instead of their state-based status.
+
+**Incorrect Logic** (before fix):
+```sql
+IF CURRENT_DATE > v_verification_due THEN
+    v_new_status := 'status_expired';  -- Applied BEFORE checking state!
+ELSIF NEW.verification_state = 'state_storage' THEN
+    v_new_status := 'status_storage';  -- Never reached for expired items
+...
+```
+
+**Corrected Logic** (after fix):
+```sql
+IF NEW.verification_state = 'state_storage' THEN
+    v_new_status := 'status_storage';  -- Check state FIRST
+ELSIF NEW.verification_state = 'state_work' THEN
+    -- Only check due date for "В работе" state
+    IF CURRENT_DATE > v_verification_due THEN
+        v_new_status := 'status_expired';
+...
+```
+
+**Fixes Applied**:
+- `backend/scripts/fix_trigger_logic.sql`: Corrected trigger function with proper priority (state before date)
+- `backend/scripts/fix_status_consistency.py`: Migration script to fix 278 existing records with incorrect status
+- Applied trigger fix to database
+- Ran migration: Fixed 226 storage + 48 verification + 4 repair records
+
+**Result**: All 393 records in non-work states now have correct matching statuses (323 storage, 66 verification, 4 repair) ✓
+
+**Critical Pattern**: Non-work states (storage/verification/repair/archived) ALWAYS override date-based statuses. Date checks only apply to state_work.
+
+### Analytics Dashboard Updates (2025-10-21)
+**Changes**:
+- Removed departments "Группа СМ" and "ОГМК" from analytics (now shows 11 departments instead of 13)
+- Added visual highlighting for non-zero values in verification calendar:
+  - Blue text color (#0071BC)
+  - Light blue background (#E6F4FF)
+  - Bold font weight (600)
+  - Rounded corners with padding for better visibility
+- Removed "Закрыть" button (redundant with X close icon)
+
 ## Known Issues
 
 - **Alembic config**: `alembic.ini` line 87 has hardcoded database credentials (should use `.env`)

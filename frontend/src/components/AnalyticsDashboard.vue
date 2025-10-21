@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, h } from 'vue'
 import { NModal, NButton, NCard, NSpace, NDataTable } from 'naive-ui'
 import { useAnalytics } from '../composables/useAnalytics'
 
@@ -45,7 +45,19 @@ const columns = [
     key: `month_${index}`,
     width: 90,
     align: 'center',
-    render: (row) => row.monthCounts[index] || 0
+    render: (row) => {
+      const value = row.monthCounts[index] || 0
+      return h('span', {
+        style: {
+          display: 'inline-block',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          color: value > 0 ? '#0071BC' : '#333',
+          fontWeight: value > 0 ? '600' : 'normal',
+          backgroundColor: value > 0 ? '#E6F4FF' : 'transparent'
+        }
+      }, value)
+    }
   }))
 ]
 
@@ -60,11 +72,6 @@ const summaryRow = () => {
   })
   return row
 }
-
-// Закрытие модального окна
-const handleClose = () => {
-  emit('update:show', false)
-}
 </script>
 
 <template>
@@ -77,11 +84,6 @@ const handleClose = () => {
     :bordered="false"
     :segmented="{ content: true }"
   >
-    <template #header-extra>
-      <n-button @click="handleClose">
-        Закрыть
-      </n-button>
-    </template>
 
     <div class="analytics-container">
       <!-- Статистические показатели -->

@@ -10,13 +10,12 @@ export function useAnalytics(equipmentData) {
   const currentYear = new Date().getFullYear()
 
   // Карта названий подразделений (технические значения → отображаемые названия)
+  // Исключены: Группа СМ (gruppa_sm), ОГМК (ogmk)
   const departmentMap = {
-    gruppa_sm: 'Группа СМ',
     gtl: 'ГТЛ',
     lbr: 'ЛБР',
     ltr: 'ЛТР',
     lhaiei: 'ЛХАиЭИ',
-    ogmk: 'ОГМК',
     oii: 'ОИИ',
     ooops: 'ОООПС',
     smtsik: 'СМТСиК',
