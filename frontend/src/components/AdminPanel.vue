@@ -6,10 +6,11 @@ import {
   AddCircleOutline as AddIcon,
   ArchiveOutline as ArchiveIcon,
   CloudDownloadOutline as BackupIcon,
-  StatsChartOutline as MonitorIcon
+  StatsChartOutline as MonitorIcon,
+  DocumentTextOutline as ContractsIcon
 } from '@vicons/ionicons5'
 
-const emit = defineEmits(['add-equipment', 'show-archive', 'show-backup', 'show-monitor'])
+const emit = defineEmits(['add-equipment', 'show-archive', 'show-backup', 'show-monitor', 'show-contracts'])
 
 // Опции выпадающего меню
 const dropdownOptions = [
@@ -36,6 +37,15 @@ const dropdownOptions = [
     label: 'Мониторинг',
     key: 'monitor',
     icon: () => h(NIcon, { component: MonitorIcon })
+  },
+  {
+    type: 'divider',
+    key: 'd2'
+  },
+  {
+    label: 'Баланс по договорам',
+    key: 'contracts',
+    icon: () => h(NIcon, { component: ContractsIcon })
   }
 ]
 
@@ -53,6 +63,9 @@ const handleSelect = (key) => {
       break
     case 'monitor':
       emit('show-monitor')
+      break
+    case 'contracts':
+      emit('show-contracts')
       break
   }
 }

@@ -330,3 +330,32 @@ class BackupCreateResponse(BaseModel):
     """Ответ на создание резервной копии"""
     message: str
     backup: BackupHistoryResponse
+
+
+# ==================== СХЕМЫ ДЛЯ БАЛАНСА ПО ДОГОВОРАМ ====================
+
+class ContractBase(BaseModel):
+    executor_name: str
+    contract_number: str
+    valid_until: date
+    contract_amount: float
+    spent_amount: float = 0.0
+    current_balance: Optional[float] = None
+
+
+class ContractCreate(ContractBase):
+    pass
+
+
+class ContractUpdate(ContractBase):
+    pass
+
+
+class ContractResponse(ContractBase):
+    id: int
+    balance: Optional[float] = None  # Computed field
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

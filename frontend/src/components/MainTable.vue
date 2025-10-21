@@ -10,6 +10,7 @@ import DocumentsPanel from './DocumentsPanel.vue'
 import MetricsDashboard from './MetricsDashboard.vue'
 import BackupPanel from './BackupPanel.vue'
 import SystemMonitor from './SystemMonitor.vue'
+import ContractsNotebook from './ContractsNotebook.vue'
 import AppLogo from './AppLogo.vue'
 import AdminPanel from './AdminPanel.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
@@ -45,9 +46,10 @@ const { metrics } = useEquipmentMetrics(source)
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
 
-// Refs для BackupPanel и SystemMonitor
+// Refs для BackupPanel, SystemMonitor и ContractsNotebook
 const backupPanelRef = ref(null)
 const systemMonitorRef = ref(null)
+const showContractsNotebook = ref(false)
 
 // Функция форматирования даты в dd.mm.yyyy
 const formatDate = (dateString) => {
@@ -599,6 +601,7 @@ defineExpose({
               @show-archive="$emit('show-archive')"
               @show-backup="backupPanelRef?.openModal()"
               @show-monitor="systemMonitorRef?.openModal()"
+              @show-contracts="showContractsNotebook = true"
             />
           </n-space>
         </div>
@@ -656,9 +659,10 @@ defineExpose({
       </n-drawer-content>
     </n-drawer>
 
-    <!-- Модальные окна для BackupPanel и SystemMonitor -->
+    <!-- Модальные окна для BackupPanel, SystemMonitor и ContractsNotebook -->
     <BackupPanel ref="backupPanelRef" />
     <SystemMonitor ref="systemMonitorRef" />
+    <ContractsNotebook v-model:show="showContractsNotebook" />
   </div>
 </template>
 
