@@ -9,6 +9,7 @@ from backend.routes.auth import router as auth_router
 from backend.routes.pinned_documents import router as pinned_documents_router
 from backend.routes.backup import router as backup_router
 from backend.routes.health import router as health_router
+from backend.routes.contracts import router as contracts_router
 from backend.core.logging_config import setup_logging
 from backend.middleware.logging_middleware import LoggingMiddleware
 
@@ -47,3 +48,4 @@ app.include_router(archive_router)
 app.include_router(pinned_documents_router)
 app.include_router(backup_router)
 app.include_router(health_router)
+app.include_router(contracts_router)

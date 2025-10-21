@@ -244,3 +244,21 @@ class BackupHistory(Base):
     created_by = Column(String, nullable=False)  # Username администратора
     status = Column(Enum('success', 'failed', name='backup_status_enum'), nullable=False, default='success')
     error_message = Column(String)  # Сообщение об ошибке, если backup failed
+
+
+# ==================== БАЛАНС ПО ДОГОВОРАМ ====================
+
+class Contract(Base):
+    """Модель для записной книжки админа - баланс по договорам с исполнителями"""
+    __tablename__ = "contracts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    executor_name = Column(String, nullable=False)  # Название исполнителя
+    contract_number = Column(String, nullable=False)  # Номер договора
+    valid_until = Column(Date, nullable=False)  # Действует до
+    contract_amount = Column(Float, nullable=False)  # Сумма по договору
+    spent_amount = Column(Float, default=0.0, nullable=False)  # Израсходовано
+    balance = Column(Float, Computed("contract_amount - spent_amount"))  # Остаток (автоматический расчет)
+    current_balance = Column(Float)  # Текущий баланс (ручной ввод)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
