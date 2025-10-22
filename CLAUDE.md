@@ -24,7 +24,7 @@ Deltica is a metrology equipment management system for oil & gas companies. It t
     - Primary Blue: `#0071BC`, Info Blue: `#00A6E4`, Orange: `#F7941D`, Green: `#8BC53F`
 - **Backend**: FastAPI with Python 3.13 managed by uv
 - **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
-- **Target Platform**: Tauri desktop application (planned)
+- **Desktop**: Tauri v2 (Rust + WebView) - нативное Windows приложение с Vite frontend
 
 ## Development Commands
 
@@ -68,6 +68,31 @@ npm run dev        # Start development server (http://localhost:5173)
 npm run build      # Build for production
 npm run preview    # Preview production build
 ```
+
+### Desktop Application (Tauri)
+```bash
+cd frontend
+
+# Development mode (запускает Vite dev server + Tauri)
+npm run tauri:dev
+
+# Production build (создает установщик для Windows)
+npm run tauri:build
+
+# Проверка конфигурации Tauri
+npm run tauri info
+```
+
+**Требования для Tauri:**
+- Rust 1.70+ (установлен)
+- Visual C++ Build Tools или Visual Studio с C++ workload
+- Backend должен быть запущен на `http://localhost:8000`
+
+**Особенности:**
+- Приложение работает как нативное Windows приложение
+- Конфигурация в `frontend/src-tauri/tauri.conf.json`
+- API endpoint настраивается через `VITE_API_URL` в `.env`
+- Подробная документация в `frontend/TAURI_README.md`
 
 ### Database Management
 ```bash
