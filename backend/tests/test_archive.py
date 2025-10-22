@@ -82,6 +82,8 @@ def db_session():
             CREATE TABLE IF NOT EXISTS finance (
                 id INTEGER PRIMARY KEY,
                 equipment_model_id INTEGER NOT NULL,
+                budget_item VARCHAR NOT NULL,
+                code_rate VARCHAR,
                 cost_rate REAL,
                 quantity INTEGER NOT NULL,
                 coefficient REAL DEFAULT 1.0,
@@ -157,6 +159,8 @@ def db_session():
                 id INTEGER PRIMARY KEY,
                 archived_equipment_id INTEGER NOT NULL,
                 original_equipment_id INTEGER NOT NULL,
+                budget_item VARCHAR NOT NULL,
+                code_rate VARCHAR,
                 cost_rate REAL,
                 quantity INTEGER NOT NULL,
                 coefficient REAL DEFAULT 1.0,
@@ -246,6 +250,8 @@ def full_equipment(db_session):
     # Создать финансы
     finance = Finance(
         equipment_model_id=equipment.id,
+        budget_item="01.02.03.4",  # Обязательное поле
+        code_rate="ТР-001",  # Опциональное поле
         cost_rate=5000.0,
         quantity=1,
         coefficient=1.2,

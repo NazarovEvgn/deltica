@@ -55,6 +55,50 @@ def db_session():
         """))
 
         conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS verification (
+                id INTEGER PRIMARY KEY,
+                equipment_id INTEGER NOT NULL,
+                verification_type VARCHAR NOT NULL,
+                registry_number VARCHAR,
+                verification_interval INTEGER NOT NULL,
+                verification_date DATE NOT NULL,
+                verification_due DATE,
+                verification_plan DATE NOT NULL,
+                verification_state VARCHAR NOT NULL,
+                status VARCHAR NOT NULL,
+                FOREIGN KEY (equipment_id) REFERENCES equipment(id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS responsibility (
+                id INTEGER PRIMARY KEY,
+                equipment_id INTEGER NOT NULL,
+                department VARCHAR NOT NULL,
+                responsible_person VARCHAR NOT NULL,
+                verifier_org VARCHAR NOT NULL,
+                FOREIGN KEY (equipment_id) REFERENCES equipment(id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS finance (
+                id INTEGER PRIMARY KEY,
+                equipment_model_id INTEGER NOT NULL,
+                budget_item VARCHAR NOT NULL,
+                code_rate VARCHAR,
+                cost_rate FLOAT,
+                quantity INTEGER NOT NULL,
+                coefficient FLOAT DEFAULT 1.0,
+                total_cost FLOAT,
+                invoice_number VARCHAR,
+                paid_amount FLOAT,
+                payment_date DATE,
+                FOREIGN KEY (equipment_model_id) REFERENCES equipment(id)
+            )
+        """))
+
+        conn.execute(text("""
             CREATE TABLE IF NOT EXISTS equipment_files (
                 id INTEGER PRIMARY KEY,
                 equipment_id INTEGER NOT NULL,
@@ -66,6 +110,80 @@ def db_session():
                 FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE CASCADE
             )
         """))
+
+        # Архивные таблицы
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS archived_equipment (
+                id INTEGER PRIMARY KEY,
+                equipment_name VARCHAR NOT NULL,
+                equipment_model VARCHAR NOT NULL,
+                equipment_type VARCHAR NOT NULL,
+                equipment_specs VARCHAR,
+                factory_number VARCHAR NOT NULL,
+                inventory_number VARCHAR NOT NULL,
+                equipment_year INTEGER NOT NULL,
+                archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                archive_reason VARCHAR
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS archived_verification (
+                id INTEGER PRIMARY KEY,
+                archived_equipment_id INTEGER NOT NULL,
+                verification_type VARCHAR NOT NULL,
+                registry_number VARCHAR,
+                verification_interval INTEGER NOT NULL,
+                verification_date DATE NOT NULL,
+                verification_due DATE,
+                verification_plan DATE NOT NULL,
+                verification_state VARCHAR NOT NULL,
+                status VARCHAR NOT NULL,
+                FOREIGN KEY (archived_equipment_id) REFERENCES archived_equipment(id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS archived_responsibility (
+                id INTEGER PRIMARY KEY,
+                archived_equipment_id INTEGER NOT NULL,
+                department VARCHAR NOT NULL,
+                responsible_person VARCHAR NOT NULL,
+                verifier_org VARCHAR NOT NULL,
+                FOREIGN KEY (archived_equipment_id) REFERENCES archived_equipment(id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS archived_finance (
+                id INTEGER PRIMARY KEY,
+                archived_equipment_model_id INTEGER NOT NULL,
+                budget_item VARCHAR NOT NULL,
+                code_rate VARCHAR,
+                cost_rate FLOAT,
+                quantity INTEGER NOT NULL,
+                coefficient FLOAT DEFAULT 1.0,
+                total_cost FLOAT,
+                invoice_number VARCHAR,
+                paid_amount FLOAT,
+                payment_date DATE,
+                FOREIGN KEY (archived_equipment_model_id) REFERENCES archived_equipment(id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS archived_equipment_files (
+                id INTEGER PRIMARY KEY,
+                archived_equipment_id INTEGER NOT NULL,
+                file_name VARCHAR NOT NULL,
+                file_path VARCHAR NOT NULL,
+                file_type VARCHAR NOT NULL DEFAULT 'other',
+                file_size INTEGER NOT NULL,
+                uploaded_at TIMESTAMP,
+                FOREIGN KEY (archived_equipment_id) REFERENCES archived_equipment(id)
+            )
+        """))
+
         conn.commit()
 
     db = TestingSessionLocal()
@@ -73,10 +191,20 @@ def db_session():
         yield db
     finally:
         db.close()
-        # Очищаем таблицы
+        # Очищаем таблицы (порядок важен из-за FK)
         with engine.connect() as conn:
+            # Сначала удаляем таблицы с FK
             conn.execute(text("DROP TABLE IF EXISTS equipment_files"))
+            conn.execute(text("DROP TABLE IF EXISTS verification"))
+            conn.execute(text("DROP TABLE IF EXISTS responsibility"))
+            conn.execute(text("DROP TABLE IF EXISTS finance"))
+            conn.execute(text("DROP TABLE IF EXISTS archived_equipment_files"))
+            conn.execute(text("DROP TABLE IF EXISTS archived_verification"))
+            conn.execute(text("DROP TABLE IF EXISTS archived_responsibility"))
+            conn.execute(text("DROP TABLE IF EXISTS archived_finance"))
+            # Затем основные таблицы
             conn.execute(text("DROP TABLE IF EXISTS equipment"))
+            conn.execute(text("DROP TABLE IF EXISTS archived_equipment"))
             conn.commit()
 
 
