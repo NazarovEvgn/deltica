@@ -238,8 +238,8 @@ class DocumentService:
                 equipment = equipments_data[idx]
                 row = data_table.add_row()
 
-                # Порядковый номер
-                row.cells[0].text = str(idx + 1)
+                # Порядковый номер с точкой
+                row.cells[0].text = str(idx + 1) + "."
 
                 # Данные оборудования
                 row.cells[1].text = (
