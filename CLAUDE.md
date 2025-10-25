@@ -69,30 +69,61 @@ npm run build      # Build for production
 npm run preview    # Preview production build
 ```
 
-### Desktop Application (Electron) - В разработке
+### Desktop Application (Electron) - ✅ Готово и работает
 
-**Текущий статус:** Планируется миграция на Electron после выявления критических проблем с Tauri (конфликт с RevoGrid).
+**Текущий статус:** Electron desktop режим полностью настроен и протестирован. RevoGrid корректно отображается после устранения проблем с кэшированием.
 
-**Причина миграции:**
-- Tauri v2 показал несовместимость с RevoGrid (отсутствие отображения таблицы)
+**Причина миграции с Tauri:**
+- Tauri v2 показал проблемы с RevoGrid (отсутствие отображения таблицы из-за кэширования)
 - Проблемы с кэшем и рендерингом в WebView2
 - Electron гарантирует совместимость через встроенный Chromium
 
-**План реализации:**
-- Подробный план миграции находится в `docs/deltica_dev_plan.md` раздел "Electron для режима desktop"
-- 10 этапов: от подготовки до production сборки
-- Архитектура: Electron (main/renderer) + Vite + Vue 3 + Naive UI + RevoGrid
-
-**Ключевые решения:**
+**Архитектура:**
+- Electron (main/renderer) + Vite + Vue 3 + Naive UI + RevoGrid
 - Backend (FastAPI) остается отдельным процессом на `http://localhost:8000`
 - Electron - только frontend обертка (не embedded backend)
-- Размер установщика: ~120-150 MB (приемлемо для корпоративной среды)
 - Security: contextIsolation + отключенный nodeIntegration + preload script
+- ES modules синтаксис в electron файлах (main.js, preload.js)
 
-**Когда будет готово:**
-- Electron скрипты будут добавлены в `frontend/package.json`
-- Документация будет в `frontend/ELECTRON_README.md`
-- Build команды: `npm run electron:dev`, `npm run electron:build:win`
+**Установленные зависимости:**
+- electron ^38.4.0
+- electron-builder ^26.0.12 (для Windows NSIS установщика)
+- concurrently ^9.2.1 (параллельный запуск Vite + Electron)
+- wait-on ^9.0.1 (ожидание готовности Vite dev server)
+- cross-env ^10.1.0 (кроссплатформенные переменные окружения)
+
+**Команды запуска:**
+```bash
+# Вариант 1: Автоматический запуск (рекомендуется для пользователей)
+.\start-desktop.bat         # или
+.\start-desktop.ps1
+
+# Вариант 2: Ручной запуск
+# Терминал 1: Backend
+uv run uvicorn backend.core.main:app --reload
+
+# Терминал 2: Electron
+cd frontend
+npm run electron:dev
+
+# Production сборка Windows installer
+cd frontend
+npm run electron:build:win   # Создаст установщик в frontend/dist-electron/
+```
+
+**Критические исправления (2025-10-25):**
+- **Автоочистка кэша**: `session.clearCache()` при запуске в dev режиме
+- **CORS настройки**: расширен backend CORS для поддержки `null` origin (Electron)
+- **webSecurity: false**: отключены CORS проверки для localhost API
+- **UTF-8 кодировка**: исправлено отображение русских символов в PowerShell
+
+**Важно:**
+- Vite dev server зафиксирован на порту 5173 (strictPort: true)
+- Кэш автоматически очищается при каждом dev запуске для предотвращения проблем с RevoGrid
+- При первом запуске PowerShell может потребовать разрешение политики выполнения:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
 
 ### Database Management
 ```bash
