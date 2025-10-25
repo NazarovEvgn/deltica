@@ -750,7 +750,7 @@ defineExpose({
         <!-- Левая часть: Фильтры, Документы и AdminPanel -->
         <div class="header-left">
           <n-space :size="12" align="center">
-            <n-button v-if="isAdmin" type="primary" @click="showFilterDrawer = true">
+            <n-button type="primary" @click="showFilterDrawer = true">
               Фильтры
             </n-button>
             <DocumentsPanel />
