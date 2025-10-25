@@ -14,6 +14,7 @@ import ContractsNotebook from './ContractsNotebook.vue'
 import AnalyticsDashboard from './AnalyticsDashboard.vue'
 import AppLogo from './AppLogo.vue'
 import AdminPanel from './AdminPanel.vue'
+import DocumentActionsDropdown from './DocumentActionsDropdown.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
@@ -637,6 +638,49 @@ const printLabels = async () => {
   }
 }
 
+const printConservationAct = async () => {
+  if (selectedIds.value.size === 0) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const equipmentIds = Array.from(selectedIds.value)
+
+    const response = await axios.post(
+      'http://localhost:8000/documents/conservation-act',
+      { equipment_ids: equipmentIds },
+      {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    // Скачиваем файл
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Акт_консервации_${equipmentIds.length}_шт.docx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    // Очищаем выбранные строки после успешной генерации
+    selectedIds.value.clear()
+    selectedIds.value = new Set(selectedIds.value)
+
+    alert(`Акт консервации для ${equipmentIds.length} ед. оборудования успешно сгенерирован`)
+  } catch (error) {
+    console.error('Ошибка при генерации акта консервации:', error)
+    alert('Ошибка при генерации акта консервации: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   loadData()
   loadSavedSettings()
@@ -700,15 +744,14 @@ defineExpose({
           />
         </div>
 
-        <!-- Правая часть: Печать этикетки -->
+        <!-- Правая часть: Этикетки и акты -->
         <div class="header-right">
-          <n-button
-            type="primary"
-            @click="printLabels"
+          <DocumentActionsDropdown
+            :selected-count="selectedIds.size"
             :disabled="selectedIds.size === 0"
-          >
-            Печать этикетки ({{ selectedIds.size }})
-          </n-button>
+            @print-labels="printLabels"
+            @print-conservation-act="printConservationAct"
+          />
         </div>
       </div>
     </div>
@@ -719,7 +762,7 @@ defineExpose({
         ref="grid"
         :source="transformedSource"
         :columns="columnsWithActions"
-        theme="compact"
+        theme="material"
         :resize="true"
         :range="true"
         :filter="true"
@@ -837,5 +880,21 @@ defineExpose({
 .table-wrapper :deep(.header-sortable.active),
 .table-wrapper :deep(.header-filter.active) {
   opacity: 1;
+}
+
+/* Выравнивание чекбоксов по центру ячейки */
+.table-wrapper :deep(revogr-data) input[type="checkbox"],
+.table-wrapper :deep(revogr-header) input[type="checkbox"] {
+  vertical-align: middle;
+  margin: 0;
+}
+
+.table-wrapper :deep(.rgRow) {
+  align-items: center;
+}
+
+.table-wrapper :deep(.rgCell) {
+  display: flex;
+  align-items: center;
 }
 </style>

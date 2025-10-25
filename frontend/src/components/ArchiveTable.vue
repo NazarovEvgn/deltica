@@ -230,7 +230,7 @@ onMounted(() => {
         ref="grid"
         :source="source"
         :columns="columns"
-        theme="compact"
+        theme="material"
         :resize="true"
         :filter="true"
         :readonly="true"
@@ -336,5 +336,21 @@ onMounted(() => {
 .table-wrapper :deep(.header-sortable.active),
 .table-wrapper :deep(.header-filter.active) {
   opacity: 1;
+}
+
+/* Выравнивание чекбоксов по центру ячейки */
+.table-wrapper :deep(revogr-data) input[type="checkbox"],
+.table-wrapper :deep(revogr-header) input[type="checkbox"] {
+  vertical-align: middle;
+  margin: 0;
+}
+
+.table-wrapper :deep(.rgRow) {
+  align-items: center;
+}
+
+.table-wrapper :deep(.rgCell) {
+  display: flex;
+  align-items: center;
 }
 </style>

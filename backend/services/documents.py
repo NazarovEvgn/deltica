@@ -157,9 +157,6 @@ class DocumentService:
                 temp_path = self.output_dir / f"temp_label_{idx}.docx"
                 template.save(str(temp_path))
 
-                # Добавляем отступ между этикетками
-                result_doc.add_paragraph()
-
                 # Читаем заполненный шаблон
                 temp_doc = Document(str(temp_path))
 
@@ -169,10 +166,97 @@ class DocumentService:
                     new_table_element = deepcopy(source_table._element)
                     result_doc.element.body.append(new_table_element)
 
+                    # Принудительно устанавливаем выравнивание по левому краю
+                    from docx.oxml import OxmlElement
+                    from docx.oxml.ns import qn
+
+                    # Находим элемент tblPr (table properties)
+                    tblPr = new_table_element.find(qn('w:tblPr'))
+                    if tblPr is not None:
+                        # Удаляем существующее выравнивание если есть
+                        jc = tblPr.find(qn('w:jc'))
+                        if jc is not None:
+                            tblPr.remove(jc)
+
+                        # Добавляем выравнивание по левому краю
+                        jc = OxmlElement('w:jc')
+                        jc.set(qn('w:val'), 'left')
+                        tblPr.append(jc)
+
                 # Удаляем временный файл
                 temp_path.unlink()
 
             # Сохраняем результат
             result_doc.save(str(output_path))
+
+        return str(output_path)
+
+    def generate_conservation_act(self, equipment_ids: List[int]) -> Optional[str]:
+        """
+        Генерировать акт консервации для нескольких единиц оборудования
+        Возвращает путь к сгенерированному файлу или None при ошибке
+        """
+        if not equipment_ids:
+            return None
+
+        # Получить данные для всех единиц оборудования
+        equipments_data = []
+        for equipment_id in equipment_ids:
+            data = self._get_equipment_full_data(equipment_id)
+            if data:  # Добавляем только найденное оборудование
+                equipments_data.append(data)
+
+        if not equipments_data:
+            return None
+
+        # Загрузить шаблон акта консервации
+        template_path = self.templates_dir / "template_storage.docx"
+        if not template_path.exists():
+            raise FileNotFoundError(f"Шаблон не найден: {template_path}")
+
+        from docx import Document
+
+        # Генерируем первую запись
+        template = DocxTemplate(template_path)
+        template.render(equipments_data[0])
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_filename = f"conservation_act_{len(equipments_data)}_items_{timestamp}.docx"
+        output_path = self.output_dir / output_filename
+
+        template.save(str(output_path))
+
+        # Если больше одной единицы оборудования, добавляем остальные строки
+        if len(equipments_data) > 1:
+            doc = Document(str(output_path))
+
+            # Находим таблицу с данными (вторая таблица, индекс 1)
+            data_table = doc.tables[1]
+
+            # Для каждой дополнительной единицы оборудования добавляем строку
+            for idx in range(1, len(equipments_data)):
+                equipment = equipments_data[idx]
+                row = data_table.add_row()
+
+                # Порядковый номер
+                row.cells[0].text = str(idx + 1)
+
+                # Данные оборудования
+                row.cells[1].text = (
+                    f"{equipment['equipment_name']}, "
+                    f"зав. № {equipment['factory_number']}, "
+                    f"инв. № {equipment['inventory_number']}"
+                )
+
+                # Применяем форматирование как в первой строке
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            run.font.name = 'Times New Roman'
+                            from docx.shared import Pt
+                            run.font.size = Pt(12)
+
+            # Сохраняем финальный документ
+            doc.save(str(output_path))
 
         return str(output_path)
