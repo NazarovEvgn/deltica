@@ -181,3 +181,30 @@ def generate_conservation_act(
             status_code=500,
             detail=f"Ошибка при генерации акта консервации: {str(e)}"
         )
+
+
+@router.get("/commissioning-template")
+def download_commissioning_template(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Скачать шаблон акта ввода в эксплуатацию
+    Доступно для всех аутентифицированных пользователей
+    """
+    template_path = Path("docs/docx-templates/template_new_entries.docx")
+    
+    if not template_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Шаблон не найден"
+        )
+    
+    # Вернуть шаблон для скачивания
+    return FileResponse(
+        path=str(template_path),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename="Акт_ввода_в_эксплуатацию.docx",
+        headers={
+            "Content-Disposition": "attachment; filename*=UTF-8''%D0%90%D0%BA%D1%82_%D0%B2%D0%B2%D0%BE%D0%B4%D0%B0_%D0%B2_%D1%8D%D0%BA%D1%81%D0%BF%D0%BB%D1%83%D0%B0%D1%82%D0%B0%D1%86%D0%B8%D1%8E.docx"
+        }
+    )

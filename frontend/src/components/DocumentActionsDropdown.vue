@@ -10,14 +10,10 @@ const props = defineProps({
   selectedCount: {
     type: Number,
     default: 0
-  },
-  disabled: {
-    type: Boolean,
-    default: false
   }
 })
 
-const emit = defineEmits(['print-labels', 'print-conservation-act'])
+const emit = defineEmits(['print-labels', 'print-conservation-act', 'download-commissioning-template'])
 
 // Опции выпадающего меню
 const dropdownOptions = computed(() => [
@@ -25,13 +21,23 @@ const dropdownOptions = computed(() => [
     label: `Печать этикетки${props.selectedCount > 0 ? ` (${props.selectedCount})` : ''}`,
     key: 'labels',
     icon: () => h(NIcon, { component: LabelIcon }),
-    disabled: props.disabled
+    disabled: props.selectedCount === 0  // Доступно только если выбрано оборудование
   },
   {
     label: `Акт консервации${props.selectedCount > 0 ? ` (${props.selectedCount})` : ''}`,
     key: 'conservation-act',
     icon: () => h(NIcon, { component: ActIcon }),
-    disabled: props.disabled
+    disabled: props.selectedCount === 0  // Доступно только если выбрано оборудование
+  },
+  {
+    type: 'divider',
+    key: 'd1'
+  },
+  {
+    label: 'Акт ввода в эксплуатацию',
+    key: 'commissioning-template',
+    icon: () => h(NIcon, { component: ActIcon }),
+    disabled: false  // Всегда доступен, не зависит от выбранного оборудования
   }
 ])
 
@@ -44,6 +50,9 @@ const handleSelect = (key) => {
     case 'conservation-act':
       emit('print-conservation-act')
       break
+    case 'commissioning-template':
+      emit('download-commissioning-template')
+      break
   }
 }
 </script>
@@ -54,10 +63,7 @@ const handleSelect = (key) => {
     :options="dropdownOptions"
     @select="handleSelect"
   >
-    <n-button
-      type="primary"
-      :disabled="disabled"
-    >
+    <n-button type="primary">
       <template #icon>
         <n-icon :component="LabelIcon" />
       </template>

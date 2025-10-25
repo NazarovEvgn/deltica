@@ -681,6 +681,37 @@ const printConservationAct = async () => {
   }
 }
 
+const downloadCommissioningTemplate = async () => {
+  try {
+    loading.value = true
+
+    const response = await axios.get(
+      'http://localhost:8000/documents/commissioning-template',
+      {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    // Скачиваем файл
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'Акт_ввода_в_эксплуатацию.docx')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Ошибка при скачивании шаблона:', error)
+    alert('Ошибка при скачивании шаблона: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   loadData()
   loadSavedSettings()
@@ -748,9 +779,9 @@ defineExpose({
         <div class="header-right">
           <DocumentActionsDropdown
             :selected-count="selectedIds.size"
-            :disabled="selectedIds.size === 0"
             @print-labels="printLabels"
             @print-conservation-act="printConservationAct"
+            @download-commissioning-template="downloadCommissioningTemplate"
           />
         </div>
       </div>
