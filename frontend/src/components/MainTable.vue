@@ -761,7 +761,7 @@ defineExpose({
               Фильтры
             </n-button>
             <DocumentsPanel />
-            <n-button type="primary" @click="statisticsRef?.openModal()">
+            <n-button v-if="isLaborant" type="primary" @click="statisticsRef?.openModal()">
               Статистика
             </n-button>
             <AdminPanel

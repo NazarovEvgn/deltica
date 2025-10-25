@@ -417,222 +417,27 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 
 ## Recent Fixes
 
-### Equipment Creation/Update Finance Data (2025-10-20)
-**Problem**: Equipment creation/update was failing silently or not returning finance data in response.
+### Critical Fixes Summary
 
-**Root Causes**:
-1. Frontend: Missing `budget_item` and `code_rate` fields in form initialization (EquipmentModal.vue resetForm())
-2. Backend: `create_equipment_full()` and `update_equipment_full()` methods were not including finance fields in MainTableResponse
+**Status Calculation (2025-10-21)**: Fixed PostgreSQL trigger bug where non-work states (storage/verification/repair) were incorrectly showing status_expired. Now state-based statuses ALWAYS override date-based statuses. Fixed 278 existing records.
 
-**Fixes Applied**:
-- `frontend/src/components/EquipmentModal.vue` (lines 323-324): Added `budget_item: ''` and `code_rate: null` to resetForm()
-- `backend/services/main_table.py`:
-  - `create_equipment_full()` (lines 219-227): Added all 9 finance fields to response
-  - `update_equipment_full()` (lines 308-316): Added all 9 finance fields with null checks to response
-- Enhanced error handling in EquipmentModal to display Pydantic validation errors with field names
+**RevoGrid Data Transformation (2025-10-20)**: Implemented `transformedSource` pattern - enum fields and dates converted to Russian labels BEFORE passing to RevoGrid. Enables filtering/sorting/search with Russian labels while maintaining technical values in database.
 
-**Validation**: Budget_item is required (MainTableCreate schema), code_rate is optional. Both are now properly initialized and returned.
+**Finance Fields Integration (2025-10-20)**: Added `budget_item` and `code_rate` fields to equipment CRUD operations (frontend forms, backend responses, archive operations). Budget_item is required, code_rate is optional.
 
-### Terminology Consistency (2025-10-20)
-**Change**: Replaced all instances of "на хранении" with "На консервации" across 6 files:
-- MainTable.vue, EquipmentModal.vue, useEquipmentFilters.js, useEquipmentMetrics.js, MetricsDashboard.vue, FilterPanel.vue
+**Missing API Fields (2025-10-21)**: Added `registry_number` and `equipment_year` to SQL queries, Pydantic schemas, and API responses - fields existed in DB but weren't returned by backend.
 
-### UI Label Display (2025-10-20)
-**Enhancement**: Added cellTemplate mappings in MainTable.vue for human-readable labels:
-- verification_state, verification_type, equipment_type, department columns now display Russian labels instead of technical values
-- Data integrity maintained - technical values remain in database
+### Recent Features (2025-10-25)
 
-### RevoGrid Filtering with Russian Labels (2025-10-20)
-**Problem**: RevoGrid filters only worked with technical values (lbr, state_work), not Russian labels (ЛБР, В работе).
+**Laborant Statistics**: Verification statistics dashboard with date range filtering. Shows total verified, breakdown by type, failed verifications (from archive), and status breakdown. Department-filtered for laborants.
 
-**Solution**: Data transformation approach instead of cellTemplate:
-- Created `transformedSource` computed property that transforms data BEFORE passing to RevoGrid
-- All enum fields and dates are converted to human-readable format in the data itself
-- Added reverse mapping functions to convert back to technical values when saving
-- Benefits: Filters, sorting, and search all work with Russian labels
+**Document Generation**: Batch label generation and conservation acts using docxtpl templates. Table border preservation, automatic row numbering, full equipment data context.
 
-**Implementation** (`frontend/src/components/MainTable.vue`):
-- **Value Maps**: departmentMap, verificationStateMap, verificationTypeMap, equipmentTypeMap, statusMap
-- **Reverse Maps**: reverseDepartmentMap, reverseVerificationStateMap, etc.
-- **Transform Function**: `reverseTransformValue(prop, value)` - converts display values back to technical for API
-- **Date Handling**: `parseDateFromDisplay()`, `parseMonthYearFromDisplay()` - bidirectional date conversion
-- **Usage**: v-grid uses `:source="transformedSource"` instead of `:source="filteredData"`
+**Analytics Dashboard**: Admin verification calendar by department/month. Client-side calculation, automatic year detection, visual highlighting for non-zero values.
 
-### Archive Operations - Finance Fields (2025-10-20)
-**Problem**: Archiving and restoring equipment failed due to missing budget_item and code_rate fields.
+**Contracts Notebook**: Admin-only contract balance tracking with RevoGrid editable table and PostgreSQL computed balance column.
 
-**Fixes Applied** (`backend/services/archive.py`):
-1. **archive_equipment()** (lines 89-90): Added budget_item and code_rate when copying to ArchivedFinance
-2. **restore_equipment()** (lines 214-215): Added budget_item (with default '00.00.00.0' for NULL) and code_rate when restoring
-   - Default value handles old archived records created before these fields were required
-
-### Equipment Modal Finance Data (2025-10-20)
-**Problem**: Finance section fields (budget_item, code_rate) showed empty in edit modal.
-
-**Fix** (`frontend/src/components/EquipmentModal.vue` lines 286-287):
-- Added budget_item and code_rate to loadEquipmentData() function
-- Fields now properly load when editing existing equipment
-
-### Archive UI/UX Improvements (2025-10-20)
-**Changes** (`frontend/src/components/ArchiveTable.vue`):
-- Removed hint text "Архивное оборудование можно восстановить или удалить навсегда"
-- Removed "Обновить" button (unnecessary auto-refresh)
-- Changed title "Архив оборудования" to black (#333333) and repositioned under logo
-- Changed "Восстановить" and "Удалить навсегда" buttons to gray (#8c8c8c) for consistency with main table
-- Logo and title now in vertical layout (logo-title-section class)
-
-### Contracts Balance Notebook (2025-10-21)
-**Feature**: Admin notebook for tracking contract balances with external vendors.
-
-**Implementation**:
-- Backend (`backend/routes/contracts.py`, `backend/app/models.py`):
-  - Contract model with 7 fields: executor_name, contract_number, valid_until, contract_amount, spent_amount, balance (computed), current_balance
-  - Full CRUD API endpoints (admin-only access)
-  - PostgreSQL computed column for automatic balance calculation
-- Frontend (`frontend/src/components/ContractsNotebook.vue`):
-  - RevoGrid editable table with auto-save on cell edit
-  - Add/Delete contract functionality
-  - Money and date formatting
-  - Modal window accessible from AdminPanel dropdown
-
-### Analytics Dashboard (2025-10-21)
-**Feature**: Admin analytics dashboard with verification calendar and statistics.
-
-**Implementation**:
-- Composable (`frontend/src/composables/useAnalytics.js`):
-  - Client-side calculation of verification calendar by department and month
-  - Statistics: total verifications, calibrations, certifications in current year
-  - Automatic year detection (works for any year without code changes)
-- Component (`frontend/src/components/AnalyticsDashboard.vue`):
-  - 4 statistical cards with monochrome design (#333, 24px font)
-  - Calendar table showing equipment count planned for verification by department/month
-  - Summary row with monthly totals
-  - Reactive updates when main table data changes (receives data via props)
-- Integration: "Аналитика" button in AdminPanel, admin-only access
-
-**Key Features**:
-- Uses verification_plan column from main table
-- Filters data by current year automatically
-- Displays Russian department labels
-- Real-time updates without separate API calls
-
-### MainTable Cell Editing Fix (2025-10-21)
-**Problem**: Double-click cell editing worked for some fields but failed for verification_plan and other transformed fields due to double value transformation.
-
-**Fix** (`frontend/src/components/MainTable.vue`):
-- Removed duplicate `reverseTransformValue()` call in `saveCellToServer()`
-- Now transformation happens once in `handleAfterEdit()` and `handleBeforeRangeEdit()`
-- Fixes editing of verification_plan (month/year format) and all mapped enum fields
-
-### Missing Fields in API Response (2025-10-21)
-**Problem**: Fields `registry_number` and `equipment_year` existed in database but were not displayed in frontend table (empty cells).
-
-**Root Cause**: Fields were missing from API response chain:
-1. Not selected in SQL query (`backend/services/main_table.py` get_all_data())
-2. Not included in Pydantic schema (`backend/app/schemas.py` MainTableResponse)
-3. Not returned in service methods (create, update)
-
-**Fixes Applied**:
-- `backend/services/main_table.py`:
-  - Added `Equipment.equipment_year` and `Verification.registry_number` to SQL SELECT query (lines 73, 75)
-  - Added fields to MainTableResponse construction in all methods (get_all, create_equipment_full, update_equipment_full)
-- `backend/app/schemas.py`:
-  - Added `equipment_year: int` and `registry_number: Optional[str]` to MainTableResponse schema (lines 138, 140)
-
-**Validation**: Confirmed 1337 records with equipment_year (100%) and 894 records with registry_number (66.9%) in database.
-
-### Status Calculation Trigger Bug Fix (2025-10-21)
-**Problem**: Equipment with state "На консервации" (state_storage) had status "Просрочен" (status_expired) instead of "На консервации" (status_storage). Same issue for equipment in verification and repair states.
-
-**Root Cause**: Bug in PostgreSQL trigger `update_verification_status()` - it checked verification due date FIRST, then checked state. This caused expired equipment in storage/verification/repair to get status_expired instead of their state-based status.
-
-**Incorrect Logic** (before fix):
-```sql
-IF CURRENT_DATE > v_verification_due THEN
-    v_new_status := 'status_expired';  -- Applied BEFORE checking state!
-ELSIF NEW.verification_state = 'state_storage' THEN
-    v_new_status := 'status_storage';  -- Never reached for expired items
-...
-```
-
-**Corrected Logic** (after fix):
-```sql
-IF NEW.verification_state = 'state_storage' THEN
-    v_new_status := 'status_storage';  -- Check state FIRST
-ELSIF NEW.verification_state = 'state_work' THEN
-    -- Only check due date for "В работе" state
-    IF CURRENT_DATE > v_verification_due THEN
-        v_new_status := 'status_expired';
-...
-```
-
-**Fixes Applied**:
-- `backend/scripts/fix_trigger_logic.sql`: Corrected trigger function with proper priority (state before date)
-- `backend/scripts/fix_status_consistency.py`: Migration script to fix 278 existing records with incorrect status
-- Applied trigger fix to database
-- Ran migration: Fixed 226 storage + 48 verification + 4 repair records
-
-**Result**: All 393 records in non-work states now have correct matching statuses (323 storage, 66 verification, 4 repair) ✓
-
-**Critical Pattern**: Non-work states (storage/verification/repair/archived) ALWAYS override date-based statuses. Date checks only apply to state_work.
-
-### Analytics Dashboard Updates (2025-10-21)
-**Changes**:
-- Removed departments "Группа СМ" and "ОГМК" from analytics (now shows 11 departments instead of 13)
-- Added visual highlighting for non-zero values in verification calendar:
-  - Blue text color (#0071BC)
-  - Light blue background (#E6F4FF)
-  - Bold font weight (600)
-  - Rounded corners with padding for better visibility
-- Removed "Закрыть" button (redundant with X close icon)
-
-### Label Generation Improvements (2025-10-25)
-**Changes**:
-- Fixed table border preservation in generated labels (critical for layout consistency)
-- Fixed department mapping for Russian labels in document generation
-- Added batch label generation feature (multiple equipment items in single document)
-- Archive equipment files now viewable in ArchiveTable modal
-
-### Laborant Statistics Feature (2025-10-25)
-**Feature**: Verification statistics dashboard for laborants with date range filtering.
-
-**Implementation**:
-- Component (`frontend/src/components/LaborantStatistics.vue`):
-  - Modal window with date range selector (default: current year)
-  - Four statistics sections: General, By Type, Failed, By Status
-  - Client-side calculation from main table data
-  - Archive data loading for failed verification count
-- Integration:
-  - "Статистика" button added next to "Документы" in MainTable (line 764-766)
-  - Button style: `type="primary"` (blue)
-  - Accessible to all authenticated users
-- Statistics calculated:
-  - Total equipment verified in selected period (by verification_date)
-  - Breakdown by verification type (verification/calibration/certification)
-  - Failed verifications from archive (department-specific, reason: "Извещение о непригодности")
-  - Status breakdown (fit/in storage) from verified equipment
-
-**Key Features**:
-- Department filtering automatic for laborants (via loadData in MainTable)
-- Archive data loaded on-demand when modal opens
-- All calculations in computed property for reactivity
-- Color-coded display: failed (red), fit (green), others (black)
-
-### AppLogo Navigation (2025-10-25)
-**Feature**: Clickable logo for navigation.
-
-**Implementation**:
-- AppLogo component now emits 'click' event
-- In ArchiveTable: click returns to main table (emits 'back-to-main')
-- In MainTable: click scrolls to top of page (smooth scroll)
-- Styling: cursor pointer, hover opacity effect (0.8)
-
-### Filter Access for Laborants (2025-10-25)
-**Changes**:
-- Removed `v-if="isAdmin"` from Filters button - now accessible to all users
-- Added `isLaborant` prop to FilterPanel component
-- Hidden "Финансы" and "Ответственность" sections for laborants in filter panel
-- Quick filters now available for all users (expired, expiring, fit, on verification, in storage, in repair)
+**UI Improvements**: Clickable logo navigation, filter access for laborants (Finance/Responsibility sections hidden), terminology consistency ("На консервации" instead of "на хранении")
 
 ## Known Issues
 
