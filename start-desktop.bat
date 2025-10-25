@@ -1,7 +1,8 @@
 @echo off
-:: Deltica Desktop Application Launcher
-:: Запускает backend и Tauri desktop приложение
+:: Deltica Desktop Application Launcher (Electron)
+:: Запускает backend и Electron desktop приложение
 
+chcp 65001 >nul
 title Deltica Desktop
 
 echo ====================================

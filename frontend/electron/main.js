@@ -17,13 +17,17 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      webSecurity: false  // Отключаем CORS для localhost API
     },
     icon: path.join(__dirname, '../public/favicon.png')
   })
 
   // В режиме разработки загружаем из Vite dev server
   if (process.env.NODE_ENV === 'development') {
+    // Очистка кэша в dev режиме для предотвращения проблем с RevoGrid
+    mainWindow.webContents.session.clearCache()
+
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
   } else {
