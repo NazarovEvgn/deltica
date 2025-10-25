@@ -818,6 +818,7 @@ defineExpose({
           :field-groups="fieldGroups"
           :visible-columns="visibleColumns"
           :active-filters="activeFilters"
+          :is-laborant="isLaborant"
           @update:visible-columns="visibleColumns = $event"
           @update:active-filters="activeFilters = $event"
           @reset="resetFilters"

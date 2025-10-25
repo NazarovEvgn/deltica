@@ -40,6 +40,10 @@ const props = defineProps({
   activeFilters: {
     type: Object,
     required: true
+  },
+  isLaborant: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -59,7 +63,15 @@ const groupIcons = {
 const fieldsByGroup = computed(() => {
   const grouped = {}
 
+  // Скрываем финансы и ответственность для лаборанта
+  const hiddenGroupsForLaborant = ['finance', 'responsibility']
+
   for (const [groupKey, groupInfo] of Object.entries(props.fieldGroups)) {
+    // Пропускаем скрытые группы для лаборанта
+    if (props.isLaborant && hiddenGroupsForLaborant.includes(groupKey)) {
+      continue
+    }
+
     grouped[groupKey] = {
       ...groupInfo,
       fields: []
