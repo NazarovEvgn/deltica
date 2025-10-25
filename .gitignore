@@ -29,3 +29,17 @@ import_equipment_data.sql
 
 # Backup files
 backend/backups/
+
+# Generated documents
+backend/generated_documents/
+
+# Temporary test/development scripts in root
+analyze*.py
+test_*.py
+test_*.docx
+create_*.py
+debug_*.py
+prepare_*.py
+fix_*.py
+add_*.py
+check_*.py
