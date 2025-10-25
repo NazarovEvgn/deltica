@@ -35,20 +35,21 @@ class DocumentService:
             models.Responsibility.equipment_id == equipment_id
         ).first()
 
-        # Маппинг подразделений для отображения
+        # Маппинг подразделений для отображения (должен совпадать с departmentOptions в EquipmentModal)
         department_map = {
-            'lbr': 'ЛБР',
+            'gruppa_sm': 'Группа СМ',
             'gtl': 'ГТЛ',
+            'lbr': 'ЛБР',
+            'ltr': 'ЛТР',
+            'lhaiei': 'ЛХАиЭИ',
+            'ogmk': 'ОГМК',
+            'oii': 'ОИИ',
             'smtsik': 'СМТСиК',
-            'oks': 'ОКС',
-            'oits': 'ОИТС',
-            'sm': 'СМ',
-            'production': 'Производство',
-            'okp': 'ОКП',
-            'okpnrs': 'ОКПНРС',
-            'okpvrs': 'ОКПВРС',
-            'lao': 'ЛАО',
-            'ogt': 'ОГТ'
+            'soii': 'СОИИ',
+            'to': 'ТО',
+            'ts': 'ТС',
+            'es': 'ЭС',
+            'ooops': 'ОООПС'  # Добавлено недостающее
         }
 
         # Форматирование дат

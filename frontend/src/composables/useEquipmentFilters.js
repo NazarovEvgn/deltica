@@ -284,9 +284,29 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
   }
 
   /**
+   * Маппинг подразделений для поиска (русские названия → технические значения)
+   */
+  const departmentSearchMap = {
+    'группа см': 'gruppa_sm',
+    'гтл': 'gtl',
+    'лбр': 'lbr',
+    'лтр': 'ltr',
+    'лхаиэи': 'lhaiei',
+    'огмк': 'ogmk',
+    'оии': 'oii',
+    'смтсик': 'smtsik',
+    'соии': 'soii',
+    'то': 'to',
+    'тс': 'ts',
+    'эс': 'es',
+    'ооопс': 'ooops'
+  }
+
+  /**
    * Поиск по всем текстовым полям записи
    * Разбивает поисковый запрос на отдельные слова и проверяет,
    * что ВСЕ слова присутствуют в записи (в любых полях)
+   * Поддерживает поиск по русским названиям подразделений
    */
   const searchInRecord = (record, query) => {
     if (!query) return true
@@ -303,7 +323,17 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
       .join(' ')
 
     // Проверяем, что ВСЕ слова из поискового запроса присутствуют в записи
-    return searchTerms.every(term => allValues.includes(term))
+    // Если слово - это русское название подразделения, заменяем на техническое значение
+    return searchTerms.every(term => {
+      // Проверяем оригинальный термин
+      if (allValues.includes(term)) return true
+
+      // Если это похоже на название подразделения, пробуем найти техническое значение
+      const technicalValue = departmentSearchMap[term]
+      if (technicalValue && allValues.includes(technicalValue)) return true
+
+      return false
+    })
   }
 
   // ==================== ФИЛЬТРАЦИЯ ====================
