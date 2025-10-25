@@ -162,14 +162,6 @@ const isEdit = ref(false)
 
 // Состояние файлов
 const equipmentFiles = ref([])
-const selectedFileType = ref('other')
-
-const fileTypeOptions = [
-  { label: 'Свидетельство о поверке', value: 'certificate' },
-  { label: 'Паспорт', value: 'passport' },
-  { label: 'Техническая документация', value: 'technical_doc' },
-  { label: 'Прочее', value: 'other' }
-]
 
 // Загрузка списка файлов оборудования
 const loadEquipmentFiles = async () => {
@@ -193,7 +185,7 @@ const handleFileUpload = async ({ file }) => {
   try {
     const formData = new FormData()
     formData.append('file', file.file)
-    formData.append('file_type', selectedFileType.value)
+    formData.append('file_type', 'other')
 
     await axios.post(
       `http://localhost:8000/files/upload/${props.equipmentId}`,
@@ -246,11 +238,6 @@ const formatFileSize = (bytes) => {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
 }
 
-// Получение метки типа файла
-const getFileTypeLabel = (fileType) => {
-  const option = fileTypeOptions.find(opt => opt.value === fileType)
-  return option ? option.label : fileType
-}
 
 // Загрузка данных для редактирования
 const loadEquipmentData = async () => {
@@ -702,7 +689,7 @@ watch(() => props.show, (newValue) => {
                 </a>
               </template>
               <template #description>
-                {{ getFileTypeLabel(file.file_type) }} • {{ formatFileSize(file.file_size) }}
+                {{ formatFileSize(file.file_size) }}
               </template>
               <template #action>
                 <n-button size="small" @click="downloadFile(file.id, file.file_name)">
@@ -958,7 +945,7 @@ watch(() => props.show, (newValue) => {
                     </a>
                   </template>
                   <template #description>
-                    {{ getFileTypeLabel(file.file_type) }} • {{ formatFileSize(file.file_size) }}
+                    {{ formatFileSize(file.file_size) }}
                   </template>
                   <template #action>
                     <n-space>
@@ -982,14 +969,6 @@ watch(() => props.show, (newValue) => {
 
             <!-- Загрузчик файлов (скрыт в режиме readOnly) -->
             <n-space v-if="!readOnly" vertical>
-              <n-form-item label="Тип файла">
-                <n-select
-                  v-model:value="selectedFileType"
-                  :options="fileTypeOptions"
-                  placeholder="Выберите тип файла"
-                />
-              </n-form-item>
-
               <n-upload
                 :custom-request="handleFileUpload"
                 :show-file-list="false"

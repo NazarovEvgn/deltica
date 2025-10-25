@@ -285,20 +285,25 @@ export function useEquipmentFilters(sourceData, isLaborant = ref(false)) {
 
   /**
    * Поиск по всем текстовым полям записи
+   * Разбивает поисковый запрос на отдельные слова и проверяет,
+   * что ВСЕ слова присутствуют в записи (в любых полях)
    */
   const searchInRecord = (record, query) => {
     if (!query) return true
 
-    // Поиск по всем searchable полям
-    for (const [field, definition] of Object.entries(fieldDefinitions)) {
-      if (definition.searchable && record[field]) {
-        if (matchesSearch(record[field], query)) {
-          return true
-        }
-      }
-    }
+    // Разбиваем поисковый запрос на отдельные слова (по пробелам)
+    const searchTerms = query.toLowerCase().trim().split(/\s+/).filter(term => term.length > 0)
 
-    return false
+    if (searchTerms.length === 0) return true
+
+    // Собираем все значения searchable полей в одну строку для поиска
+    const allValues = Object.entries(fieldDefinitions)
+      .filter(([field, definition]) => definition.searchable && record[field])
+      .map(([field]) => String(record[field]).toLowerCase())
+      .join(' ')
+
+    // Проверяем, что ВСЕ слова из поискового запроса присутствуют в записи
+    return searchTerms.every(term => allValues.includes(term))
   }
 
   // ==================== ФИЛЬТРАЦИЯ ====================
