@@ -266,3 +266,91 @@ class ArchiveService:
         self.db.delete(archived_equipment)
         self.db.commit()
         return True
+
+    def get_archived_full(self, archived_equipment_id: int) -> Optional[dict]:
+        """
+        Получить полные данные архивного оборудования
+        (включая верификацию, ответственность, финансы и файлы)
+        """
+        # Получить архивное оборудование
+        archived_equipment = self.db.query(models.ArchivedEquipment).filter(
+            models.ArchivedEquipment.id == archived_equipment_id
+        ).first()
+
+        if not archived_equipment:
+            return None
+
+        # Получить связанные архивные данные
+        archived_verification = self.db.query(models.ArchivedVerification).filter(
+            models.ArchivedVerification.archived_equipment_id == archived_equipment_id
+        ).first()
+
+        archived_responsibility = self.db.query(models.ArchivedResponsibility).filter(
+            models.ArchivedResponsibility.archived_equipment_id == archived_equipment_id
+        ).first()
+
+        archived_finance = self.db.query(models.ArchivedFinance).filter(
+            models.ArchivedFinance.archived_equipment_id == archived_equipment_id
+        ).first()
+
+        archived_files = self.db.query(models.ArchivedEquipmentFile).filter(
+            models.ArchivedEquipmentFile.archived_equipment_id == archived_equipment_id
+        ).all()
+
+        # Формируем словарь с полными данными
+        result = {
+            # Equipment
+            "id": archived_equipment.id,
+            "original_id": archived_equipment.original_id,
+            "equipment_name": archived_equipment.equipment_name,
+            "equipment_model": archived_equipment.equipment_model,
+            "equipment_type": archived_equipment.equipment_type,
+            "equipment_specs": archived_equipment.equipment_specs,
+            "factory_number": archived_equipment.factory_number,
+            "inventory_number": archived_equipment.inventory_number,
+            "equipment_year": archived_equipment.equipment_year,
+            "archived_at": archived_equipment.archived_at,
+            "archive_reason": archived_equipment.archive_reason,
+
+            # Verification (обязательно должна существовать)
+            "verification_type": archived_verification.verification_type if archived_verification else "verification",
+            "registry_number": archived_verification.registry_number if archived_verification else None,
+            "verification_interval": archived_verification.verification_interval if archived_verification else 12,
+            "verification_date": archived_verification.verification_date if archived_verification else None,
+            "verification_due": archived_verification.verification_due if archived_verification else None,
+            "verification_plan": archived_verification.verification_plan if archived_verification else None,
+            "verification_state": archived_verification.verification_state if archived_verification else "state_archived",
+            "status": archived_verification.status if archived_verification else "status_archived",
+
+            # Responsibility (обязательно должна существовать)
+            "department": archived_responsibility.department if archived_responsibility else "",
+            "responsible_person": archived_responsibility.responsible_person if archived_responsibility else "",
+            "verifier_org": archived_responsibility.verifier_org if archived_responsibility else "",
+
+            # Finance (обязательно должна существовать)
+            "budget_item": archived_finance.budget_item if archived_finance else "",
+            "code_rate": archived_finance.code_rate if archived_finance else None,
+            "cost_rate": archived_finance.cost_rate if archived_finance else None,
+            "quantity": archived_finance.quantity if archived_finance else 1,
+            "coefficient": archived_finance.coefficient if archived_finance else 1.0,
+            "total_cost": archived_finance.total_cost if archived_finance else None,
+            "invoice_number": archived_finance.invoice_number if archived_finance else None,
+            "paid_amount": archived_finance.paid_amount if archived_finance else None,
+            "payment_date": archived_finance.payment_date if archived_finance else None,
+
+            # Files (преобразуем ORM объекты в словари)
+            "files": [
+                {
+                    "id": f.id,
+                    "equipment_id": f.archived_equipment_id,  # Используем archived_equipment_id как equipment_id
+                    "file_name": f.file_name,
+                    "file_path": f.file_path,
+                    "file_type": f.file_type,
+                    "file_size": f.file_size,
+                    "uploaded_at": f.uploaded_at
+                }
+                for f in archived_files
+            ]
+        }
+
+        return result

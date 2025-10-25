@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.core.database import SessionLocal
 from backend.services.archive import ArchiveService
-from backend.app.schemas import ArchiveResponse, ArchiveRequest
+from backend.app.schemas import ArchiveResponse, ArchiveRequest, ArchiveFullResponse
 
 
 router = APIRouter(prefix="/archive", tags=["archive"])
@@ -74,6 +74,23 @@ def get_archived_equipment_by_id(archived_equipment_id: int, db: Session = Depen
         )
 
     return archived
+
+
+@router.get("/{archived_equipment_id}/full", response_model=ArchiveFullResponse)
+def get_archived_equipment_full(archived_equipment_id: int, db: Session = Depends(get_db)):
+    """
+    Получить полные данные архивного оборудования (включая верификацию, ответственность, финансы и файлы)
+    """
+    service = ArchiveService(db)
+    archived_full = service.get_archived_full(archived_equipment_id)
+
+    if not archived_full:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Архивное оборудование с ID {archived_equipment_id} не найдено"
+        )
+
+    return archived_full
 
 
 @router.post("/restore/{archived_equipment_id}")

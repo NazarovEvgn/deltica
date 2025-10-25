@@ -4,6 +4,7 @@ import { NButton, NSpace, NEmpty, useMessage, useDialog } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
 import AppLogo from './AppLogo.vue'
+import EquipmentModal from './EquipmentModal.vue'
 
 const emit = defineEmits(['back-to-main', 'restored'])
 const message = useMessage()
@@ -12,6 +13,10 @@ const dialog = useDialog()
 // Данные архивной таблицы
 const source = ref([])
 const loading = ref(false)
+
+// Состояние для модального окна просмотра
+const showViewModal = ref(false)
+const viewArchiveId = ref(null)
 
 // Функция форматирования даты в dd.mm.yyyy
 const formatDate = (dateString) => {
@@ -80,7 +85,7 @@ const columns = ref([
   {
     prop: 'actions',
     name: 'Действия',
-    size: 260,
+    size: 330,
     readonly: true,
     sortable: false,
     cellTemplate: (createElement, props) => {
@@ -88,6 +93,19 @@ const columns = ref([
       return createElement('div', {
         style: { display: 'flex', gap: '8px', padding: '4px 8px 4px 4px' }
       }, [
+        createElement('button', {
+          textContent: 'Просмотр',
+          style: {
+            padding: '4px 12px',
+            cursor: 'pointer',
+            border: '1px solid #8c8c8c',
+            borderRadius: '3px',
+            background: '#8c8c8c',
+            color: 'white',
+            fontSize: '12px'
+          },
+          onClick: () => viewArchive(archivedId)
+        }),
         createElement('button', {
           textContent: 'Восстановить',
           style: {
@@ -131,6 +149,12 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// Просмотр архивного оборудования
+const viewArchive = (archivedId) => {
+  viewArchiveId.value = archivedId
+  showViewModal.value = true
 }
 
 // Восстановление оборудования из архива
@@ -225,6 +249,15 @@ onMounted(() => {
         </n-button>
       </template>
     </n-empty>
+
+    <!-- Модальное окно для просмотра архивного оборудования -->
+    <EquipmentModal
+      :show="showViewModal"
+      @update:show="showViewModal = $event"
+      :equipment-id="viewArchiveId"
+      :read-only="true"
+      :is-archive="true"
+    />
   </div>
 </template>
 

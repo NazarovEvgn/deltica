@@ -49,6 +49,10 @@ const props = defineProps({
   readOnly: {
     type: Boolean,
     default: false
+  },
+  isArchive: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -167,6 +171,9 @@ const equipmentFiles = ref([])
 const loadEquipmentFiles = async () => {
   if (!props.equipmentId) return
 
+  // Для архивных данных файлы уже загружаются вместе с основными данными
+  if (props.isArchive) return
+
   try {
     const response = await axios.get(`http://localhost:8000/files/equipment/${props.equipmentId}`)
     equipmentFiles.value = response.data
@@ -244,7 +251,12 @@ const loadEquipmentData = async () => {
   if (!props.equipmentId) return
 
   try {
-    const response = await axios.get(`http://localhost:8000/main-table/${props.equipmentId}/full`)
+    // Выбираем API endpoint в зависимости от того, архивное ли это оборудование
+    const apiUrl = props.isArchive
+      ? `http://localhost:8000/archive/${props.equipmentId}/full`
+      : `http://localhost:8000/main-table/${props.equipmentId}/full`
+
+    const response = await axios.get(apiUrl)
     const data = response.data
 
     // Заполняем форму данными
@@ -279,6 +291,11 @@ const loadEquipmentData = async () => {
       invoice_number: data.invoice_number || '',
       paid_amount: data.paid_amount,
       payment_date: data.payment_date ? new Date(data.payment_date).getTime() : null
+    }
+
+    // Для архивных данных загружаем файлы из ответа
+    if (props.isArchive && data.files) {
+      equipmentFiles.value = data.files
     }
   } catch (error) {
     console.error('Ошибка при загрузке данных оборудования:', error)

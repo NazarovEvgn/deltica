@@ -251,6 +251,54 @@ class ArchiveResponse(BaseModel):
         from_attributes = True
 
 
+class ArchiveFullResponse(BaseModel):
+    """Полный ответ с данными архивного оборудования (включая верификацию, ответственность, финансы и файлы)"""
+    # Equipment
+    id: int
+    original_id: int
+    equipment_name: str
+    equipment_model: str
+    equipment_type: EquipmentTypeEnum
+    equipment_specs: Optional[str] = None
+    factory_number: str
+    inventory_number: str
+    equipment_year: int
+    archived_at: datetime
+    archive_reason: Optional[str] = None
+
+    # Verification
+    verification_type: str
+    registry_number: Optional[str] = None
+    verification_interval: int
+    verification_date: date
+    verification_due: date
+    verification_plan: date
+    verification_state: str
+    status: str
+
+    # Responsibility
+    department: str
+    responsible_person: str
+    verifier_org: str
+
+    # Finance
+    budget_item: str
+    code_rate: Optional[str] = None
+    cost_rate: Optional[float] = None
+    quantity: int
+    coefficient: float
+    total_cost: Optional[float] = None
+    invoice_number: Optional[str] = None
+    paid_amount: Optional[float] = None
+    payment_date: Optional[date] = None
+
+    # Files
+    files: list[EquipmentFileResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
 # ==================== СХЕМЫ ДЛЯ АУТЕНТИФИКАЦИИ ====================
 
 class UserRoleEnum(str, Enum):

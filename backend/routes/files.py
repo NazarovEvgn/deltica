@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.core.database import get_db
-from backend.app.models import EquipmentFile, Equipment
+from backend.app.models import EquipmentFile, Equipment, ArchivedEquipmentFile
 from backend.app.schemas import EquipmentFileResponse
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -146,8 +146,17 @@ def get_equipment_files(equipment_id: int, db: Session = Depends(get_db)):
 
 @router.get("/view/{file_id}")
 def view_file(file_id: int, db: Session = Depends(get_db)):
-    """Открыть файл для просмотра в браузере."""
+    """
+    Открыть файл для просмотра в браузере.
+    Работает как с основными, так и с архивными файлами.
+    """
+    # Сначала ищем в основной таблице
     db_file = db.query(EquipmentFile).filter(EquipmentFile.id == file_id).first()
+
+    # Если не найден, ищем в архивной таблице
+    if not db_file:
+        db_file = db.query(ArchivedEquipmentFile).filter(ArchivedEquipmentFile.id == file_id).first()
+
     if not db_file:
         raise HTTPException(status_code=404, detail="Файл не найден")
 
@@ -173,8 +182,17 @@ def view_file(file_id: int, db: Session = Depends(get_db)):
 
 @router.get("/download/{file_id}")
 def download_file(file_id: int, db: Session = Depends(get_db)):
-    """Скачать файл по ID (принудительное скачивание)."""
+    """
+    Скачать файл по ID (принудительное скачивание).
+    Работает как с основными, так и с архивными файлами.
+    """
+    # Сначала ищем в основной таблице
     db_file = db.query(EquipmentFile).filter(EquipmentFile.id == file_id).first()
+
+    # Если не найден, ищем в архивной таблице
+    if not db_file:
+        db_file = db.query(ArchivedEquipmentFile).filter(ArchivedEquipmentFile.id == file_id).first()
+
     if not db_file:
         raise HTTPException(status_code=404, detail="Файл не найден")
 
