@@ -27,6 +27,9 @@ const { currentUser, isAuthenticated, isAdmin, isLaborant } = useAuth()
 const source = ref([])
 const loading = ref(false)
 
+// Выбранные строки для печати этикеток
+const selectedIds = ref(new Set())
+
 // Инициализация фильтров
 const {
   searchQuery,
@@ -322,7 +325,43 @@ const dynamicColumns = computed(() => {
 
 // Добавляем колонку действий в конец
 const columnsWithActions = computed(() => {
-  const columns = [...dynamicColumns.value]
+  const columns = []
+
+  // Добавляем колонку с чекбоксами В НАЧАЛО
+  columns.push({
+    prop: 'checkbox',
+    name: '',
+    size: 50,
+    pin: 'colPinStart',
+    cellTemplate: (createElement, props) => {
+      const equipmentId = props.model.equipment_id
+      const isChecked = selectedIds.value.has(equipmentId)
+
+      return createElement('input', {
+        type: 'checkbox',
+        checked: isChecked,
+        style: {
+          cursor: 'pointer',
+          width: '16px',
+          height: '16px',
+          margin: '0 auto',
+          display: 'block'
+        },
+        onChange: (event) => {
+          if (event.target.checked) {
+            selectedIds.value.add(equipmentId)
+          } else {
+            selectedIds.value.delete(equipmentId)
+          }
+          // Принудительно обновляем компонент
+          selectedIds.value = new Set(selectedIds.value)
+        }
+      })
+    }
+  })
+
+  // Добавляем остальные колонки
+  columns.push(...dynamicColumns.value)
 
   // Колонка действий для администратора
   if (isAdmin.value) {
@@ -554,6 +593,50 @@ const viewEquipment = (equipmentId) => {
   emit('view-equipment', equipmentId)
 }
 
+// Печать этикеток для выбранного оборудования
+const printLabels = async () => {
+  if (selectedIds.value.size === 0) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const equipmentIds = Array.from(selectedIds.value)
+
+    const response = await axios.post(
+      'http://localhost:8000/documents/labels',
+      { equipment_ids: equipmentIds },
+      {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    // Скачиваем файл
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Этикетки_${equipmentIds.length}_шт.docx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    // Очищаем выбранные строки после успешной генерации
+    selectedIds.value.clear()
+    selectedIds.value = new Set(selectedIds.value)
+
+    alert(`Этикетки для ${equipmentIds.length} ед. оборудования успешно сгенерированы`)
+  } catch (error) {
+    console.error('Ошибка при генерации этикеток:', error)
+    alert('Ошибка при генерации этикеток: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   loadData()
   loadSavedSettings()
@@ -617,8 +700,16 @@ defineExpose({
           />
         </div>
 
-        <!-- Правая часть: пустой блок для симметрии -->
-        <div class="header-right"></div>
+        <!-- Правая часть: Печать этикетки -->
+        <div class="header-right">
+          <n-button
+            type="primary"
+            @click="printLabels"
+            :disabled="selectedIds.size === 0"
+          >
+            Печать этикетки ({{ selectedIds.size }})
+          </n-button>
+        </div>
       </div>
     </div>
 
