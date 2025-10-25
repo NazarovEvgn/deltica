@@ -12,6 +12,7 @@ import BackupPanel from './BackupPanel.vue'
 import SystemMonitor from './SystemMonitor.vue'
 import ContractsNotebook from './ContractsNotebook.vue'
 import AnalyticsDashboard from './AnalyticsDashboard.vue'
+import LaborantStatistics from './LaborantStatistics.vue'
 import AppLogo from './AppLogo.vue'
 import AdminPanel from './AdminPanel.vue'
 import DocumentActionsDropdown from './DocumentActionsDropdown.vue'
@@ -51,9 +52,10 @@ const { metrics } = useEquipmentMetrics(source)
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
 
-// Refs для BackupPanel, SystemMonitor, ContractsNotebook и AnalyticsDashboard
+// Refs для BackupPanel, SystemMonitor, ContractsNotebook, AnalyticsDashboard и LaborantStatistics
 const backupPanelRef = ref(null)
 const systemMonitorRef = ref(null)
+const statisticsRef = ref(null)
 const showContractsNotebook = ref(false)
 const showAnalyticsDashboard = ref(false)
 
@@ -759,6 +761,9 @@ defineExpose({
               Фильтры
             </n-button>
             <DocumentsPanel />
+            <n-button type="primary" @click="statisticsRef?.openModal()">
+              Статистика
+            </n-button>
             <AdminPanel
               v-if="isAdmin"
               @add-equipment="$emit('add-equipment')"
@@ -832,9 +837,10 @@ defineExpose({
       </n-drawer-content>
     </n-drawer>
 
-    <!-- Модальные окна для BackupPanel, SystemMonitor, ContractsNotebook и AnalyticsDashboard -->
+    <!-- Модальные окна для BackupPanel, SystemMonitor, ContractsNotebook, AnalyticsDashboard и LaborantStatistics -->
     <BackupPanel ref="backupPanelRef" />
     <SystemMonitor ref="systemMonitorRef" />
+    <LaborantStatistics ref="statisticsRef" :equipment-data="source" />
     <ContractsNotebook v-model:show="showContractsNotebook" />
     <AnalyticsDashboard v-model:show="showAnalyticsDashboard" :equipment-data="source" />
   </div>
