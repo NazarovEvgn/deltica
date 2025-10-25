@@ -24,7 +24,7 @@ Deltica is a metrology equipment management system for oil & gas companies. It t
     - Primary Blue: `#0071BC`, Info Blue: `#00A6E4`, Orange: `#F7941D`, Green: `#8BC53F`
 - **Backend**: FastAPI with Python 3.13 managed by uv
 - **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
-- **Desktop**: Tauri v2 (Rust + WebView) - нативное Windows приложение с Vite frontend
+- **Desktop**: Electron (планируется) - нативное Windows приложение с Vite frontend (миграция с Tauri из-за конфликта с RevoGrid)
 
 ## Development Commands
 
@@ -69,30 +69,30 @@ npm run build      # Build for production
 npm run preview    # Preview production build
 ```
 
-### Desktop Application (Tauri)
-```bash
-cd frontend
+### Desktop Application (Electron) - В разработке
 
-# Development mode (запускает Vite dev server + Tauri)
-npm run tauri:dev
+**Текущий статус:** Планируется миграция на Electron после выявления критических проблем с Tauri (конфликт с RevoGrid).
 
-# Production build (создает установщик для Windows)
-npm run tauri:build
+**Причина миграции:**
+- Tauri v2 показал несовместимость с RevoGrid (отсутствие отображения таблицы)
+- Проблемы с кэшем и рендерингом в WebView2
+- Electron гарантирует совместимость через встроенный Chromium
 
-# Проверка конфигурации Tauri
-npm run tauri info
-```
+**План реализации:**
+- Подробный план миграции находится в `docs/deltica_dev_plan.md` раздел "Electron для режима desktop"
+- 10 этапов: от подготовки до production сборки
+- Архитектура: Electron (main/renderer) + Vite + Vue 3 + Naive UI + RevoGrid
 
-**Требования для Tauri:**
-- Rust 1.70+ (установлен)
-- Visual C++ Build Tools или Visual Studio с C++ workload
-- Backend должен быть запущен на `http://localhost:8000`
+**Ключевые решения:**
+- Backend (FastAPI) остается отдельным процессом на `http://localhost:8000`
+- Electron - только frontend обертка (не embedded backend)
+- Размер установщика: ~120-150 MB (приемлемо для корпоративной среды)
+- Security: contextIsolation + отключенный nodeIntegration + preload script
 
-**Особенности:**
-- Приложение работает как нативное Windows приложение
-- Конфигурация в `frontend/src-tauri/tauri.conf.json`
-- API endpoint настраивается через `VITE_API_URL` в `.env`
-- Подробная документация в `frontend/TAURI_README.md`
+**Когда будет готово:**
+- Electron скрипты будут добавлены в `frontend/package.json`
+- Документация будет в `frontend/ELECTRON_README.md`
+- Build команды: `npm run electron:dev`, `npm run electron:build:win`
 
 ### Database Management
 ```bash
