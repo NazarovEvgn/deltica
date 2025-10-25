@@ -198,6 +198,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - `/pinned-documents/*` - Shared PDF documents (view/download for all, upload/delete admin-only)
 - `/backup/*` - Database backup operations (admin-only, uses pg_dump)
 - `/health/*` - System monitoring and health checks (admin-only)
+- `/contracts/*` - Contract balance notebook (admin-only)
+- `/documents/*` - Label generation for equipment (single and batch, DOCX templates with Jinja2)
 
 ### Critical Development Patterns
 
@@ -348,6 +350,32 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - Filter plugin enabled with `:filter="true"` on v-grid component
   - Both sort and filter icons visible on hover (opacity: 0.3 by default, 1.0 on hover or when active)
   - Column resizing enabled with `:resize="true"`
+
+**15. Document Generation (Labels and Acts)** (`backend/routes/documents.py`, `backend/services/documents.py`):
+- **Purpose**: Generate equipment labels and conservation acts from DOCX templates using docxtpl (Jinja2 templating)
+- **Templates**: Stored in `docs/docx-templates/`
+- **Output**: Generated documents in `backend/generated_documents/`
+- **Features**:
+  - Single label generation: `GET /documents/label/{equipment_id}`
+  - Batch label generation: `POST /documents/labels` with array of equipment_ids
+  - Conservation act generation: `POST /documents/conservation-act` with array of equipment_ids
+  - Table border preservation in generated documents (critical for layout)
+  - Automatic row numbering with proper formatting (1., 2., 3., etc.)
+  - Full equipment data context (equipment + verification + responsibility)
+  - Department mapping for display (technical values → Russian labels)
+- **Templates**:
+  - `template_label.docx` - Equipment labels (single table cell format)
+  - `template_storage.docx` - Conservation act (multi-row table with automatic numbering)
+- **Template Variables**: Available in context
+  - Equipment fields: equipment_name, equipment_model, equipment_specs, factory_number, inventory_number, etc.
+  - Verification fields: verification_type, verification_date, registry_number, verification_due, etc.
+  - Responsibility fields: department (mapped to Russian), responsible_person, verifier_org
+- **RFC 5987 headers**: Cyrillic filenames (e.g., "Этикетка_{id}.docx", "Акт_консервации_{count}_шт.docx")
+- **Access**: All authenticated users can generate documents
+- **Frontend**: DocumentActionsDropdown component with hover menu ("Печать этикетки", "Акт консервации")
+- **Recent fixes** (2025-10-25):
+  - Table border preservation when generating labels from templates
+  - Conservation act generation with automatic row numbering and point formatting
 
 ## Important Notes
 
@@ -532,6 +560,13 @@ ELSIF NEW.verification_state = 'state_work' THEN
   - Bold font weight (600)
   - Rounded corners with padding for better visibility
 - Removed "Закрыть" button (redundant with X close icon)
+
+### Label Generation Improvements (2025-10-25)
+**Changes**:
+- Fixed table border preservation in generated labels (critical for layout consistency)
+- Fixed department mapping for Russian labels in document generation
+- Added batch label generation feature (multiple equipment items in single document)
+- Archive equipment files now viewable in ArchiveTable modal
 
 ## Known Issues
 
