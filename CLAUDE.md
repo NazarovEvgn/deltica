@@ -314,10 +314,10 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 **14. UI/UX Design Guidelines** (implemented from `docs/deltica_dev_plan.md`):
 - **Layout Structure**:
   - Row 1: AppLogo (left) → MetricsDashboard (center) → UserProfile (right)
-  - Row 2: Buttons (left: Filters, Documents, Admin Panel) → SearchBar (center, 600px) → Empty spacer (right)
+  - Row 2: Buttons (left: Filters, Documents, Statistics, Admin Panel) → SearchBar (center, 600px) → Empty spacer (right)
   - CSS Grid layout (1fr auto 1fr) ensures true centering regardless of side content
   - Main table below with white background on light gray (#f5f5f5) page
-- **AppLogo Component**: 24x24px favicon + "Deltica" text (black #333, bold), 6px gap
+- **AppLogo Component**: 24x24px favicon + "Deltica" text (black #333, bold), 6px gap, clickable (returns to main/scrolls to top)
 - **Metrics Dashboard**: Monochrome design (#333), no colored indicators, increased font sizes (value: 17px, label: 11px)
 - **User Profile Display**: Format "Department Surname I." with icon at right, no role tag, dropdown menu contains only "Logout"
 - **Admin Panel Component** (`AdminPanel.vue`):
@@ -326,10 +326,10 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - Consolidates all admin actions in one place
   - BackupPanel and SystemMonitor components have buttons removed, controlled via refs and `openModal()` method
 - **Button Styles**:
-  - All action buttons use `type="primary"` (Filters, Documents, Admin Panel)
+  - All action buttons use `type="primary"` (Filters, Documents, Statistics, Admin Panel)
   - Border radius: 6px (unified with tables and inputs)
   - Table action buttons (Edit/Delete/View): gray (#8c8c8c)
-- **Documents Button**: Positioned in button row (row 2), `type="primary"`
+- **Documents & Statistics Buttons**: Positioned in button row (row 2), both `type="primary"`
 - **Documents Modal**: Title "Документы по метрологическому обеспечению в филиале", displays date only (no time/author)
 - **Equipment View Modal**:
   - Title: "Полная информация по оборудованию и закрепленные файлы"
@@ -376,6 +376,31 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Recent fixes** (2025-10-25):
   - Table border preservation when generating labels from templates
   - Conservation act generation with automatic row numbering and point formatting
+
+**16. Laborant Statistics** (`frontend/src/components/LaborantStatistics.vue`):
+- **Purpose**: Verification statistics dashboard for laborants with date range filtering
+- **Features**:
+  - Date range selector (default: current year, Jan 1 - Dec 31)
+  - Filters equipment by `verification_date` within selected period
+  - Client-side calculation from main table data (already filtered by department for laborants)
+  - Archive data loaded on-demand for failed verification count
+- **Statistics Sections**:
+  1. **General**: Total equipment verified in period
+  2. **By Type**: Breakdown by verification_type (verification/calibration/certification)
+  3. **Failed**: Count from archive with reason "Извещение о непригодности" (department-specific)
+  4. **By Status**: Fit and in storage counts from verified equipment
+- **Data Flow**:
+  - Receives `equipmentData` prop from MainTable (source array)
+  - Loads archive data via `GET /archive/` when modal opens
+  - Filters by currentUser.department for failed verification count
+  - All calculations in computed property `statistics`
+- **UI Integration**:
+  - "Статистика" button next to "Документы" button (type="primary")
+  - Modal window with NDatePicker (daterange type)
+  - 4 NCard sections with stat-row styling
+  - Color coding: failed (red #d03050), fit (green #18a058), others (black #333)
+- **Access**: All authenticated users (laborants see department-filtered data automatically)
+- **Location**: `frontend/src/components/LaborantStatistics.vue`, button in MainTable.vue line 764-766
 
 ## Important Notes
 
@@ -567,6 +592,47 @@ ELSIF NEW.verification_state = 'state_work' THEN
 - Fixed department mapping for Russian labels in document generation
 - Added batch label generation feature (multiple equipment items in single document)
 - Archive equipment files now viewable in ArchiveTable modal
+
+### Laborant Statistics Feature (2025-10-25)
+**Feature**: Verification statistics dashboard for laborants with date range filtering.
+
+**Implementation**:
+- Component (`frontend/src/components/LaborantStatistics.vue`):
+  - Modal window with date range selector (default: current year)
+  - Four statistics sections: General, By Type, Failed, By Status
+  - Client-side calculation from main table data
+  - Archive data loading for failed verification count
+- Integration:
+  - "Статистика" button added next to "Документы" in MainTable (line 764-766)
+  - Button style: `type="primary"` (blue)
+  - Accessible to all authenticated users
+- Statistics calculated:
+  - Total equipment verified in selected period (by verification_date)
+  - Breakdown by verification type (verification/calibration/certification)
+  - Failed verifications from archive (department-specific, reason: "Извещение о непригодности")
+  - Status breakdown (fit/in storage) from verified equipment
+
+**Key Features**:
+- Department filtering automatic for laborants (via loadData in MainTable)
+- Archive data loaded on-demand when modal opens
+- All calculations in computed property for reactivity
+- Color-coded display: failed (red), fit (green), others (black)
+
+### AppLogo Navigation (2025-10-25)
+**Feature**: Clickable logo for navigation.
+
+**Implementation**:
+- AppLogo component now emits 'click' event
+- In ArchiveTable: click returns to main table (emits 'back-to-main')
+- In MainTable: click scrolls to top of page (smooth scroll)
+- Styling: cursor pointer, hover opacity effect (0.8)
+
+### Filter Access for Laborants (2025-10-25)
+**Changes**:
+- Removed `v-if="isAdmin"` from Filters button - now accessible to all users
+- Added `isLaborant` prop to FilterPanel component
+- Hidden "Финансы" and "Ответственность" sections for laborants in filter panel
+- Quick filters now available for all users (expired, expiring, fit, on verification, in storage, in repair)
 
 ## Known Issues
 
