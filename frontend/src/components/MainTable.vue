@@ -712,6 +712,11 @@ const downloadCommissioningTemplate = async () => {
   }
 }
 
+// Обработчик клика по логотипу - прокрутка к началу страницы
+const handleLogoClick = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 onMounted(() => {
   loadData()
   loadSavedSettings()
@@ -731,7 +736,7 @@ defineExpose({
       <div class="header-row">
         <!-- Левая часть: логотип -->
         <div class="header-left">
-          <AppLogo />
+          <AppLogo @click="handleLogoClick" />
         </div>
 
         <!-- Центральная часть: Дашборд с метриками -->

@@ -214,7 +214,7 @@ onMounted(() => {
     <div class="action-panel">
       <div class="header">
         <div class="logo-title-section">
-          <AppLogo />
+          <AppLogo @click="$emit('back-to-main')" />
           <h2 style="color: #333333; font-weight: bold; margin: 0; font-family: 'PT Astra Sans', sans-serif;">Архив оборудования</h2>
         </div>
         <n-space>
