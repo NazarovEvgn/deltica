@@ -6,6 +6,7 @@ from pathlib import Path
 from docxtpl import DocxTemplate
 from sqlalchemy.orm import Session
 from backend.app import models
+from copy import deepcopy
 
 
 class DocumentService:
@@ -99,6 +100,7 @@ class DocumentService:
     def generate_labels_batch(self, equipment_ids: List[int]) -> Optional[str]:
         """
         Генерировать пакет этикеток для нескольких единиц оборудования
+        Использует простой шаблон, этикетки идут одна под другой без разрывов страниц
         Возвращает путь к сгенерированному файлу или None при ошибке
         """
         if not equipment_ids:
@@ -114,22 +116,63 @@ class DocumentService:
         if not equipments_data:
             return None
 
-        # Загрузить пакетный шаблон
-        template_path = self.templates_dir / "template_labels_batch.docx"
+        # Загрузить шаблон одной этикетки
+        template_path = self.templates_dir / "template_label.docx"
         if not template_path.exists():
             raise FileNotFoundError(f"Шаблон не найден: {template_path}")
 
+        from docx import Document
+        from docx.shared import Cm
+
+        # Генерируем первую этикетку - она станет основой документа
         template = DocxTemplate(template_path)
+        template.render(equipments_data[0])
 
-        # Заполнить шаблон
-        context = {'equipments': equipments_data}
-        template.render(context)
-
-        # Сохранить результат
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_filename = f"labels_batch_{len(equipments_data)}_items_{timestamp}.docx"
+        output_filename = f"labels_{len(equipments_data)}_items_{timestamp}.docx"
         output_path = self.output_dir / output_filename
 
         template.save(str(output_path))
+
+        # Если есть ещё этикетки, добавляем их
+        if len(equipments_data) > 1:
+            result_doc = Document(str(output_path))
+
+            # Устанавливаем минимальные поля
+            section = result_doc.sections[0]
+            section.top_margin = Cm(1)
+            section.bottom_margin = Cm(1)
+            section.left_margin = Cm(1.5)
+            section.right_margin = Cm(1.5)
+
+            # Для остальных единиц оборудования генерируем этикетки
+            for idx in range(1, len(equipments_data)):
+                equipment_data = equipments_data[idx]
+
+                # Загружаем шаблон и заполняем данными
+                template = DocxTemplate(template_path)
+                template.render(equipment_data)
+
+                # Сохраняем во временный файл
+                temp_path = self.output_dir / f"temp_label_{idx}.docx"
+                template.save(str(temp_path))
+
+                # Добавляем отступ между этикетками
+                result_doc.add_paragraph()
+
+                # Читаем заполненный шаблон
+                temp_doc = Document(str(temp_path))
+
+                # Копируем таблицу из шаблона
+                if temp_doc.tables:
+                    source_table = temp_doc.tables[0]
+                    new_table_element = deepcopy(source_table._element)
+                    result_doc.element.body.append(new_table_element)
+
+                # Удаляем временный файл
+                temp_path.unlink()
+
+            # Сохраняем результат
+            result_doc.save(str(output_path))
 
         return str(output_path)
