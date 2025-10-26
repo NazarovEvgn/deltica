@@ -17,9 +17,6 @@ wheels/
 # User configuration (содержит пароли)
 config/users_config.yaml
 
-# Documentation
-docs/
-
 # Uploaded files
 backend/uploads/
 
