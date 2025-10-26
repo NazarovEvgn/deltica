@@ -20,8 +20,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Convert verification_due to computed column."""
-    # Drop the existing column
-    op.drop_column('verification', 'verification_due')
+    # Drop the existing column if it exists
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT FROM information_schema.columns
+                WHERE table_name='verification' AND column_name='verification_due'
+            ) THEN
+                ALTER TABLE verification DROP COLUMN verification_due;
+            END IF;
+        END $$;
+    """)
 
     # Add computed column
     op.execute("""
