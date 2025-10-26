@@ -30,8 +30,8 @@ const formatDate = (dateString) => {
 
 // Определение колонок для RevoGrid
 const columns = ref([
-  { prop: 'equipment_name', name: 'Наименование', size: 200, readonly: true, sortable: true, filter: 'string' },
-  { prop: 'equipment_model', name: 'Модель', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'equipment_name', name: 'Наименование', size: 300, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'equipment_model', name: 'Модель', size: 220, readonly: true, sortable: true, filter: 'string' },
   { prop: 'factory_number', name: 'Заводской номер', size: 150, readonly: true, sortable: true, filter: 'string' },
   { prop: 'inventory_number', name: 'Инвентарный номер', size: 150, readonly: true, sortable: true, filter: 'string' },
   {
@@ -85,7 +85,7 @@ const columns = ref([
   {
     prop: 'actions',
     name: 'Действия',
-    size: 330,
+    size: 270,
     readonly: true,
     sortable: false,
     cellTemplate: (createElement, props) => {

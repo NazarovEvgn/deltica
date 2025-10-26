@@ -246,29 +246,35 @@ const dynamicColumns = computed(() => {
     // Определяем размер колонки в зависимости от поля
     let columnSize = 150 // дефолтный размер
     if (fieldKey === 'equipment_name') {
-      columnSize = 250 // увеличенная ширина для наименования
+      columnSize = 300 // увеличенная ширина для наименования
+    } else if (fieldKey === 'equipment_model') {
+      columnSize = 220 // увеличенная ширина для модели
+    } else if (fieldKey === 'equipment_specs') {
+      columnSize = 230 // "Технические характеристики"
     } else if (fieldKey === 'equipment_type') {
       columnSize = 160 // "Тип оборудования"
     } else if (fieldKey === 'verification_interval') {
-      columnSize = 100 // уменьшенный размер для интервала
+      columnSize = 180 // "Межповерочный интервал"
     } else if (fieldKey === 'verification_plan') {
       columnSize = 130 // ширина по содержимому (например: "Октябрь 2025")
     } else if (fieldKey === 'verification_date') {
-      columnSize = 160 // "Дата верификации"
+      columnSize = 180 // "Дата верификации"
     } else if (fieldKey === 'verification_due') {
       columnSize = 140 // "Действует до"
     } else if (fieldKey === 'verification_type') {
-      columnSize = 160 // "Тип верификации"
+      columnSize = 180 // "Тип верификации"
     } else if (fieldKey === 'registry_number') {
       columnSize = 160 // "Номер в реестре"
     } else if (fieldKey === 'verifier_org') {
       columnSize = 220 // "Организация-поверитель"
     } else if (fieldKey === 'budget_item') {
-      columnSize = 150 // "Статья бюджета"
+      columnSize = 170 // "Статья бюджета"
     } else if (fieldKey === 'code_rate') {
       columnSize = 140 // "Тариф"
     } else if (fieldKey === 'cost_rate') {
-      columnSize = 200 // "Стоимость по тарифу (без НДС)"
+      columnSize = 240 // "Стоимость по тарифу (без НДС)"
+    } else if (fieldKey === 'coefficient') {
+      columnSize = 170 // "Доп. коэффициент"
     } else if (fieldKey === 'total_cost') {
       columnSize = 200 // "Итоговая стоимость (без НДС)"
     } else if (fieldKey === 'paid_amount') {
@@ -371,7 +377,7 @@ const columnsWithActions = computed(() => {
     columns.push({
       prop: 'actions',
       name: 'Действия',
-      size: 210,
+      size: 215,
       cellTemplate: (createElement, props) => {
         const equipmentId = props.model.equipment_id
         return createElement('div', {
@@ -598,24 +604,14 @@ const viewEquipment = (equipmentId) => {
 
 // Вспомогательная функция для открытия или скачивания файла
 const handleFileDownload = async (blob, filename) => {
-  // Отладочное логирование
-  console.log('handleFileDownload вызвана')
-  console.log('window.electron:', window.electron)
-  console.log('window.electron.openFile:', window.electron?.openFile)
-
   // Проверяем, запущено ли приложение в Electron
   if (window.electron && window.electron.openFile) {
-    console.log('Используем Electron API для открытия файла')
     // В Electron режиме - открываем файл автоматически
     try {
       const arrayBuffer = await blob.arrayBuffer()
-      console.log('ArrayBuffer создан, размер:', arrayBuffer.byteLength)
       const result = await window.electron.openFile(arrayBuffer, filename)
-      console.log('Результат открытия файла:', result)
 
-      if (result.success) {
-        console.log('Файл успешно открыт:', result.path)
-      } else {
+      if (!result.success) {
         console.error('Ошибка при открытии файла:', result.error)
         alert('Ошибка при открытии файла: ' + result.error)
       }
@@ -624,7 +620,6 @@ const handleFileDownload = async (blob, filename) => {
       alert('Ошибка при открытии файла: ' + error.message)
     }
   } else {
-    console.log('Используем браузерное скачивание')
     // В браузере - обычное скачивание
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
