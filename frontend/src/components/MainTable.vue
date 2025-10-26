@@ -249,34 +249,34 @@ const dynamicColumns = computed(() => {
       columnSize = 300 // увеличенная ширина для наименования
     } else if (fieldKey === 'equipment_model') {
       columnSize = 220 // увеличенная ширина для модели
-    } else if (fieldKey === 'equipment_specs') {
-      columnSize = 230 // "Технические характеристики"
     } else if (fieldKey === 'equipment_type') {
-      columnSize = 160 // "Тип оборудования"
+      columnSize = 180 // "Тип оборудования"
+    } else if (fieldKey === 'equipment_specs') {
+      columnSize = 180 // "Характеристики}"
     } else if (fieldKey === 'verification_interval') {
-      columnSize = 180 // "Межповерочный интервал"
+      columnSize = 120 // уменьшенный размер для интервала
     } else if (fieldKey === 'verification_plan') {
-      columnSize = 130 // ширина по содержимому (например: "Октябрь 2025")
+      columnSize = 130 // ширина по содержимому
     } else if (fieldKey === 'verification_date') {
       columnSize = 180 // "Дата верификации"
     } else if (fieldKey === 'verification_due') {
       columnSize = 140 // "Действует до"
     } else if (fieldKey === 'verification_type') {
-      columnSize = 180 // "Тип верификации"
+      columnSize = 170 // "Тип верификации"
     } else if (fieldKey === 'registry_number') {
       columnSize = 160 // "Номер в реестре"
     } else if (fieldKey === 'verifier_org') {
       columnSize = 220 // "Организация-поверитель"
     } else if (fieldKey === 'budget_item') {
-      columnSize = 170 // "Статья бюджета"
+      columnSize = 160 // "Статья бюджета"
     } else if (fieldKey === 'code_rate') {
       columnSize = 140 // "Тариф"
     } else if (fieldKey === 'cost_rate') {
-      columnSize = 240 // "Стоимость по тарифу (без НДС)"
-    } else if (fieldKey === 'coefficient') {
-      columnSize = 170 // "Доп. коэффициент"
+      columnSize = 270 // "Стоимость по тарифу (без НДС)"
     } else if (fieldKey === 'total_cost') {
-      columnSize = 200 // "Итоговая стоимость (без НДС)"
+      columnSize = 270 // "Итоговая стоимость (без НДС)"
+    } else if (fieldKey === 'coefficient') {
+      columnSize = 190 // "Коэффициент"
     } else if (fieldKey === 'paid_amount') {
       columnSize = 140 // "Факт оплаты"
     } else if (fieldKey === 'status') {
@@ -298,7 +298,9 @@ const dynamicColumns = computed(() => {
       readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
     }
 
-    // Добавляем cellTemplate для форматирования только для status (с цветовым кодированием)
+    // Добавляем cellTemplate для форматирования
+
+    // Статусы с цветовым кодированием
     if (fieldKey === 'status') {
       // Изменяем prop на status_display для отображения
       columnConfig.prop = 'status_display'
@@ -323,6 +325,37 @@ const dynamicColumns = computed(() => {
             padding: '0 4px',
             color: color,
             fontWeight: '600'
+          }
+        })
+      }
+    }
+
+    // Финансовые поля с форматированием (разделение тысяч и 2 знака после запятой)
+    if (fieldKey === 'cost_rate' || fieldKey === 'total_cost' || fieldKey === 'paid_amount') {
+      columnConfig.cellTemplate = (createElement, props) => {
+        const value = props.model[fieldKey]
+
+        // Форматирование числа: разделение тысяч пробелом, 2 знака после запятой
+        let formattedValue = ''
+        if (value !== null && value !== undefined && value !== '') {
+          const num = parseFloat(value)
+          if (!isNaN(num)) {
+            formattedValue = num.toLocaleString('ru-RU', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })
+          } else {
+            formattedValue = value
+          }
+        }
+
+        return createElement('span', {
+          textContent: formattedValue,
+          style: {
+            padding: '0 4px',
+            textAlign: 'right',
+            display: 'block',
+            fontVariantNumeric: 'tabular-nums'
           }
         })
       }
