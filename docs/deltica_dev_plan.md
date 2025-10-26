@@ -1,90 +1,197 @@
-# План разработки
+# Deltica Production Deployment Plan
+# План подготовки к production развертыванию
 
-### Предыстория
-- Изначально был выбран Tauri v2 в качестве desktop обертки
-- Обнаружены критические проблемы: конфликт с RevoGrid (отсутствие отображения), проблемы с кэшем
-- Принято решение о миграции на Electron для гарантированной совместимости
+## Архитектура
 
-### Причины выбора Electron
-- **Совместимость с RevoGrid**: Electron использует Chromium - тот же движок, что и в веб-версии
-- **Зрелость экосистемы**: проверен годами (VS Code, Slack, Discord)
-- **Единая среда разработки**: только JavaScript/TypeScript (не требуется Rust)
-- **Предсказуемое поведение**: встроенный Chromium обеспечивает одинаковое поведение на всех машинах
-- **Корпоративный контекст**: размер установщика не критичен для внутреннего развертывания
-
-### План миграции (пошаговый чеклист)
-
-#### Этап 1: Подготовка и очистка
-- [x] Удалить директорию `frontend/src-tauri/` со всем содержимым
-- [x] Удалить файл `frontend/TAURI_README.md`
-- [x] Удалить Tauri зависимости из `frontend/package.json`
-- [x] Удалить Tauri скрипты из `frontend/package.json` (tauri, tauri:dev, tauri:build)
-- [ ] Обновить CLAUDE.md (удалить секцию о Tauri)
-
-#### Этап 2: Установка Electron и зависимостей
-- [ ] Установить Electron: `npm install --save-dev electron`
-- [ ] Установить Electron Builder: `npm install --save-dev electron-builder`
-- [ ] Установить утилиты: `npm install --save-dev electron-devtools-installer`
-- [ ] (Опционально) Установить Electron Forge для упрощенной настройки
-
-#### Этап 3: Создание структуры проекта
 ```
-frontend/
-├── electron/
-│   ├── main.js              # Главный процесс Electron
-│   ├── preload.js           # Preload скрипт для безопасности
-│   └── menu.js              # Настройка меню приложения (опционально)
-├── src/                     # Vue.js исходники (без изменений)
-├── public/                  # Статические файлы (без изменений)
-├── dist/                    # Собранные файлы Vite (генерируется)
-├── package.json             # Обновленный с Electron скриптами
-└── vite.config.js           # Конфигурация Vite (проверить base path)
+┌─────────────────────────────────────┐
+│  СЕРВЕР (Windows Server / Linux)    │
+│  ┌───────────────────────────────┐  │
+│  │ Docker Compose                │  │
+│  │  ├─ Backend (FastAPI)         │  │
+│  │  └─ PostgreSQL 17             │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+              ↑
+              │ HTTP API (локальная сеть)
+              ↓
+┌─────────────────────────────────────┐
+│  РАБОЧИЕ ПК (100+ станций)          │
+│  ┌───────────────────────────────┐  │
+│  │ Deltica.exe (Electron)        │  │
+│  │ - Frontend (Vue + RevoGrid)   │  │
+│  │ - API: http://server:8000     │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
 ```
 
-#### Этап 4: Конфигурация Electron
+---
 
-**Создать `frontend/electron/main.js`:**
-- Настройка главного окна (BrowserWindow)
-- Размеры окна: width: 1400, height: 900, minWidth: 1200, minHeight: 700
-- Security: contextIsolation: true, nodeIntegration: false, sandbox: true
-- Загрузка приложения:
-  - Dev mode: loadURL('http://localhost:5173')
-  - Production: loadFile('dist/index.html')
-- Обработка жизненного цикла: app.on('ready'), app.on('window-all-closed')
+## Этап 1: Docker контейнеризация backend
 
-**Создать `frontend/electron/preload.js`:**
-- Безопасный мост между Electron и renderer process
-- Использовать contextBridge API для экспозиции необходимых функций
-- Пока минимальная реализация (расширить по необходимости)
+### Задачи:
+- [ ] Создать `Dockerfile` для backend
+- [ ] Создать `docker-compose.yml` (backend + PostgreSQL + volumes)
+- [ ] Создать `.env.production` с переменными окружения
+- [ ] Создать `docker/entrypoint.sh` (миграции + seed)
+- [ ] Протестировать сборку и запуск
 
-#### Этап 5: Обновление package.json
+### Файлы для создания:
 
-**Добавить поля:**
-```json
-{
-  "main": "electron/main.js",
-  "author": "NazarovEvgn",
-  "description": "Deltica - система управления метрологическим оборудованием"
-}
+**Dockerfile:**
+```dockerfile
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка uv
+RUN pip install uv
+
+# Копирование зависимостей
+COPY pyproject.toml uv.lock ./
+
+# Установка Python зависимостей
+RUN uv sync --no-dev
+
+# Копирование кода
+COPY . .
+
+# Порт
+EXPOSE 8000
+
+# Entrypoint
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
 ```
 
-**Добавить скрипты:**
-```json
-{
-  "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-  "electron:build": "npm run build && electron-builder",
-  "electron:build:win": "npm run build && electron-builder --win --x64"
-}
+**docker-compose.yml:**
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: deltica_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: deltica_backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
+      - ./backend/backups:/app/backend/backups
+      - ./backend/logs:/app/backend/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
 ```
 
-**Добавить конфигурацию electron-builder:**
+**.env.production:**
+```bash
+# Database
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=deltica_prod
+DB_USER=deltica_user
+DB_PASSWORD=CHANGE_THIS_STRONG_PASSWORD
+
+# Backend
+SECRET_KEY=CHANGE_THIS_SECRET_KEY_MINIMUM_32_CHARACTERS
+```
+
+**docker/entrypoint.sh:**
+```bash
+#!/bin/bash
+set -e
+
+# Ожидание готовности PostgreSQL
+echo "Waiting for PostgreSQL..."
+while ! pg_isready -h postgres -U $DB_USER; do
+  sleep 1
+done
+
+# Применение миграций
+echo "Applying database migrations..."
+uv run alembic upgrade head
+
+# Создание начальных пользователей
+echo "Seeding initial users..."
+uv run python backend/scripts/seed_users.py || true
+
+# Запуск backend
+echo "Starting backend..."
+exec uv run uvicorn backend.core.main:app --host 0.0.0.0 --port 8000
+```
+
+**Проверка:**
+```bash
+docker-compose up -d
+curl http://localhost:8000/docs
+```
+
+---
+
+## Этап 2: Production конфигурация Electron
+
+### Задачи:
+- [ ] Создать `frontend/.env.production`
+- [ ] Создать `frontend/build/icon.ico`
+- [ ] Обновить `frontend/package.json` (electron-builder config)
+- [ ] Отключить DevTools в production
+- [ ] Протестировать сборку установщика
+
+### Файлы для создания:
+
+**frontend/.env.production:**
+```bash
+# Production API URL - ИЗМЕНИТЬ НА ВАШ СЕРВЕР!
+VITE_API_URL=http://192.168.1.100:8000
+
+# Или доменное имя
+# VITE_API_URL=http://deltica-server.local:8000
+```
+
+**frontend/package.json** (добавить в секцию "build"):
 ```json
 {
   "build": {
-    "appId": "com.deltica.app",
+    "appId": "com.gazpromneft.deltica",
     "productName": "Deltica",
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-electron",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -93,99 +200,250 @@ frontend/
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/favicon.png"
+      "icon": "build/icon.ico",
+      "publisherName": "Gazprom Neft"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "Deltica",
+      "license": "LICENSE.txt"
     }
   }
 }
 ```
 
-#### Этап 6: Установка дополнительных утилит
-- [ ] Установить `concurrently` для одновременного запуска dev сервера и Electron:
-  ```bash
-  npm install --save-dev concurrently
-  ```
-- [ ] Установить `wait-on` для ожидания запуска dev сервера:
-  ```bash
-  npm install --save-dev wait-on
-  ```
+**frontend/electron/main.js** (отключить DevTools в production):
+```javascript
+// В режиме разработки загружаем из Vite dev server
+if (process.env.NODE_ENV === 'development') {
+  // Очистка кэша в dev режиме для предотвращения проблем с RevoGrid
+  mainWindow.webContents.session.clearCache()
 
-#### Этап 7: Тестирование
-- [ ] Запустить в dev режиме: `npm run electron:dev`
-- [ ] Проверить отображение RevoGrid таблицы
-- [ ] Проверить работу всех функций (CRUD, фильтры, статистика, документы)
-- [ ] Проверить аутентификацию и роли (admin/laborant)
-- [ ] Тестировать генерацию документов (этикетки, акты)
+  mainWindow.loadURL('http://localhost:5173')
+  mainWindow.webContents.openDevTools()
+} else {
+  // В production загружаем собранные файлы
+  mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+  // DevTools отключены в production
+}
+```
 
-#### Этап 8: Сборка production
-- [ ] Собрать приложение: `npm run electron:build:win`
-- [ ] Установить и протестировать .exe на чистой машине
-- [ ] Проверить подключение к backend серверу
-- [ ] Протестировать все критические функции
+**Создание иконки:**
+```bash
+# Конвертировать favicon.png в .ico с несколькими размерами
+# Размеры: 16, 32, 48, 64, 128, 256
+# Сохранить в frontend/build/icon.ico
+```
 
-#### Этап 9: Документация
-- [ ] Создать `frontend/ELECTRON_README.md` с инструкциями:
-  - Требования (Node.js версия)
-  - Запуск в dev режиме
-  - Сборка для production
-  - Troubleshooting
-- [ ] Обновить CLAUDE.md с информацией об Electron
-- [ ] Обновить основной README.md проекта (если есть)
+**Сборка установщика:**
+```bash
+cd frontend
 
-#### Этап 10: Опциональные улучшения
-- [ ] Настроить авто-обновление (electron-updater)
-- [ ] Добавить splash screen при загрузке
-- [ ] Настроить кастомное меню приложения
-- [ ] Добавить горячие клавиши (Ctrl+R для перезагрузки в dev)
-- [ ] Настроить иконки для разных разрешений
-- [ ] Добавить tray icon (для сворачивания в трей)
+# Установка зависимостей (если нужно)
+npm install
 
-### Важные замечания
+# Production сборка
+npm run electron:build:win
 
-**Backend сервер:**
-- Backend (FastAPI) должен запускаться отдельно на `http://localhost:8000`
-- Electron приложение - это только frontend обертка
-- Нет планов встраивания Python backend в Electron (требует exe-wrapper)
+# Результат: frontend/dist-electron/Deltica-Setup-1.0.0.exe (~150 MB)
+```
 
-**Безопасность:**
-- Использовать contextIsolation и отключить nodeIntegration
-- Минимизировать код в preload.js
-- Валидировать все данные, передаваемые между процессами
+---
 
-**Размер установщика:**
-- Ожидаемый размер: ~120-150 MB (включает Chromium + Node.js)
-- Приемлемо для корпоративного сценария с внутренней сетью
+## Этап 3: Документация развертывания
 
-**Совместимость:**
-- Windows 10/11 (основная платформа)
-- Возможность расширения на Linux/macOS в будущем
+### Задачи:
+- [ ] Создать `docs/DEPLOYMENT.md` - установка сервера
+- [ ] Создать `docs/CLIENT_INSTALL.md` - установка клиента
+- [ ] Создать `docs/UPDATE.md` - обновление системы
+- [ ] Создать `docs/USER_GUIDE.md` - руководство пользователя
+- [ ] Создать `docs/ADMIN_GUIDE.md` - руководство администратора
 
-### Риски и митигации
+### Структура документов:
 
-| Риск | Вероятность | Митигация |
-|------|-------------|-----------|
-| Большой размер установщика | Высокая | Корпоративная среда - не критично |
-| Медленный запуск | Средняя | Оптимизация main.js, lazy loading |
-| Проблемы с auto-update | Средняя | Тестирование на staging окружении |
-| Конфликты версий Node.js | Низкая | Фиксация версий в package.json |
+**DEPLOYMENT.md:**
+- Системные требования сервера
+- Установка Docker и Docker Compose
+- Клонирование репозитория
+- Настройка `.env.production`
+- Запуск контейнеров
+- Проверка работоспособности
+- Настройка firewall
+- Настройка автозапуска
 
-### Альтернативы (если Electron не подойдет)
-1. **NW.js** - аналог Electron, Node.js + Chromium
-2. **PWA** - Progressive Web App с desktop install
-3. **Neutralinojs** - легковесная альтернатива Electron
+**CLIENT_INSTALL.md:**
+- Системные требования клиента
+- Скачивание `Deltica-Setup-1.0.0.exe`
+- Процесс установки
+- Первый запуск
+- Troubleshooting (типовые проблемы)
 
-## Документация
-- разработать документацию:
-  - для специалиста отвечающего за deploy на сервере.
-  - для пользователя.
-  - общая для презентации приложения на GitHub.
-  - общая техническая по функционалу и структуре.
+**UPDATE.md:**
+- Обновление backend (пересоздание контейнера)
+- Обновление клиентских установщиков
+- Откат к предыдущей версии
+- Backup перед обновлением
 
+**USER_GUIDE.md:**
+- Вход в систему
+- Работа с оборудованием (CRUD)
+- Фильтрация и поиск
+- Архивирование
+- Загрузка/скачивание файлов
+- Генерация документов
+- Статистика
 
-## Docker
-- добавить Docker контейниризацию в разработку
+**ADMIN_GUIDE.md:**
+- Управление пользователями (sync_users.py)
+- Создание backup
+- Мониторинг системы
+- Просмотр логов
+- Обновление системы
+- Устранение типовых проблем
+
+---
+
+## Этап 4: Скрипты автоматизации
+
+### Задачи:
+- [ ] Создать `deploy/install-server.sh` - установка сервера (Linux)
+- [ ] Создать `deploy/backup.sh` - автоматический backup
+- [ ] Создать `deploy/update-server.sh` - обновление сервера
+- [ ] Создать `deploy/build-electron.ps1` - сборка Electron (Windows)
+
+### Скрипты:
+
+**deploy/install-server.sh:**
+```bash
+#!/bin/bash
+# Установка Docker, Docker Compose, запуск контейнеров
+# Для Ubuntu/Debian
+```
+
+**deploy/backup.sh:**
+```bash
+#!/bin/bash
+# - pg_dump базы данных
+# - Копирование uploaded файлов
+# - Ротация старых backup (30 дней)
+```
+
+**deploy/update-server.sh:**
+```bash
+#!/bin/bash
+# - Backup перед обновлением
+# - Pull новых образов
+# - Применение миграций
+# - Перезапуск контейнеров
+```
+
+**deploy/build-electron.ps1:**
+```powershell
+# - npm install
+# - npm run build
+# - npm run electron:build:win
+# - Копирование установщика в shared folder
+```
+
+---
+
+## Этап 5: Тестирование production
+
+### Задачи:
+- [ ] Развертывание на тестовом сервере
+- [ ] Установка на 3 тестовых ПК
+- [ ] Проверка CRUD операций
+- [ ] Проверка файлов (загрузка/скачивание)
+- [ ] Проверка одновременной работы 3 пользователей
+- [ ] Проверка backup/restore
+- [ ] Стресс-тест (10+ пользователей, 1000+ записей)
+
+---
+
+## Этап 6: Усиление безопасности
+
+### Задачи:
+
+**Backend:**
+- [ ] HTTPS (SSL/TLS сертификаты)
+- [ ] Rate limiting (защита от брутфорса)
+- [ ] Блокировка после 5 неудачных попыток входа
+- [ ] Логирование всех аутентификаций
+
+**Database:**
+- [ ] Strong password для PostgreSQL
+- [ ] Отключение удаленного доступа (только localhost)
+
+**Network:**
+- [ ] Firewall (открыть только порт 8000 для локальной сети)
+
+**Electron:**
+- [ ] Code signing (подпись установщика) - опционально
+- [ ] Отключение DevTools в production
+
+---
+
+## Чек-лист готовности к production
+
+### Сервер
+- [ ] Docker и Docker Compose установлены
+- [ ] `.env.production` настроен с сильными паролями
+- [ ] Firewall настроен (порт 8000 для локальной сети)
+- [ ] Backup настроен
+- [ ] Логи настроены и ротируются
+- [ ] Тестовые пользователи созданы
+
+### Клиенты
+- [ ] Electron установщик собран
+- [ ] Правильный API URL в `.env.production`
+- [ ] Инструкция по установке готова
+
+### Документация
+- [ ] DEPLOYMENT.md
+- [ ] CLIENT_INSTALL.md
+- [ ] UPDATE.md
+- [ ] USER_GUIDE.md
+- [ ] ADMIN_GUIDE.md
+
+### Тестирование
+- [ ] Развертывание сервера протестировано
+- [ ] Установка клиента протестирована
+- [ ] CRUD операции работают
+- [ ] Файлы загружаются/скачиваются
+- [ ] Одновременная работа нескольких пользователей
+- [ ] Backup и restore протестированы
+
+---
+
+## Системные требования
+
+**Сервер:**
+- OS: Windows Server 2019+ или Ubuntu 20.04+
+- CPU: 4 cores
+- RAM: 8 GB
+- HDD: 100 GB (SSD рекомендуется)
+
+**Клиент:**
+- OS: Windows 10/11 (64-bit)
+- CPU: 2 cores
+- RAM: 4 GB
+- HDD: 500 MB
+
+---
+
+## Порты
+
+| Сервис | Порт | Доступ |
+|--------|------|--------|
+| Backend API | 8000 | Локальная сеть |
+| PostgreSQL | 5432 | Только localhost |
+
+---
+
+**Контакты:**
+- Разработчик: NazarovEvgn
+- Репозиторий: https://github.com/NazarovEvgn/deltica
