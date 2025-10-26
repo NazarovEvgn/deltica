@@ -48,7 +48,7 @@ function createSplashWindow() {
           justify-content: center;
           align-items: center;
           height: 100vh;
-          background-color: #f5f5f5;
+          background-color: #ececec;
           font-family: 'PT Astra Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .splash-container {
@@ -71,7 +71,7 @@ function createSplashWindow() {
         }
         .title {
           font-size: 32px;
-          font-weight: 700;
+          font-weight: 900;
           color: #333333;
           letter-spacing: 0.5px;
         }

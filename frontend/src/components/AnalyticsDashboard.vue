@@ -192,7 +192,7 @@ const summaryRow = () => {
 }
 
 .calendar-section :deep(.n-data-table-th) {
-  background-color: #f5f5f5;
+  background-color: #ececec;
   font-weight: 600;
   text-align: center;
 }

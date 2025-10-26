@@ -269,7 +269,7 @@ onMounted(() => {
   flex-direction: column;
   padding: 20px;
   box-sizing: border-box;
-  background: #f5f5f5;
+  background: #ececec;
 }
 
 .action-panel {

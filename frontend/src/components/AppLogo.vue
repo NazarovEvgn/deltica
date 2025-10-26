@@ -36,7 +36,7 @@ const handleClick = () => {
 
 .app-name {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 900;
   color: #333333;
   letter-spacing: 0.5px;
 }
