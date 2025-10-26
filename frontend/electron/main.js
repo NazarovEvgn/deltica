@@ -1,6 +1,8 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
+import os from 'os'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -17,7 +19,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,  // Отключаем sandbox для работы с файловой системой через IPC
       webSecurity: false  // Отключаем CORS для localhost API
     },
     icon: path.join(__dirname, '../public/favicon.png')
@@ -39,6 +41,32 @@ function createWindow() {
     mainWindow = null
   })
 }
+
+// IPC обработчик для открытия файлов
+ipcMain.handle('open-file', async (event, arrayBuffer, filename) => {
+  try {
+    // Создаем временную папку для документов
+    const tempDir = path.join(os.tmpdir(), 'deltica-docs')
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true })
+    }
+
+    // Путь к временному файлу
+    const filePath = path.join(tempDir, filename)
+
+    // Сохраняем файл
+    const buffer = Buffer.from(arrayBuffer)
+    fs.writeFileSync(filePath, buffer)
+
+    // Открываем файл в дефолтном приложении (Word для .docx)
+    await shell.openPath(filePath)
+
+    return { success: true, path: filePath }
+  } catch (error) {
+    console.error('Error opening file:', error)
+    return { success: false, error: error.message }
+  }
+})
 
 app.whenReady().then(() => {
   createWindow()

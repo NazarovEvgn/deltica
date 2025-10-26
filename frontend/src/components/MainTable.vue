@@ -596,6 +596,47 @@ const viewEquipment = (equipmentId) => {
   emit('view-equipment', equipmentId)
 }
 
+// Вспомогательная функция для открытия или скачивания файла
+const handleFileDownload = async (blob, filename) => {
+  // Отладочное логирование
+  console.log('handleFileDownload вызвана')
+  console.log('window.electron:', window.electron)
+  console.log('window.electron.openFile:', window.electron?.openFile)
+
+  // Проверяем, запущено ли приложение в Electron
+  if (window.electron && window.electron.openFile) {
+    console.log('Используем Electron API для открытия файла')
+    // В Electron режиме - открываем файл автоматически
+    try {
+      const arrayBuffer = await blob.arrayBuffer()
+      console.log('ArrayBuffer создан, размер:', arrayBuffer.byteLength)
+      const result = await window.electron.openFile(arrayBuffer, filename)
+      console.log('Результат открытия файла:', result)
+
+      if (result.success) {
+        console.log('Файл успешно открыт:', result.path)
+      } else {
+        console.error('Ошибка при открытии файла:', result.error)
+        alert('Ошибка при открытии файла: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Ошибка при открытии файла в Electron:', error)
+      alert('Ошибка при открытии файла: ' + error.message)
+    }
+  } else {
+    console.log('Используем браузерное скачивание')
+    // В браузере - обычное скачивание
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  }
+}
+
 // Печать этикеток для выбранного оборудования
 const printLabels = async () => {
   if (selectedIds.value.size === 0) {
@@ -617,21 +658,18 @@ const printLabels = async () => {
       }
     )
 
-    // Скачиваем файл
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `Этикетки_${equipmentIds.length}_шт.docx`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    // Открываем файл в Word (Electron) или скачиваем (браузер)
+    const filename = `Этикетки_${equipmentIds.length}_шт.docx`
+    await handleFileDownload(new Blob([response.data]), filename)
 
     // Очищаем выбранные строки после успешной генерации
     selectedIds.value.clear()
     selectedIds.value = new Set(selectedIds.value)
 
-    alert(`Этикетки для ${equipmentIds.length} ед. оборудования успешно сгенерированы`)
+    const message = window.electron
+      ? `Этикетки для ${equipmentIds.length} ед. оборудования успешно сгенерированы и открыты в Word`
+      : `Этикетки для ${equipmentIds.length} ед. оборудования успешно сгенерированы`
+    alert(message)
   } catch (error) {
     console.error('Ошибка при генерации этикеток:', error)
     alert('Ошибка при генерации этикеток: ' + (error.response?.data?.detail || error.message))
@@ -660,21 +698,18 @@ const printConservationAct = async () => {
       }
     )
 
-    // Скачиваем файл
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `Акт_консервации_${equipmentIds.length}_шт.docx`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    // Открываем файл в Word (Electron) или скачиваем (браузер)
+    const filename = `Акт_консервации_${equipmentIds.length}_шт.docx`
+    await handleFileDownload(new Blob([response.data]), filename)
 
     // Очищаем выбранные строки после успешной генерации
     selectedIds.value.clear()
     selectedIds.value = new Set(selectedIds.value)
 
-    alert(`Акт консервации для ${equipmentIds.length} ед. оборудования успешно сгенерирован`)
+    const message = window.electron
+      ? `Акт консервации для ${equipmentIds.length} ед. оборудования успешно сгенерирован и открыт в Word`
+      : `Акт консервации для ${equipmentIds.length} ед. оборудования успешно сгенерирован`
+    alert(message)
   } catch (error) {
     console.error('Ошибка при генерации акта консервации:', error)
     alert('Ошибка при генерации акта консервации: ' + (error.response?.data?.detail || error.message))
@@ -697,15 +732,13 @@ const downloadCommissioningTemplate = async () => {
       }
     )
 
-    // Скачиваем файл
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', 'Акт_ввода_в_эксплуатацию.docx')
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    // Открываем файл в Word (Electron) или скачиваем (браузер)
+    const filename = 'Акт_ввода_в_эксплуатацию.docx'
+    await handleFileDownload(new Blob([response.data]), filename)
+
+    if (window.electron) {
+      alert('Шаблон акта ввода в эксплуатацию успешно открыт в Word')
+    }
   } catch (error) {
     console.error('Ошибка при скачивании шаблона:', error)
     alert('Ошибка при скачивании шаблона: ' + (error.response?.data?.detail || error.message))
