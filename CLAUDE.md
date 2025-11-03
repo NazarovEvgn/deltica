@@ -295,6 +295,12 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Frontend: Simple log-style interface showing backup history
 - No frequency limitations - admin can create backups on demand
 - Location: Button in admin panel next to Archive button
+- **Excel Export**: Additional button to export all database data to Excel (.xlsx) format
+  - Exports all equipment data with joined verification/responsibility/finance tables
+  - Russian column headers with auto-sized columns
+  - File naming: `deltica_export_YYYYMMDD_HHMMSS.xlsx`
+  - Uses pandas + openpyxl for Excel generation
+  - Direct download with RFC 5987 headers for Cyrillic filenames
 
 **10. Logging and Monitoring** (`backend/core/logging_config.py`, `backend/middleware/logging_middleware.py`, `backend/routes/health.py`, `frontend/src/components/SystemMonitor.vue`):
 - **Structured JSON logging** with automatic rotation (daily, 30-day retention)
@@ -458,17 +464,19 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 
 **Missing API Fields (2025-10-21)**: Added `registry_number` and `equipment_year` to SQL queries, Pydantic schemas, and API responses - fields existed in DB but weren't returned by backend.
 
-### Recent Features (2025-10-25)
+### Recent Features
 
-**Laborant Statistics**: Verification statistics dashboard with date range filtering. Shows total verified, breakdown by type, failed verifications (from archive), and status breakdown. Department-filtered for laborants.
+**Excel Data Export (2025-11-03)**: Added Excel export functionality to Backup panel. Admin can export entire database to .xlsx format with Russian column headers, auto-sized columns, and timestamped filenames. Uses pandas + openpyxl.
 
-**Document Generation**: Batch label generation and conservation acts using docxtpl templates. Table border preservation, automatic row numbering, full equipment data context.
+**Laborant Statistics (2025-10-25)**: Verification statistics dashboard with date range filtering. Shows total verified, breakdown by type, failed verifications (from archive), and status breakdown. Department-filtered for laborants.
 
-**Analytics Dashboard**: Admin verification calendar by department/month. Client-side calculation, automatic year detection, visual highlighting for non-zero values.
+**Document Generation (2025-10-25)**: Batch label generation and conservation acts using docxtpl templates. Table border preservation, automatic row numbering, full equipment data context.
 
-**Contracts Notebook**: Admin-only contract balance tracking with RevoGrid editable table and PostgreSQL computed balance column.
+**Analytics Dashboard (2025-10-25)**: Admin verification calendar by department/month. Client-side calculation, automatic year detection, visual highlighting for non-zero values.
 
-**UI Improvements**: Clickable logo navigation, filter access for laborants (Finance/Responsibility sections hidden), terminology consistency ("На консервации" instead of "на хранении")
+**Contracts Notebook (2025-10-25)**: Admin-only contract balance tracking with RevoGrid editable table and PostgreSQL computed balance column.
+
+**UI Improvements (2025-10-25)**: Clickable logo navigation, filter access for laborants (Finance/Responsibility sections hidden), terminology consistency ("На консервации" instead of "на хранении")
 
 ## Known Issues
 

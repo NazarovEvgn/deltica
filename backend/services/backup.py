@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from backend.app.models import BackupHistory
+from sqlalchemy import select
+import pandas as pd
+from backend.app.models import BackupHistory, Equipment, Verification, Responsibility, Finance
 from backend.core.config import settings
 
 
@@ -245,3 +247,89 @@ class BackupService:
         db.commit()
 
         return True
+
+    def export_to_excel(self, db: Session) -> Path:
+        """
+        Экспортировать данные БД в Excel файл.
+
+        Args:
+            db: Сессия БД
+
+        Returns:
+            Path: Путь к созданному Excel файлу
+        """
+        # Генерируем имя файла с датой и временем
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"deltica_export_{timestamp}.xlsx"
+        file_path = self.BACKUP_DIR / file_name
+
+        # Получаем все данные с JOIN
+        query = (
+            select(
+                Equipment.id.label("ID"),
+                Equipment.equipment_name.label("Наименование"),
+                Equipment.equipment_model.label("Модель/Тип"),
+                Equipment.equipment_type.label("Тип оборудования"),
+                Equipment.factory_number.label("Заводской номер"),
+                Equipment.inventory_number.label("Инвентарный номер"),
+                Equipment.equipment_year.label("Год выпуска"),
+                Verification.verification_type.label("Тип верификации"),
+                Verification.registry_number.label("Номер в реестре"),
+                Verification.verification_interval.label("Межповерочный интервал"),
+                Verification.verification_date.label("Дата верификации"),
+                Verification.verification_due.label("Дата окончания"),
+                Verification.verification_plan.label("Плановая дата"),
+                Verification.verification_state.label("Состояние"),
+                Verification.status.label("Статус"),
+                Responsibility.department.label("Подразделение"),
+                Responsibility.responsible_person.label("Ответственный"),
+                Responsibility.verifier_org.label("Организация-поверитель"),
+                Finance.budget_item.label("Статья бюджета"),
+                Finance.code_rate.label("Тариф"),
+                Finance.cost_rate.label("Стоимость по тарифу"),
+                Finance.quantity.label("Количество"),
+                Finance.coefficient.label("Коэффициент"),
+                Finance.total_cost.label("Итоговая стоимость"),
+                Finance.invoice_number.label("Номер счета"),
+                Finance.paid_amount.label("Факт оплаты"),
+                Finance.payment_date.label("Дата оплаты")
+            )
+            .select_from(Equipment)
+            .join(Verification, Equipment.id == Verification.equipment_id, isouter=True)
+            .join(Responsibility, Equipment.id == Responsibility.equipment_id, isouter=True)
+            .join(Finance, Equipment.id == Finance.equipment_model_id, isouter=True)
+        )
+
+        # Выполняем запрос и получаем результаты
+        result = db.execute(query)
+        rows = result.fetchall()
+
+        # Преобразуем в DataFrame
+        if rows:
+            # Получаем названия колонок из результата
+            columns = result.keys()
+            df = pd.DataFrame(rows, columns=columns)
+        else:
+            # Если данных нет, создаем пустой DataFrame с нужными колонками
+            df = pd.DataFrame()
+
+        # Сохраняем в Excel с автоподбором ширины колонок
+        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Оборудование', index=False)
+
+            # Получаем worksheet для настройки ширины колонок
+            worksheet = writer.sheets['Оборудование']
+
+            # Автоподбор ширины колонок
+            from openpyxl.utils import get_column_letter
+
+            for idx, col in enumerate(df.columns, start=1):
+                column_letter = get_column_letter(idx)
+                max_length = max(
+                    df[col].astype(str).apply(len).max(),
+                    len(str(col))
+                )
+                # Ограничиваем максимальную ширину 50 символами
+                worksheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
+
+        return file_path

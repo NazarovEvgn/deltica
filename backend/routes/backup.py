@@ -1,7 +1,9 @@
 # deltica/backend/routes/backup.py
 
 import logging
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
 from backend.core.database import get_db
@@ -126,3 +128,53 @@ def delete_backup(
     )
 
     return None
+
+
+@router.get("/export-excel")
+def export_to_excel(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_admin)
+):
+    """
+    Экспортировать данные БД в Excel файл (только для администратора).
+    Возвращает файл для скачивания.
+    """
+    service = BackupService()
+
+    try:
+        # Создаем Excel файл
+        file_path = service.export_to_excel(db)
+
+        # Кодируем имя файла для корректной работы с кириллицей
+        encoded_filename = quote(file_path.name)
+
+        logger.info(
+            f"Excel export created: {file_path.name}",
+            extra={
+                "event": "excel_export_created",
+                "user": current_user.username,
+                "file_name": file_path.name
+            }
+        )
+
+        # Возвращаем файл для скачивания
+        return FileResponse(
+            path=str(file_path),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+            }
+        )
+    except Exception as e:
+        logger.error(
+            f"Excel export failed: {str(e)}",
+            extra={
+                "event": "excel_export_failed",
+                "user": current_user.username,
+                "error": str(e)
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка экспорта данных: {str(e)}"
+        )

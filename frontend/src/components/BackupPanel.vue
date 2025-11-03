@@ -12,6 +12,7 @@ const showModal = ref(false)
 const backupHistory = ref([])
 const loading = ref(false)
 const creating = ref(false)
+const exporting = ref(false)
 
 // Загрузка истории backup
 const loadBackupHistory = async () => {
@@ -63,6 +64,48 @@ const formatSize = (bytes) => {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
+// Экспорт в Excel
+const exportToExcel = async () => {
+  exporting.value = true
+  try {
+    const response = await axios.get('http://localhost:8000/backup/export-excel', {
+      responseType: 'blob'
+    })
+
+    // Создаем blob и ссылку для скачивания
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+
+    // Извлекаем имя файла из заголовка Content-Disposition
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = 'deltica_export.xlsx'
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/)
+      if (fileNameMatch && fileNameMatch[1]) {
+        fileName = decodeURIComponent(fileNameMatch[1])
+      }
+    }
+
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    message.success('Данные экспортированы в Excel')
+  } catch (error) {
+    console.error('Ошибка при экспорте в Excel:', error)
+    const errorMsg = error.response?.data?.detail || 'Ошибка экспорта данных'
+    message.error(errorMsg)
+  } finally {
+    exporting.value = false
+  }
+}
+
 // Открытие модального окна
 const openModal = async () => {
   showModal.value = true
@@ -90,16 +133,26 @@ defineExpose({
       :segmented="{ content: 'soft' }"
     >
       <n-space vertical :size="16">
-        <!-- Кнопка создания -->
+        <!-- Кнопки создания и экспорта -->
         <n-card size="small">
-          <n-button
-            type="primary"
-            :loading="creating"
-            :disabled="creating"
-            @click="createBackup"
-          >
-            {{ creating ? 'Создание резервной копии...' : 'Создать резервную копию' }}
-          </n-button>
+          <n-space :size="12">
+            <n-button
+              type="primary"
+              :loading="creating"
+              :disabled="creating || exporting"
+              @click="createBackup"
+            >
+              {{ creating ? 'Создание резервной копии...' : 'Создать резервную копию' }}
+            </n-button>
+            <n-button
+              type="primary"
+              :loading="exporting"
+              :disabled="creating || exporting"
+              @click="exportToExcel"
+            >
+              {{ exporting ? 'Экспорт в Excel...' : 'Экспорт в Excel' }}
+            </n-button>
+          </n-space>
         </n-card>
 
         <!-- История в виде логов -->
