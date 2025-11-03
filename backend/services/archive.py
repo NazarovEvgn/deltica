@@ -130,9 +130,36 @@ class ArchiveService:
 
         return archived_equipment
 
-    def get_all_archived(self) -> List[models.ArchivedEquipment]:
-        """Получить все архивные записи"""
-        return self.db.query(models.ArchivedEquipment).all()
+    def get_all_archived(self) -> List[dict]:
+        """Получить все архивные записи с department из ArchivedResponsibility"""
+        results = self.db.query(
+            models.ArchivedEquipment,
+            models.ArchivedResponsibility.department
+        ).outerjoin(
+            models.ArchivedResponsibility,
+            models.ArchivedEquipment.id == models.ArchivedResponsibility.archived_equipment_id
+        ).all()
+
+        # Преобразуем результаты в словари с department
+        archived_list = []
+        for archived_equipment, department in results:
+            archived_dict = {
+                'id': archived_equipment.id,
+                'original_id': archived_equipment.original_id,
+                'equipment_name': archived_equipment.equipment_name,
+                'equipment_model': archived_equipment.equipment_model,
+                'equipment_type': archived_equipment.equipment_type,
+                'equipment_specs': archived_equipment.equipment_specs,
+                'factory_number': archived_equipment.factory_number,
+                'inventory_number': archived_equipment.inventory_number,
+                'equipment_year': archived_equipment.equipment_year,
+                'archived_at': archived_equipment.archived_at,
+                'archive_reason': archived_equipment.archive_reason,
+                'department': department  # Добавляем department из JOIN
+            }
+            archived_list.append(archived_dict)
+
+        return archived_list
 
     def get_archived_by_id(self, archived_equipment_id: int) -> Optional[models.ArchivedEquipment]:
         """Получить архивную запись по ID"""

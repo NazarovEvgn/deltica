@@ -70,15 +70,11 @@ export function useEquipmentMetrics(filteredData, archiveData, currentUser) {
 
     const userDepartment = currentUser?.value?.department
 
+    // Считаем ВСЁ оборудование в архиве (независимо от причины списания)
     return archiveData.value.filter(item => {
-      if (!item.archive_reason) return false
-
-      // Для админа - все списанные, для лаборанта - только его подразделения
+      // Для админа - все архивные записи, для лаборанта - только его подразделения
       const matchesDepartment = !userDepartment || item.department === userDepartment
-      const matchesReason = item.archive_reason.includes('Извещение о непригодности') ||
-                            item.archive_reason.includes('непригодност')
-
-      return matchesDepartment && matchesReason
+      return matchesDepartment
     }).length || 0
   })
 

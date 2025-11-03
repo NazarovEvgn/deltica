@@ -251,6 +251,7 @@ class ArchiveResponse(BaseModel):
     equipment_year: int
     archived_at: datetime
     archive_reason: Optional[str] = None
+    department: Optional[str] = None  # Добавлено для фильтрации по подразделению
 
     class Config:
         from_attributes = True
