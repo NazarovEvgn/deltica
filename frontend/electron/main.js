@@ -139,7 +139,12 @@ function createMenu() {
         {
           label: 'Отменить',
           accelerator: 'CmdOrCtrl+Z',
-          role: 'undo'
+          click: () => {
+            // Отправляем событие в renderer process для отмены редактирования
+            if (mainWindow) {
+              mainWindow.webContents.send('undo-action')
+            }
+          }
         },
         {
           label: 'Повторить',

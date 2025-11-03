@@ -11,5 +11,12 @@ contextBridge.exposeInMainWorld('electron', {
   // API для работы с файлами
   openFile: async (arrayBuffer, filename) => {
     return await ipcRenderer.invoke('open-file', arrayBuffer, filename)
+  },
+  // API для undo/redo функциональности
+  onUndo: (callback) => {
+    ipcRenderer.on('undo-action', callback)
+  },
+  removeUndoListener: () => {
+    ipcRenderer.removeAllListeners('undo-action')
   }
 })
