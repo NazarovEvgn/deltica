@@ -233,6 +233,11 @@ class ArchiveRequest(BaseModel):
     archive_reason: Optional[str] = None
 
 
+class ArchiveReasonUpdate(BaseModel):
+    """Запрос на обновление причины архивации"""
+    archive_reason: str
+
+
 class ArchiveResponse(BaseModel):
     """Ответ с данными архивного оборудования"""
     id: int

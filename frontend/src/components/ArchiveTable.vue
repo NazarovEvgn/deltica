@@ -72,15 +72,9 @@ const columns = ref([
     prop: 'archive_reason',
     name: 'Причина списания',
     size: 200,
-    readonly: true,
+    readonly: false,
     sortable: true,
-    filter: 'string',
-    cellTemplate: (createElement, props) => {
-      return createElement('span', {
-        textContent: props.model[props.prop] || '—',
-        style: { padding: '0 4px', color: props.model[props.prop] ? 'inherit' : '#999' }
-      })
-    }
+    filter: 'string'
   },
   {
     prop: 'actions',
@@ -204,6 +198,38 @@ const deleteForever = async (archivedId) => {
   })
 }
 
+// Обработчик редактирования ячейки
+const handleAfterEdit = async (event) => {
+  const { prop, model, val } = event.detail
+
+  // Обрабатываем только редактирование причины списания
+  if (prop !== 'archive_reason') return
+
+  const archivedId = model.id
+  const newReason = val
+
+  try {
+    // Отправляем запрос на обновление причины
+    await axios.patch(`http://localhost:8000/archive/${archivedId}/reason`, {
+      archive_reason: newReason
+    })
+
+    // Обновляем локальные данные
+    const itemIndex = source.value.findIndex(item => item.id === archivedId)
+    if (itemIndex !== -1) {
+      source.value[itemIndex].archive_reason = newReason
+    }
+
+    message.success('Причина списания обновлена')
+  } catch (error) {
+    console.error('Ошибка при обновлении причины списания:', error)
+    message.error('Ошибка при сохранении изменений')
+
+    // Перезагружаем данные при ошибке
+    await loadData()
+  }
+}
+
 onMounted(() => {
   loadData()
 })
@@ -233,8 +259,8 @@ onMounted(() => {
         theme="material"
         :resize="true"
         :filter="true"
-        :readonly="true"
         :row-headers="true"
+        @afteredit="handleAfterEdit"
       />
     </div>
 

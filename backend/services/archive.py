@@ -354,3 +354,27 @@ class ArchiveService:
         }
 
         return result
+
+    def update_archive_reason(self, archived_equipment_id: int, new_reason: str) -> Optional[models.ArchivedEquipment]:
+        """
+        Обновить причину архивации для архивного оборудования.
+
+        Args:
+            archived_equipment_id: ID архивного оборудования
+            new_reason: Новая причина архивации
+
+        Returns:
+            Обновленная архивная запись или None, если не найдена
+        """
+        archived_equipment = self.db.query(models.ArchivedEquipment).filter(
+            models.ArchivedEquipment.id == archived_equipment_id
+        ).first()
+
+        if not archived_equipment:
+            return None
+
+        archived_equipment.archive_reason = new_reason
+        self.db.commit()
+        self.db.refresh(archived_equipment)
+
+        return archived_equipment

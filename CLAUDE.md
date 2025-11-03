@@ -243,6 +243,10 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - Archive process: Copy to archive tables → Explicitly delete from main tables
 - NO FK CASCADE on archive level - deletion is explicit in service layer
 - Restore process: Copy back to main tables → Delete from archive tables
+- **Editable archive_reason column**: Users can edit "Причина списания" inline in ArchiveTable via RevoGrid `@afteredit` event
+  - PATCH endpoint: `/archive/{archived_equipment_id}/reason`
+  - Updates ArchivedEquipment.archive_reason field
+  - Auto-saves on cell edit with error handling and data reload on failure
 
 **3. File Management** (`backend/routes/files.py`):
 - Full Cyrillic filename support with RFC 5987 Content-Disposition headers

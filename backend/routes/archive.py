@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.core.database import SessionLocal
 from backend.services.archive import ArchiveService
-from backend.app.schemas import ArchiveResponse, ArchiveRequest, ArchiveFullResponse
+from backend.app.schemas import ArchiveResponse, ArchiveRequest, ArchiveFullResponse, ArchiveReasonUpdate
 
 
 router = APIRouter(prefix="/archive", tags=["archive"])
@@ -57,6 +57,28 @@ def get_archived_equipment(db: Session = Depends(get_db)):
     """
     service = ArchiveService(db)
     return service.get_all_archived()
+
+
+@router.patch("/{archived_equipment_id}/reason", response_model=ArchiveResponse)
+def update_archive_reason(
+    archived_equipment_id: int,
+    reason_update: ArchiveReasonUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Обновить причину архивации для архивного оборудования.
+    """
+    service = ArchiveService(db)
+
+    updated = service.update_archive_reason(archived_equipment_id, reason_update.archive_reason)
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Архивное оборудование с ID {archived_equipment_id} не найдено"
+        )
+
+    return updated
 
 
 @router.get("/{archived_equipment_id}", response_model=ArchiveResponse)
