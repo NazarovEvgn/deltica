@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, h, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, h, computed, watch } from 'vue'
 import { NButton, NSpace, NDrawer, NDrawerContent } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
@@ -28,6 +28,11 @@ const { currentUser, isAuthenticated, isAdmin, isLaborant } = useAuth()
 // Данные таблицы
 const source = ref([])
 const loading = ref(false)
+
+// История изменений для undo функциональности (последние 10 операций)
+const editHistory = ref([])
+const MAX_HISTORY_SIZE = 10
+const isUndoing = ref(false) // Флаг для предотвращения добавления в историю во время undo
 
 // Выбранные строки для печати этикеток
 const selectedIds = ref(new Set())
@@ -543,8 +548,31 @@ const handleAfterEdit = async (event) => {
       // Преобразуем человекочитаемое значение обратно в техническое
       const technicalValue = reverseTransformValue(prop, val)
 
-      // Обновляем локальные данные (оригинальные данные в source)
+      // Сохраняем старое значение В ИСТОРИЮ (до изменения)
       const sourceRow = source.value.find(item => item.equipment_id === row.equipment_id)
+      const oldValue = sourceRow ? sourceRow[prop] : null
+
+      // Добавляем в историю изменений ТОЛЬКО если это НЕ undo операция
+      if (!isUndoing.value) {
+        editHistory.value.push({
+          equipmentId: row.equipment_id,
+          field: prop,
+          oldValue: oldValue,
+          newValue: technicalValue,
+          timestamp: Date.now()
+        })
+
+        // Ограничиваем размер истории (FIFO - удаляем самые старые)
+        if (editHistory.value.length > MAX_HISTORY_SIZE) {
+          editHistory.value.shift()
+        }
+
+        console.log(`[History] Added to history. Total: ${editHistory.value.length}`, editHistory.value[editHistory.value.length - 1])
+      } else {
+        console.log(`[History] Skipped adding to history (undo in progress)`)
+      }
+
+      // Обновляем локальные данные (оригинальные данные в source)
       if (sourceRow) {
         sourceRow[prop] = technicalValue
       }
@@ -553,11 +581,58 @@ const handleAfterEdit = async (event) => {
       try {
         await saveCellToServer(row.equipment_id, prop, technicalValue)
       } catch (error) {
+        // При ошибке - удаляем из истории и откатываем (только если не undo)
+        if (!isUndoing.value) {
+          editHistory.value.pop()
+          console.log(`[History] Removed from history due to error`)
+        }
         alert(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`)
         // Откатываем изменения при ошибке
         await loadData()
       }
     }
+  }
+}
+
+// Функция отмены последнего изменения (Ctrl+Z)
+const undoLastEdit = async () => {
+  if (editHistory.value.length === 0) {
+    console.log('[Undo] No edits to undo')
+    window.$message?.warning('Нет изменений для отмены')
+    return
+  }
+
+  const lastEdit = editHistory.value.pop()
+  console.log('[Undo] Undoing last edit:', lastEdit)
+  console.log('[Undo] History size after pop:', editHistory.value.length)
+
+  // Устанавливаем флаг undo для предотвращения добавления в историю
+  isUndoing.value = true
+
+  try {
+    // Откатываем на сервере к старому значению
+    await saveCellToServer(lastEdit.equipmentId, lastEdit.field, lastEdit.oldValue)
+
+    // Обновляем локальные данные без полного loadData()
+    const sourceRow = source.value.find(item => item.equipment_id === lastEdit.equipmentId)
+    if (sourceRow) {
+      sourceRow[lastEdit.field] = lastEdit.oldValue
+    }
+
+    // Показываем уведомление об успешной отмене
+    const fieldLabel = fieldDefinitions.value?.find(f => f.key === lastEdit.field)?.label || lastEdit.field
+    window.$message?.success(`Отменено изменение поля "${fieldLabel}"`)
+
+    console.log('[Undo] Successfully undone. Remaining history:', editHistory.value.length)
+  } catch (error) {
+    // При ошибке возвращаем изменение обратно в историю
+    editHistory.value.push(lastEdit)
+    console.error('[Undo] Error while undoing:', error)
+    console.log('[Undo] History restored. Size:', editHistory.value.length)
+    window.$message?.error('Ошибка при отмене изменения')
+  } finally {
+    // Сбрасываем флаг undo
+    isUndoing.value = false
   }
 }
 
@@ -783,6 +858,46 @@ const handleLogoClick = () => {
 onMounted(() => {
   loadData()
   loadSavedSettings()
+
+  // Подключаем обработчик Ctrl+Z для Electron режима
+  if (window.electron && window.electron.onUndo) {
+    window.electron.onUndo(() => {
+      console.log('[Electron] Undo action triggered via Ctrl+Z')
+      undoLastEdit()
+    })
+  }
+
+  // Подключаем обработчик Ctrl+Z для браузерного режима
+  const handleKeyDown = (event) => {
+    // Ctrl+Z (Windows/Linux) или Cmd+Z (Mac)
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+      // Проверяем что не в input/textarea (они должны иметь свой undo)
+      const target = event.target
+      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.isContentEditable) {
+        event.preventDefault()
+        console.log('[Browser] Undo action triggered via Ctrl+Z')
+        undoLastEdit()
+      }
+    }
+  }
+
+  document.addEventListener('keydown', handleKeyDown)
+
+  // Сохраняем ссылку на обработчик для очистки в onUnmounted
+  window.__undoKeyHandler = handleKeyDown
+})
+
+onUnmounted(() => {
+  // Отключаем обработчик Electron
+  if (window.electron && window.electron.removeUndoListener) {
+    window.electron.removeUndoListener()
+  }
+
+  // Отключаем обработчик браузера
+  if (window.__undoKeyHandler) {
+    document.removeEventListener('keydown', window.__undoKeyHandler)
+    delete window.__undoKeyHandler
+  }
 })
 
 // Экспорт функции для перезагрузки данных (для использования родительским компонентом)
