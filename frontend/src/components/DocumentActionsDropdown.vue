@@ -3,7 +3,8 @@ import { h, computed } from 'vue'
 import { NButton, NDropdown, NIcon } from 'naive-ui'
 import {
   DocumentTextOutline as LabelIcon,
-  DocumentAttachOutline as ActIcon
+  DocumentAttachOutline as ActIcon,
+  CloseCircleOutline as ClearIcon
 } from '@vicons/ionicons5'
 
 const props = defineProps({
@@ -13,7 +14,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['print-labels', 'print-conservation-act', 'download-commissioning-template'])
+const emit = defineEmits(['print-labels', 'print-conservation-act', 'download-commissioning-template', 'clear-selection'])
 
 // Опции выпадающего меню
 const dropdownOptions = computed(() => [
@@ -34,6 +35,16 @@ const dropdownOptions = computed(() => [
     key: 'd1'
   },
   {
+    label: 'Снять выделение',
+    key: 'clear-selection',
+    icon: () => h(NIcon, { component: ClearIcon }),
+    disabled: props.selectedCount === 0  // Доступно только если выбрано оборудование
+  },
+  {
+    type: 'divider',
+    key: 'd2'
+  },
+  {
     label: 'Акт ввода в эксплуатацию',
     key: 'commissioning-template',
     icon: () => h(NIcon, { component: ActIcon }),
@@ -49,6 +60,9 @@ const handleSelect = (key) => {
       break
     case 'conservation-act':
       emit('print-conservation-act')
+      break
+    case 'clear-selection':
+      emit('clear-selection')
       break
     case 'commissioning-template':
       emit('download-commissioning-template')

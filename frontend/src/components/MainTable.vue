@@ -39,6 +39,8 @@ const isUndoing = ref(false) // Флаг для предотвращения д�
 
 // Выбранные строки для печати этикеток
 const selectedIds = ref(new Set())
+// Счетчик для принудительного обновления чекбоксов
+const checkboxUpdateTrigger = ref(0)
 
 // Инициализация фильтров
 const {
@@ -391,6 +393,9 @@ const dynamicColumns = computed(() => {
 
 // Добавляем колонку действий в конец
 const columnsWithActions = computed(() => {
+  // Добавляем зависимость от триггера для обновления чекбоксов
+  const _ = checkboxUpdateTrigger.value
+
   const columns = []
 
   // Добавляем колонку с чекбоксами В НАЧАЛО
@@ -840,6 +845,14 @@ const printConservationAct = async () => {
   }
 }
 
+// Сброс выделенных строк
+const clearSelection = () => {
+  selectedIds.value.clear()
+  selectedIds.value = new Set(selectedIds.value)
+  // Инкрементируем триггер для обновления чекбоксов в таблице
+  checkboxUpdateTrigger.value++
+}
+
 const downloadCommissioningTemplate = async () => {
   try {
     loading.value = true
@@ -987,6 +1000,7 @@ defineExpose({
             :selected-count="selectedIds.size"
             @print-labels="printLabels"
             @print-conservation-act="printConservationAct"
+            @clear-selection="clearSelection"
             @download-commissioning-template="downloadCommissioningTemplate"
           />
         </div>
@@ -997,6 +1011,7 @@ defineExpose({
     <div class="table-wrapper">
       <v-grid
         ref="grid"
+        :key="checkboxUpdateTrigger"
         :source="transformedSource"
         :columns="columnsWithActions"
         theme="material"
