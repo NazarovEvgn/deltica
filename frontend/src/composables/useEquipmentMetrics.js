@@ -6,9 +6,11 @@ import { computed } from 'vue'
 /**
  * Composable для вычисления метрик по оборудованию
  * @param {Ref} filteredData - реактивный массив отфильтрованных данных оборудования
+ * @param {Ref} archiveData - реактивный массив данных из архива
+ * @param {Ref} currentUser - текущий пользователь (для фильтрации по подразделению)
  * @returns {Object} - объект с вычисляемыми метриками
  */
-export function useEquipmentMetrics(filteredData) {
+export function useEquipmentMetrics(filteredData, archiveData, currentUser) {
   /**
    * Общее количество оборудования (после применения фильтров)
    */
@@ -60,6 +62,27 @@ export function useEquipmentMetrics(filteredData) {
   })
 
   /**
+   * Количество списанного оборудования (не прошедшие поверку из архива)
+   * Фильтруется по подразделению пользователя и причине "Извещение о непригодности"
+   */
+  const failedCount = computed(() => {
+    if (!archiveData || !archiveData.value) return 0
+
+    const userDepartment = currentUser?.value?.department
+
+    return archiveData.value.filter(item => {
+      if (!item.archive_reason) return false
+
+      // Для админа - все списанные, для лаборанта - только его подразделения
+      const matchesDepartment = !userDepartment || item.department === userDepartment
+      const matchesReason = item.archive_reason.includes('Извещение о непригодности') ||
+                            item.archive_reason.includes('непригодност')
+
+      return matchesDepartment && matchesReason
+    }).length || 0
+  })
+
+  /**
    * Процент годного оборудования от общего количества
    */
   const fitPercentage = computed(() => {
@@ -86,6 +109,7 @@ export function useEquipmentMetrics(filteredData) {
     onVerification: onVerificationCount.value,
     inStorage: inStorageCount.value,
     inRepair: inRepairCount.value,
+    failed: failedCount.value,
     fitPercentage: fitPercentage.value,
     expiredPercentage: expiredPercentage.value
   }))
@@ -99,6 +123,7 @@ export function useEquipmentMetrics(filteredData) {
     onVerificationCount,
     inStorageCount,
     inRepairCount,
+    failedCount,
 
     // Проценты
     fitPercentage,

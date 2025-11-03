@@ -280,12 +280,15 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 
 **8. Metrics Dashboard** (`frontend/src/composables/useEquipmentMetrics.js`, `frontend/src/components/MetricsDashboard.vue`):
 - Client-side metrics calculation from database data (not filtered data)
-- Displays 6 key metrics: total, fit, expired, on verification, in storage, in repair
+- Displays 7 key metrics: total, fit, expired, on verification, in storage, in repair, **failed (списано)**
 - For admin: metrics show statistics for entire database
 - For laborant: metrics show statistics only for their department (filtered at loadData level)
+- **Failed metric**: Counts equipment archived with reason "Извещение о непригодности" from archive table
+  - Loads archive data on component mount via `GET /archive/`
+  - Filters by department for laborants, shows all for admins
 - Metrics are reactive and update automatically when data is reloaded
 - Location: Between action buttons and search bar in MainTable
-- Compact card design with color coding and hover effects
+- Compact card design with monochrome styling (#333) and hover effects
 
 **9. Database Backup** (`backend/routes/backup.py`, `backend/services/backup.py`, `frontend/src/components/BackupPanel.vue`):
 - Admin-only functionality using pg_dump for PostgreSQL backups
@@ -465,6 +468,8 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 **Missing API Fields (2025-10-21)**: Added `registry_number` and `equipment_year` to SQL queries, Pydantic schemas, and API responses - fields existed in DB but weren't returned by backend.
 
 ### Recent Features
+
+**Metrics Dashboard - "Списано" metric (2025-11-03)**: Added "Списано" (failed) metric to main dashboard showing count of equipment archived with reason "Извещение о непригодности". Loads archive data on mount, filters by department for laborants.
 
 **Excel Data Export (2025-11-03)**: Added Excel export functionality to Backup panel. Admin can export entire database to .xlsx format with Russian column headers, auto-sized columns, and timestamped filenames. Uses pandas + openpyxl.
 

@@ -17,7 +17,8 @@ const metricColors = {
   expired: '#333333',
   onVerification: '#333333',
   inStorage: '#333333',
-  inRepair: '#333333'
+  inRepair: '#333333',
+  failed: '#333333'
 }
 
 // Конфигурация отображаемых метрик
@@ -57,6 +58,12 @@ const displayMetrics = computed(() => [
     value: props.metrics.inRepair,
     color: metricColors.inRepair,
     key: 'inRepair'
+  },
+  {
+    label: 'Списано',
+    value: props.metrics.failed,
+    color: metricColors.failed,
+    key: 'failed'
   }
 ])
 </script>

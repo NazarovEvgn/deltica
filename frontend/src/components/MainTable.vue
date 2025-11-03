@@ -29,6 +29,9 @@ const { currentUser, isAuthenticated, isAdmin, isLaborant } = useAuth()
 const source = ref([])
 const loading = ref(false)
 
+// Архивные данные для метрики "Списано"
+const archiveData = ref([])
+
 // История изменений для undo функциональности (последние 10 операций)
 const editHistory = ref([])
 const MAX_HISTORY_SIZE = 10
@@ -52,7 +55,7 @@ const {
 } = useEquipmentFilters(source, isLaborant)
 
 // Инициализация метрик (на основе данных из БД, уже отфильтрованных по department для лаборанта)
-const { metrics } = useEquipmentMetrics(source)
+const { metrics } = useEquipmentMetrics(source, archiveData, currentUser)
 
 // Состояние drawer для фильтров
 const showFilterDrawer = ref(false)
@@ -149,6 +152,22 @@ const loadData = async () => {
     console.error('Ошибка при загрузке данных:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// Загрузка архивных данных для метрики "Списано"
+const loadArchiveData = async () => {
+  try {
+    const response = await axios.get('http://localhost:8000/archive/', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    archiveData.value = response.data
+  } catch (error) {
+    console.error('Ошибка при загрузке архивных данных:', error)
+    // Не показываем ошибку пользователю, так как это не критично
+    archiveData.value = []
   }
 }
 
@@ -857,6 +876,7 @@ const handleLogoClick = () => {
 
 onMounted(() => {
   loadData()
+  loadArchiveData() // Загружаем архивные данные для метрики "Списано"
   loadSavedSettings()
 
   // Подключаем обработчик Ctrl+Z для Electron режима
