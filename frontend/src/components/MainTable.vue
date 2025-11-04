@@ -845,6 +845,84 @@ const printConservationAct = async () => {
   }
 }
 
+// Генерация заявки на поверку
+const printBidPoverka = async () => {
+  if (selectedIds.value.size === 0) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const equipmentIds = Array.from(selectedIds.value)
+
+    const response = await axios.post(
+      'http://localhost:8000/documents/bid-poverka',
+      { equipment_ids: equipmentIds },
+      {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    const filename = `Заявка_на_поверку_${equipmentIds.length}_шт.docx`
+    await handleFileDownload(new Blob([response.data]), filename)
+
+    selectedIds.value.clear()
+    selectedIds.value = new Set(selectedIds.value)
+
+    const message = window.electron
+      ? `Заявка на поверку для ${equipmentIds.length} ед. оборудования успешно сгенерирована и открыта в Word`
+      : `Заявка на поверку для ${equipmentIds.length} ед. оборудования успешно сгенерирована`
+    alert(message)
+  } catch (error) {
+    console.error('Ошибка при генерации заявки на поверку:', error)
+    alert('Ошибка при генерации заявки на поверку: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    loading.value = false
+  }
+}
+
+// Генерация предписания (только для администратора)
+const printRequest = async () => {
+  if (selectedIds.value.size === 0) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const equipmentIds = Array.from(selectedIds.value)
+
+    const response = await axios.post(
+      'http://localhost:8000/documents/request',
+      { equipment_ids: equipmentIds },
+      {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    const filename = `Предписание_${equipmentIds.length}_шт.docx`
+    await handleFileDownload(new Blob([response.data]), filename)
+
+    selectedIds.value.clear()
+    selectedIds.value = new Set(selectedIds.value)
+
+    const message = window.electron
+      ? `Предписание для ${equipmentIds.length} ед. оборудования успешно сгенерировано и открыто в Word`
+      : `Предписание для ${equipmentIds.length} ед. оборудования успешно сгенерировано`
+    alert(message)
+  } catch (error) {
+    console.error('Ошибка при генерации предписания:', error)
+    alert('Ошибка при генерации предписания: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    loading.value = false
+  }
+}
+
 // Сброс выделенных строк
 const clearSelection = () => {
   selectedIds.value.clear()
@@ -998,8 +1076,11 @@ defineExpose({
         <div class="header-right">
           <DocumentActionsDropdown
             :selected-count="selectedIds.size"
+            :is-admin="isAdmin"
             @print-labels="printLabels"
             @print-conservation-act="printConservationAct"
+            @print-bid-poverka="printBidPoverka"
+            @print-request="printRequest"
             @clear-selection="clearSelection"
             @download-commissioning-template="downloadCommissioningTemplate"
           />
