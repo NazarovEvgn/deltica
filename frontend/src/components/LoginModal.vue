@@ -53,9 +53,23 @@
         @click="handleLogin"
         :loading="isLoading"
         :disabled="!formValue.username || !formValue.password"
-        style="background-color: #333; color: white; border: 1px solid #333;"
+        style="background-color: #333; color: white; border: 1px solid #333; margin-bottom: 12px;"
       >
         Войти
+      </n-button>
+
+      <!-- Разделитель -->
+      <n-divider style="margin: 12px 0;">или</n-divider>
+
+      <!-- Кнопка Windows SSO -->
+      <n-button
+        block
+        size="large"
+        @click="handleWindowsLogin"
+        :loading="isLoading"
+        type="info"
+      >
+        Войти через Windows
       </n-button>
     </n-form>
   </div>
@@ -125,17 +139,34 @@
     </n-form>
 
     <template #footer>
-      <n-space justify="end">
-        <n-button @click="handleCancel" :disabled="isLoading">
-          Отмена
-        </n-button>
+      <n-space vertical style="width: 100%;">
+        <!-- Кнопка входа -->
         <n-button
+          block
           @click="handleLogin"
           :loading="isLoading"
           :disabled="!formValue.username || !formValue.password"
           style="background-color: #333; color: white; border: 1px solid #333;"
         >
           Войти
+        </n-button>
+
+        <!-- Разделитель -->
+        <n-divider style="margin: 8px 0;">или</n-divider>
+
+        <!-- Кнопка Windows SSO -->
+        <n-button
+          block
+          @click="handleWindowsLogin"
+          :loading="isLoading"
+          type="info"
+        >
+          Войти через Windows
+        </n-button>
+
+        <!-- Кнопка отмены -->
+        <n-button block @click="handleCancel" :disabled="isLoading">
+          Отмена
         </n-button>
       </n-space>
     </template>
@@ -144,7 +175,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { NModal, NForm, NFormItem, NInput, NButton, NSpace, NIcon, NAlert, useMessage } from 'naive-ui'
+import { NModal, NForm, NFormItem, NInput, NButton, NSpace, NIcon, NAlert, NDivider, useMessage } from 'naive-ui'
 import { PersonOutline, LockClosedOutline } from '@vicons/ionicons5'
 import { useAuth } from '../composables/useAuth'
 
@@ -162,7 +193,7 @@ const props = defineProps({
 const emit = defineEmits(['update:show', 'login-success'])
 
 const message = useMessage()
-const { login, isLoading, authError, clearError } = useAuth()
+const { login, loginWithWindows, isLoading, authError, clearError } = useAuth()
 
 // Видимость модального окна
 const visible = ref(props.show)
@@ -226,6 +257,26 @@ const handleLogin = async () => {
   } catch (error) {
     // Ошибка валидации формы
     console.error('Ошибка валидации:', error)
+  }
+}
+
+// Обработчик Windows логина
+const handleWindowsLogin = async () => {
+  try {
+    // Попытка входа через Windows SSO
+    const result = await loginWithWindows()
+
+    if (result.success) {
+      message.success('Вход через Windows выполнен успешно')
+      visible.value = false
+      emit('login-success')
+      resetForm()
+    } else {
+      // Ошибка уже установлена в composable
+      message.error(result.error || 'Ошибка входа через Windows')
+    }
+  } catch (error) {
+    console.error('Ошибка Windows логина:', error)
   }
 }
 

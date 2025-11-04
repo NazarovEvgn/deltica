@@ -320,12 +320,14 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str] = None  # Опциональный для Windows SSO
+    windows_username: Optional[str] = None  # Windows username для SSO
 
 
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    windows_username: Optional[str] = None  # Windows username (если настроен)
     created_at: datetime
 
     class Config:

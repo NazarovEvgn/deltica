@@ -131,6 +131,40 @@ const login = async (username, password) => {
   }
 }
 
+// Windows SSO логин
+const loginWithWindows = async () => {
+  try {
+    isLoading.value = true
+    authError.value = null
+
+    const response = await axios.post(`${API_URL}/auth/windows-login`)
+
+    const { access_token, user } = response.data
+
+    // Сохраняем токен и данные пользователя
+    saveToken(access_token)
+    currentUser.value = user
+    isAuthenticated.value = true
+
+    return { success: true }
+  } catch (error) {
+    console.error('Ошибка Windows логина:', error)
+
+    // Обработка ошибок
+    if (error.response?.status === 401) {
+      authError.value = 'Пользователь не найден в системе. Обратитесь к администратору.'
+    } else if (error.response?.status === 403) {
+      authError.value = 'Пользователь деактивирован. Обратитесь к администратору.'
+    } else {
+      authError.value = 'Ошибка соединения с сервером'
+    }
+
+    return { success: false, error: authError.value }
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // Выход пользователя
 const logout = () => {
   currentUser.value = null
@@ -163,6 +197,7 @@ export function useAuth() {
     // Actions
     initialize,
     login,
+    loginWithWindows,
     logout,
     clearError,
     fetchCurrentUser

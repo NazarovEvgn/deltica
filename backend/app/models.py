@@ -207,7 +207,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False, index=True)  # Логин для входа
-    password_hash = Column(String, nullable=False)  # Хеш пароля (bcrypt)
+    password_hash = Column(String, nullable=True)  # Хеш пароля (bcrypt) - nullable для Windows auth
+    windows_username = Column(String, unique=True, nullable=True, index=True)  # Windows имя пользователя для SSO
     full_name = Column(String, nullable=False)  # ФИО (из responsible_person)
     department = Column(String, nullable=False)  # Подразделение
     role = Column(Enum('admin', 'laborant', name='user_role_enum'), nullable=False, default='laborant')

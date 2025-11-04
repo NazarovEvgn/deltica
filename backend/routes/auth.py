@@ -106,6 +106,7 @@ async def login(
             department=user.department,
             role=user.role,
             is_active=user.is_active,
+            windows_username=user.windows_username,
             created_at=user.created_at
         )
     )
@@ -133,7 +134,121 @@ async def get_me(current_user = Depends(get_current_user)):
         department=current_user.department,
         role=current_user.role,
         is_active=current_user.is_active,
+        windows_username=current_user.windows_username,
         created_at=current_user.created_at
+    )
+
+
+@router.post("/windows-login", response_model=TokenResponse)
+async def windows_login(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Аутентификация через Windows username (SSO)
+
+    Получает Windows username текущего пользователя из заголовка запроса
+    и автоматически авторизует его, если пользователь найден в базе данных.
+
+    Args:
+        request: HTTP запрос (для получения Windows username из заголовка)
+        db: Сессия базы данных
+
+    Returns:
+        TokenResponse с access_token и данными пользователя
+
+    Raises:
+        401: Пользователь не найден в базе данных
+        403: Пользователь деактивирован
+    """
+    import os
+    import getpass
+
+    # Получаем Windows username из заголовка или из окружения
+    windows_username = request.headers.get('X-Windows-Username')
+
+    if not windows_username:
+        # Fallback: получаем из переменной окружения (для локальной разработки)
+        windows_username = os.environ.get('USERNAME') or getpass.getuser()
+
+    windows_username = windows_username.lower() if windows_username else None
+
+    if not windows_username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Не удалось определить Windows пользователя",
+        )
+
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Ищем пользователя по windows_username
+    from backend.app.models import User
+    user = db.query(User).filter(User.windows_username == windows_username).first()
+
+    if not user:
+        logger.warning(
+            f"Windows login failed: user not found for windows_username: {windows_username}",
+            extra={
+                "event": "windows_login_failed",
+                "windows_username": windows_username,
+                "ip": client_ip,
+                "reason": "user_not_found"
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Пользователь с Windows именем '{windows_username}' не найден в системе",
+        )
+
+    # Проверка активности пользователя
+    if not user.is_active:
+        logger.warning(
+            f"Windows login attempt for inactive user: {user.username}",
+            extra={
+                "event": "windows_login_failed",
+                "user": user.username,
+                "windows_username": windows_username,
+                "ip": client_ip,
+                "reason": "user_inactive"
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Пользователь деактивирован. Обратитесь к администратору."
+        )
+
+    # Создание JWT токена
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires
+    )
+
+    logger.info(
+        f"Successful Windows login: {user.username} (windows: {windows_username})",
+        extra={
+            "event": "windows_login_success",
+            "user": user.username,
+            "windows_username": windows_username,
+            "role": user.role,
+            "ip": client_ip
+        }
+    )
+
+    # Формирование ответа с токеном и данными пользователя
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse(
+            id=user.id,
+            username=user.username,
+            full_name=user.full_name,
+            department=user.department,
+            role=user.role,
+            is_active=user.is_active,
+            windows_username=user.windows_username,
+            created_at=user.created_at
+        )
     )
 
 
@@ -209,6 +324,7 @@ async def login_with_form(
             department=user.department,
             role=user.role,
             is_active=user.is_active,
+            windows_username=user.windows_username,
             created_at=user.created_at
         )
     )

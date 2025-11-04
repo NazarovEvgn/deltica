@@ -70,6 +70,7 @@ def sync_users(db: Session, users_config: list):
         try:
             username = user_data.get('username')
             password = user_data.get('password')
+            windows_username = user_data.get('windows_username')  # Опциональное поле
             full_name = user_data.get('full_name')
             department = user_data.get('department')
             role = user_data.get('role', 'laborant')
@@ -79,8 +80,9 @@ def sync_users(db: Session, users_config: list):
             if not username:
                 errors.append("Пропущен username для одного из пользователей")
                 continue
-            if not password:
-                errors.append(f"Пропущен password для пользователя {username}")
+            # Пароль обязателен, если не указан windows_username
+            if not password and not windows_username:
+                errors.append(f"Для пользователя {username} должен быть указан password или windows_username")
                 continue
             if not full_name:
                 errors.append(f"Пропущен full_name для пользователя {username}")
@@ -118,10 +120,20 @@ def sync_users(db: Session, users_config: list):
                     changes.append(f"  Активен: {existing_user.is_active} -> {is_active}")
                     existing_user.is_active = is_active
 
-                # Пароль всегда обновляем (на случай если изменился в конфиге)
-                new_hash = hash_password(password)
-                existing_user.password_hash = new_hash
-                changes.append("  Пароль: обновлён")
+                # Обновляем windows_username
+                if existing_user.windows_username != windows_username:
+                    changes.append(f"  Windows username: '{existing_user.windows_username}' -> '{windows_username}'")
+                    existing_user.windows_username = windows_username
+
+                # Пароль обновляем только если указан в конфиге
+                if password:
+                    new_hash = hash_password(password)
+                    existing_user.password_hash = new_hash
+                    changes.append("  Пароль: обновлён")
+                elif not windows_username and not existing_user.password_hash:
+                    # Если нет ни пароля, ни windows_username - это ошибка
+                    errors.append(f"Пользователь {username} не имеет ни пароля, ни windows_username")
+                    continue
 
                 if changes:
                     for change in changes:
@@ -135,7 +147,8 @@ def sync_users(db: Session, users_config: list):
                 # Создаём нового пользователя
                 new_user = User(
                     username=username,
-                    password_hash=hash_password(password),
+                    password_hash=hash_password(password) if password else None,
+                    windows_username=windows_username,
                     full_name=full_name,
                     department=department,
                     role=role,
@@ -150,6 +163,12 @@ def sync_users(db: Session, users_config: list):
                 print(f"  Подразделение: {department}")
                 print(f"  Роль: {role}")
                 print(f"  Активен: {is_active}")
+                if windows_username:
+                    print(f"  Windows username: {windows_username}")
+                if password:
+                    print(f"  Аутентификация: пароль")
+                else:
+                    print(f"  Аутентификация: Windows SSO")
 
                 created_count += 1
 
