@@ -4,7 +4,25 @@
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8000'
+// API URL загружается из config.json (можно изменить без пересборки)
+let API_URL = 'http://localhost:8000' // Fallback значение
+
+// Загрузка конфигурации при старте
+async function loadConfig() {
+  try {
+    const response = await fetch('/config.json')
+    const config = await response.json()
+    if (config.apiUrl) {
+      API_URL = config.apiUrl
+      console.log('API URL загружен из конфигурации:', API_URL)
+    }
+  } catch (error) {
+    console.warn('Не удалось загрузить config.json, используется localhost:', error)
+  }
+}
+
+// Загружаем конфигурацию сразу
+await loadConfig()
 
 // Глобальное состояние (shared state)
 const currentUser = ref(null)
