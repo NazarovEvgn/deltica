@@ -1,7 +1,7 @@
 # deltica/backend/services/documents.py
 
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from docxtpl import DocxTemplate
 from sqlalchemy.orm import Session
@@ -254,9 +254,182 @@ class DocumentService:
                         for run in paragraph.runs:
                             run.font.name = 'Times New Roman'
                             from docx.shared import Pt
-                            run.font.size = Pt(12)
+                            run.font.size = Pt(10)
 
             # Сохраняем финальный документ
             doc.save(str(output_path))
+
+        return str(output_path)
+
+    def generate_request(self, equipment_ids: List[int]) -> Optional[str]:
+        """
+        Генерировать предписание для нескольких единиц оборудования
+        Добавляет текущую дату и дату +7 дней, заполняет таблицу с номерами
+        Возвращает путь к сгенерированному файлу или None при ошибке
+        """
+        if not equipment_ids:
+            return None
+
+        # Получить данные для всех единиц оборудования
+        equipments_data = []
+        for equipment_id in equipment_ids:
+            data = self._get_equipment_full_data(equipment_id)
+            if data:  # Добавляем только найденное оборудование
+                equipments_data.append(data)
+
+        if not equipments_data:
+            return None
+
+        # Загрузить шаблон предписания
+        template_path = self.templates_dir / "template_request.docx"
+        if not template_path.exists():
+            raise FileNotFoundError(f"Шаблон не найден: {template_path}")
+
+        from docx import Document
+
+        # Добавляем даты к первому оборудованию
+        current_date = datetime.now()
+        date_plus_7 = current_date + timedelta(days=7)
+        first_equipment = equipments_data[0].copy()
+        first_equipment['current_date'] = current_date.strftime('%d/%m/%Y')
+        first_equipment['current_date_plus_7'] = date_plus_7.strftime('%d/%m/%Y')
+
+        # Генерируем первую запись
+        template = DocxTemplate(template_path)
+        template.render(first_equipment)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_filename = f"request_{len(equipments_data)}_items_{timestamp}.docx"
+        output_path = self.output_dir / output_filename
+
+        template.save(str(output_path))
+
+        # Открываем документ для заполнения номеров
+        doc = Document(str(output_path))
+        data_table = doc.tables[1]
+
+        # Заполняем номер для первой строки данных (row 2)
+        data_table.rows[2].cells[0].text = "1."
+
+        # Если больше одной единицы оборудования, добавляем остальные строки
+        if len(equipments_data) > 1:
+            # Для каждой дополнительной единицы оборудования добавляем строку
+            for idx in range(1, len(equipments_data)):
+                equipment = equipments_data[idx]
+                row = data_table.add_row()
+
+                # Порядковый номер
+                row.cells[0].text = str(idx + 1) + "."
+
+                # Наименование СИ
+                row.cells[1].text = equipment['equipment_name']
+
+                # Тип СИ
+                row.cells[2].text = equipment['equipment_model']
+
+                # Заводской номер
+                row.cells[3].text = equipment['factory_number']
+
+                # Применяем форматирование как в первой строке
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            run.font.name = 'Times New Roman'
+                            from docx.shared import Pt
+                            run.font.size = Pt(10)
+
+        # Сохраняем финальный документ (ВСЕГДА, даже если одна единица оборудования)
+        doc.save(str(output_path))
+
+        return str(output_path)
+
+    def generate_bid_poverka(self, equipment_ids: List[int]) -> Optional[str]:
+        """
+        Генерировать заявку на поверку для нескольких единиц оборудования
+        Возвращает путь к сгенерированному файлу или None при ошибке
+        """
+        if not equipment_ids:
+            return None
+
+        # Получить данные для всех единиц оборудования
+        equipments_data = []
+        for equipment_id in equipment_ids:
+            data = self._get_equipment_full_data(equipment_id)
+            if data:  # Добавляем только найденное оборудование
+                equipments_data.append(data)
+
+        if not equipments_data:
+            return None
+
+        # Загрузить шаблон заявки на поверку
+        template_path = self.templates_dir / "template_bid_poverka.DOCX"
+        if not template_path.exists():
+            raise FileNotFoundError(f"Шаблон не найден: {template_path}")
+
+        from docx import Document
+
+        # Генерируем первую запись
+        template = DocxTemplate(template_path)
+        template.render(equipments_data[0])
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_filename = f"bid_poverka_{len(equipments_data)}_items_{timestamp}.docx"
+        output_path = self.output_dir / output_filename
+
+        template.save(str(output_path))
+
+        # Открываем документ для заполнения номеров
+        doc = Document(str(output_path))
+        data_table = doc.tables[0]
+
+        # Заполняем номер для первой строки данных (row 2)
+        data_table.rows[2].cells[0].text = "1"
+
+        # Если больше одной единицы оборудования, добавляем остальные строки
+        if len(equipments_data) > 1:
+            # Для каждой дополнительной единицы оборудования добавляем строку
+            for idx in range(1, len(equipments_data)):
+                equipment = equipments_data[idx]
+                row = data_table.add_row()
+
+                # Порядковый номер
+                row.cells[0].text = str(idx + 1)
+
+                # Наименование и модель (объединенные в одной ячейке)
+                row.cells[1].text = f"{equipment['equipment_name']} {equipment['equipment_model']}"
+
+                # Количество - всегда 1
+                row.cells[2].text = "1"
+
+                # Ячейка 3 - пустая (кол-во каналов/датчиков)
+                row.cells[3].text = ""
+
+                # Заводской номер
+                row.cells[4].text = equipment['factory_number']
+
+                # Ячейки 5, 6 - пустые (метрологические характеристики, дата выпуска)
+                row.cells[5].text = ""
+                row.cells[6].text = ""
+
+                # Вид поверки - всегда "периодическая"
+                row.cells[7].text = "периодическая"
+
+                # Выдача протокола - всегда "нет"
+                row.cells[8].text = "нет"
+
+                # Остальные ячейки - пустые
+                for cell_idx in range(9, 12):
+                    row.cells[cell_idx].text = ""
+
+                # Применяем форматирование как в первой строке
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            run.font.name = 'Times New Roman'
+                            from docx.shared import Pt
+                            run.font.size = Pt(10)
+
+        # Сохраняем финальный документ (ВСЕГДА, даже если одна единица оборудования)
+        doc.save(str(output_path))
 
         return str(output_path)
