@@ -254,7 +254,7 @@ class DocumentService:
                         for run in paragraph.runs:
                             run.font.name = 'Times New Roman'
                             from docx.shared import Pt
-                            run.font.size = Pt(10)
+                            run.font.size = Pt(12)
 
             # Сохраняем финальный документ
             doc.save(str(output_path))

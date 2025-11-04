@@ -9,7 +9,7 @@ from typing import List
 
 from backend.core.database import get_db
 from backend.services.documents import DocumentService
-from backend.utils.auth import get_current_user
+from backend.utils.auth import get_current_user, get_current_active_admin
 from backend.app.models import User
 
 
@@ -183,6 +183,120 @@ def generate_conservation_act(
         )
 
 
+@router.post("/request")
+def generate_request(
+    request: GenerateLabelsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin)
+):
+    """
+    Генерировать предписание для нескольких единиц оборудования
+    Доступно только для администраторов
+    """
+    service = DocumentService(db)
+
+    if not request.equipment_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Список ID оборудования не может быть пустым"
+        )
+
+    try:
+        file_path = service.generate_request(request.equipment_ids)
+
+        if not file_path:
+            raise HTTPException(
+                status_code=404,
+                detail="Не найдено оборудование для генерации предписания"
+            )
+
+        # Проверить, что файл существует
+        if not Path(file_path).exists():
+            raise HTTPException(
+                status_code=500,
+                detail="Ошибка при генерации документа"
+            )
+
+        # Вернуть файл для скачивания
+        count = len(request.equipment_ids)
+        return FileResponse(
+            path=file_path,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=f"Предписание_{count}_шт.docx",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''%D0%9F%D1%80%D0%B5%D0%B4%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5_{count}_%D1%88%D1%82.docx"
+            }
+        )
+
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Шаблон не найден: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при генерации предписания: {str(e)}"
+        )
+
+
+@router.post("/bid-poverka")
+def generate_bid_poverka(
+    request: GenerateLabelsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Генерировать заявку на поверку для нескольких единиц оборудования
+    Доступно для всех аутентифицированных пользователей
+    """
+    service = DocumentService(db)
+
+    if not request.equipment_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Список ID оборудования не может быть пустым"
+        )
+
+    try:
+        file_path = service.generate_bid_poverka(request.equipment_ids)
+
+        if not file_path:
+            raise HTTPException(
+                status_code=404,
+                detail="Не найдено оборудование для генерации заявки на поверку"
+            )
+
+        # Проверить, что файл существует
+        if not Path(file_path).exists():
+            raise HTTPException(
+                status_code=500,
+                detail="Ошибка при генерации документа"
+            )
+
+        # Вернуть файл для скачивания
+        count = len(request.equipment_ids)
+        return FileResponse(
+            path=file_path,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=f"Заявка_на_поверку_{count}_шт.docx",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''%D0%97%D0%B0%D1%8F%D0%B2%D0%BA%D0%B0_%D0%BD%D0%B0_%D0%BF%D0%BE%D0%B2%D0%B5%D1%80%D0%BA%D1%83_{count}_%D1%88%D1%82.docx"
+            }
+        )
+
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Шаблон не найден: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при генерации заявки на поверку: {str(e)}"
+        )
+
+
 @router.get("/commissioning-template")
 def download_commissioning_template(
     current_user: User = Depends(get_current_user)
@@ -192,13 +306,13 @@ def download_commissioning_template(
     Доступно для всех аутентифицированных пользователей
     """
     template_path = Path("docs/docx-templates/template_new_entries.docx")
-    
+
     if not template_path.exists():
         raise HTTPException(
             status_code=404,
             detail="Шаблон не найден"
         )
-    
+
     # Вернуть шаблон для скачивания
     return FileResponse(
         path=str(template_path),
