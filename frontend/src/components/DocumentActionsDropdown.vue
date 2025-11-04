@@ -19,7 +19,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['print-labels', 'print-conservation-act', 'download-commissioning-template', 'clear-selection', 'print-bid-poverka', 'print-request'])
+const emit = defineEmits(['print-labels', 'print-conservation-act', 'download-commissioning-template', 'clear-selection', 'print-bid-poverka', 'print-bid-calibrovka', 'print-request'])
 
 // Опции выпадающего меню
 const dropdownOptions = computed(() => {
@@ -44,6 +44,12 @@ const dropdownOptions = computed(() => {
       {
         label: `Заявка на поверку${props.selectedCount > 0 ? ` (${props.selectedCount})` : ''}`,
         key: 'bid-poverka',
+        icon: () => h(NIcon, { component: RequestIcon }),
+        disabled: props.selectedCount === 0
+      },
+      {
+        label: `Заявка на калибровку${props.selectedCount > 0 ? ` (${props.selectedCount})` : ''}`,
+        key: 'bid-calibrovka',
         icon: () => h(NIcon, { component: RequestIcon }),
         disabled: props.selectedCount === 0
       },
@@ -93,6 +99,9 @@ const handleSelect = (key) => {
       break
     case 'bid-poverka':
       emit('print-bid-poverka')
+      break
+    case 'bid-calibrovka':
+      emit('print-bid-calibrovka')
       break
     case 'request':
       emit('print-request')

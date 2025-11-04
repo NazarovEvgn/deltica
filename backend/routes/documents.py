@@ -244,11 +244,11 @@ def generate_request(
 def generate_bid_poverka(
     request: GenerateLabelsRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_admin)
 ):
     """
     Генерировать заявку на поверку для нескольких единиц оборудования
-    Доступно для всех аутентифицированных пользователей
+    Доступно только для администраторов
     """
     service = DocumentService(db)
 
@@ -294,6 +294,63 @@ def generate_bid_poverka(
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при генерации заявки на поверку: {str(e)}"
+        )
+
+
+@router.post("/bid-calibrovka")
+def generate_bid_calibrovka(
+    request: GenerateLabelsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin)
+):
+    """
+    Генерировать заявку на калибровку для нескольких единиц оборудования
+    Доступно только для администраторов
+    """
+    service = DocumentService(db)
+
+    if not request.equipment_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Список ID оборудования не может быть пустым"
+        )
+
+    try:
+        file_path = service.generate_bid_calibrovka(request.equipment_ids)
+
+        if not file_path:
+            raise HTTPException(
+                status_code=404,
+                detail="Не найдено оборудование для генерации заявки на калибровку"
+            )
+
+        # Проверить, что файл существует
+        if not Path(file_path).exists():
+            raise HTTPException(
+                status_code=500,
+                detail="Ошибка при генерации документа"
+            )
+
+        # Вернуть файл для скачивания
+        count = len(request.equipment_ids)
+        return FileResponse(
+            path=file_path,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=f"Заявка_на_калибровку_{count}_шт.docx",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''%D0%97%D0%B0%D1%8F%D0%B2%D0%BA%D0%B0_%D0%BD%D0%B0_%D0%BA%D0%B0%D0%BB%D0%B8%D0%B1%D1%80%D0%BE%D0%B2%D0%BA%D1%83_{count}_%D1%88%D1%82.docx"
+            }
+        )
+
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Шаблон не найден: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при генерации заявки на калибровку: {str(e)}"
         )
 
 

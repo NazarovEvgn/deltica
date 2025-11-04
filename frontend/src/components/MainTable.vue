@@ -884,6 +884,45 @@ const printBidPoverka = async () => {
   }
 }
 
+// Генерация заявки на калибровку (только для администратора)
+const printBidCalibrovka = async () => {
+  if (selectedIds.value.size === 0) {
+    return
+  }
+
+  try {
+    loading.value = true
+    const equipmentIds = Array.from(selectedIds.value)
+
+    const response = await axios.post(
+      'http://localhost:8000/documents/bid-calibrovka',
+      { equipment_ids: equipmentIds },
+      {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    const filename = `Заявка_на_калибровку_${equipmentIds.length}_шт.docx`
+    await handleFileDownload(new Blob([response.data]), filename)
+
+    selectedIds.value.clear()
+    selectedIds.value = new Set(selectedIds.value)
+
+    const message = window.electron
+      ? `Заявка на калибровку для ${equipmentIds.length} ед. оборудования успешно сгенерирована и открыта в Word`
+      : `Заявка на калибровку для ${equipmentIds.length} ед. оборудования успешно сгенерирована`
+    alert(message)
+  } catch (error) {
+    console.error('Ошибка при генерации заявки на калибровку:', error)
+    alert('Ошибка при генерации заявки на калибровку: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    loading.value = false
+  }
+}
+
 // Генерация предписания (только для администратора)
 const printRequest = async () => {
   if (selectedIds.value.size === 0) {
@@ -1080,6 +1119,7 @@ defineExpose({
             @print-labels="printLabels"
             @print-conservation-act="printConservationAct"
             @print-bid-poverka="printBidPoverka"
+            @print-bid-calibrovka="printBidCalibrovka"
             @print-request="printRequest"
             @clear-selection="clearSelection"
             @download-commissioning-template="downloadCommissioningTemplate"

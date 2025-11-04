@@ -433,3 +433,86 @@ class DocumentService:
         doc.save(str(output_path))
 
         return str(output_path)
+
+    def generate_bid_calibrovka(self, equipment_ids: List[int]) -> Optional[str]:
+        """
+        Генерировать заявку на калибровку для нескольких единиц оборудования
+        Возвращает путь к сгенерированному файлу или None при ошибке
+        """
+        if not equipment_ids:
+            return None
+
+        # Получить данные для всех единиц оборудования
+        equipments_data = []
+        for equipment_id in equipment_ids:
+            data = self._get_equipment_full_data(equipment_id)
+            if data:  # Добавляем только найденное оборудование
+                equipments_data.append(data)
+
+        if not equipments_data:
+            return None
+
+        # Загрузить шаблон заявки на калибровку
+        template_path = self.templates_dir / "template_bid_calibrovka.DOCX"
+        if not template_path.exists():
+            raise FileNotFoundError(f"Шаблон не найден: {template_path}")
+
+        from docx import Document
+
+        # Генерируем первую запись
+        template = DocxTemplate(template_path)
+        template.render(equipments_data[0])
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_filename = f"bid_calibrovka_{len(equipments_data)}_items_{timestamp}.docx"
+        output_path = self.output_dir / output_filename
+
+        template.save(str(output_path))
+
+        # Открываем документ для заполнения номеров
+        doc = Document(str(output_path))
+        data_table = doc.tables[0]
+
+        # Заполняем номер для первой строки данных (row 2)
+        data_table.rows[2].cells[0].text = "1"
+
+        # Если больше одной единицы оборудования, добавляем остальные строки
+        if len(equipments_data) > 1:
+            # Для каждой дополнительной единицы оборудования добавляем строку
+            for idx in range(1, len(equipments_data)):
+                equipment = equipments_data[idx]
+                row = data_table.add_row()
+
+                # Порядковый номер
+                row.cells[0].text = str(idx + 1)
+
+                # Наименование и модель (объединенные в одной ячейке)
+                row.cells[1].text = f"{equipment['equipment_name']} {equipment['equipment_model']}"
+
+                # Количество - всегда 1
+                row.cells[2].text = "1"
+
+                # Ячейка 3 - пустая (кол-во каналов/датчиков)
+                row.cells[3].text = ""
+
+                # Заводской номер
+                row.cells[4].text = equipment['factory_number']
+
+                # Ячейки 5, 6, 7, 8 - пустые (метрологические характеристики, дата выпуска, вид калибровки, выдача протокола)
+                row.cells[5].text = ""
+                row.cells[6].text = ""
+                row.cells[7].text = ""
+                row.cells[8].text = ""
+
+                # Применяем форматирование как в первой строке
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            run.font.name = 'Times New Roman'
+                            from docx.shared import Pt
+                            run.font.size = Pt(10)
+
+        # Сохраняем финальный документ (ВСЕГДА, даже если одна единица оборудования)
+        doc.save(str(output_path))
+
+        return str(output_path)
