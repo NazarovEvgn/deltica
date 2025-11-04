@@ -10,6 +10,7 @@ const API_URL = 'http://localhost:8000'
 const currentUser = ref(null)
 const isAuthenticated = ref(false)
 const isLoading = ref(false)
+const isInitializing = ref(false)  // Состояние первичной инициализации
 const authError = ref(null)
 
 // Проверка роли администратора
@@ -67,10 +68,32 @@ const setupAxiosInterceptor = () => {
 
 // Инициализация - запускается при загрузке приложения
 const initialize = async () => {
-  const token = getToken()
-  if (token) {
-    // Есть токен - проверяем его валидность и получаем данные пользователя
-    await fetchCurrentUser()
+  try {
+    isInitializing.value = true
+
+    const token = getToken()
+    if (token) {
+      // Есть сохраненный токен - проверяем его валидность
+      await fetchCurrentUser()
+
+      // Если токен валиден - пользователь вошел
+      if (isAuthenticated.value) {
+        console.log('Восстановлена сессия из сохраненного токена')
+        return
+      }
+    }
+
+    // Токена нет или он невалиден - пробуем автоматический Windows SSO
+    console.log('Попытка автоматического входа через Windows SSO...')
+    const result = await tryAutoLogin()
+
+    if (result.success) {
+      console.log('Автоматический вход выполнен успешно')
+    } else {
+      console.log('Требуется ручной вход')
+    }
+  } finally {
+    isInitializing.value = false
   }
 }
 
@@ -165,6 +188,26 @@ const loginWithWindows = async () => {
   }
 }
 
+// Тихая попытка Windows SSO (без показа ошибок пользователю)
+const tryAutoLogin = async () => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/windows-login`)
+    const { access_token, user } = response.data
+
+    // Сохраняем токен и данные пользователя
+    saveToken(access_token)
+    currentUser.value = user
+    isAuthenticated.value = true
+
+    console.log('Автоматический вход через Windows SSO успешен:', user.username)
+    return { success: true }
+  } catch (error) {
+    // Тихая ошибка - не устанавливаем authError
+    console.log('Автоматический Windows SSO не удался, требуется ручной вход')
+    return { success: false }
+  }
+}
+
 // Выход пользователя
 const logout = () => {
   currentUser.value = null
@@ -190,6 +233,7 @@ export function useAuth() {
     currentUser,
     isAuthenticated,
     isLoading,
+    isInitializing,
     authError,
     isAdmin,
     isLaborant,
@@ -198,6 +242,7 @@ export function useAuth() {
     initialize,
     login,
     loginWithWindows,
+    tryAutoLogin,
     logout,
     clearError,
     fetchCurrentUser

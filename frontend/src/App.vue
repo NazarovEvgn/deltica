@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { NMessageProvider, NDialogProvider, NConfigProvider } from 'naive-ui'
+import { NMessageProvider, NDialogProvider, NConfigProvider, NSpin } from 'naive-ui'
 import MainTable from './components/MainTable.vue'
 import ArchiveTable from './components/ArchiveTable.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
@@ -35,10 +35,13 @@ const showArchive = ref(false)
 const showLoginModal = ref(false)
 
 // Инициализация аутентификации
-const { initialize, isAuthenticated } = useAuth()
+const { initialize, isAuthenticated, isInitializing } = useAuth()
 
 onMounted(async () => {
-  // Проверяем наличие сохраненного токена и восстанавливаем сессию
+  // Попытка автоматического входа:
+  // 1. Проверка сохраненного токена
+  // 2. Если токена нет - попытка Windows SSO
+  // 3. Если не получилось - показ формы логина
   await initialize()
 })
 
@@ -90,8 +93,18 @@ const handleLoginSuccess = () => {
     <n-message-provider>
       <n-dialog-provider>
         <div id="app">
-          <!-- Страница авторизации (если пользователь не авторизован) -->
-          <div v-if="!isAuthenticated" class="login-page">
+          <!-- Индикатор загрузки при инициализации -->
+          <div v-if="isInitializing" class="loading-page">
+            <div class="loading-container">
+              <img src="/favicon.png" alt="Deltica" class="loading-logo" />
+              <h1 class="loading-title">Deltica</h1>
+              <n-spin size="large" style="margin-top: 32px" />
+              <p class="loading-text">Вход в систему...</p>
+            </div>
+          </div>
+
+          <!-- Страница авторизации (если пользователь не авторизован после инициализации) -->
+          <div v-else-if="!isAuthenticated" class="login-page">
             <div class="login-container">
               <!-- Логотип и название -->
               <div class="login-header">
@@ -140,6 +153,42 @@ const handleLoginSuccess = () => {
 #app {
   height: 100vh;
   overflow: hidden;
+}
+
+/* Страница загрузки при инициализации */
+.loading-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #ececec;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.loading-logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.loading-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #666;
+  margin-top: 16px;
 }
 
 /* Страница авторизации */
