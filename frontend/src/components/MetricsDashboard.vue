@@ -7,6 +7,10 @@ const props = defineProps({
   metrics: {
     type: Object,
     required: true
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -22,50 +26,59 @@ const metricColors = {
 }
 
 // Конфигурация отображаемых метрик
-const displayMetrics = computed(() => [
-  {
-    label: 'Всего',
-    value: props.metrics.total,
-    color: metricColors.total,
-    key: 'total'
-  },
-  {
-    label: 'Годных',
-    value: props.metrics.fit,
-    color: metricColors.fit,
-    key: 'fit'
-  },
-  {
-    label: 'Просроченных',
-    value: props.metrics.expired,
-    color: metricColors.expired,
-    key: 'expired'
-  },
-  {
-    label: 'На верификации',
-    value: props.metrics.onVerification,
-    color: metricColors.onVerification,
-    key: 'onVerification'
-  },
-  {
-    label: 'На консервации',
-    value: props.metrics.inStorage,
-    color: metricColors.inStorage,
-    key: 'inStorage'
-  },
-  {
-    label: 'В ремонте',
-    value: props.metrics.inRepair,
-    color: metricColors.inRepair,
-    key: 'inRepair'
-  },
-  {
-    label: 'Списано',
-    value: props.metrics.failed,
-    color: metricColors.failed,
-    key: 'failed'
+const displayMetrics = computed(() => {
+  const allMetrics = [
+    {
+      label: 'Всего',
+      value: props.metrics.total,
+      color: metricColors.total,
+      key: 'total'
+    },
+    {
+      label: 'Годных',
+      value: props.metrics.fit,
+      color: metricColors.fit,
+      key: 'fit'
+    },
+    {
+      label: 'Просроченных',
+      value: props.metrics.expired,
+      color: metricColors.expired,
+      key: 'expired'
+    },
+    {
+      label: 'На верификации',
+      value: props.metrics.onVerification,
+      color: metricColors.onVerification,
+      key: 'onVerification'
+    },
+    {
+      label: 'На консервации',
+      value: props.metrics.inStorage,
+      color: metricColors.inStorage,
+      key: 'inStorage'
+    },
+    {
+      label: 'В ремонте',
+      value: props.metrics.inRepair,
+      color: metricColors.inRepair,
+      key: 'inRepair'
+    },
+    {
+      label: 'Списано',
+      value: props.metrics.failed,
+      color: metricColors.failed,
+      key: 'failed'
+    }
+  ]
+
+  // Убираем метрику "Списано" для администраторов
+  if (props.isAdmin) {
+    return allMetrics.filter(metric => metric.key !== 'failed')
   }
-])
+
+  return allMetrics
+})
 </script>
 
 <template>

@@ -1069,7 +1069,7 @@ defineExpose({
 
         <!-- Центральная часть: Дашборд с метриками -->
         <div class="header-center">
-          <MetricsDashboard :metrics="metrics" />
+          <MetricsDashboard :metrics="metrics" :is-admin="isAdmin" />
         </div>
 
         <!-- Правая часть: UserProfile -->
