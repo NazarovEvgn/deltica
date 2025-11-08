@@ -24,7 +24,9 @@ Deltica is a metrology equipment management system for oil & gas companies. It t
     - Primary Blue: `#0071BC`, Info Blue: `#00A6E4`, Orange: `#F7941D`, Green: `#8BC53F`
 - **Backend**: FastAPI with Python 3.13 managed by uv
 - **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
-- **Desktop**: Electron (планируется) - нативное Windows приложение с Vite frontend (миграция с Tauri из-за конфликта с RevoGrid)
+- **Desktop**: Electron (✅ готово) - нативное Windows приложение с Vite frontend (миграция с Tauri из-за конфликта с RevoGrid)
+  - **Status**: Production-ready portable ZIP installer (146 MB) available for distribution
+  - **Builder**: electron-builder for NSIS + portable installers
 
 ## Development Commands
 
@@ -213,17 +215,78 @@ backend/
 ├── core/           # Application core (config, database, main)
 │   ├── config.py       # Environment config via pydantic-settings
 │   ├── database.py     # SQLAlchemy engine, session, get_db() dependency
+│   ├── logging_config.py  # Structured JSON logging setup
 │   └── main.py         # FastAPI app instance with routers
 ├── app/            # Domain models and schemas
 │   ├── models.py       # SQLAlchemy ORM models (Equipment, Verification, User, etc.)
 │   └── schemas.py      # Pydantic schemas for API requests/responses
 ├── services/       # Business logic layer
 │   ├── main_table.py   # MainTableService with CRUD logic
-│   └── archive.py      # ArchiveService with archive/restore/delete logic
-├── routes/         # API endpoints (/main-table, /files, /archive, /auth, /pinned-documents)
-├── utils/          # Utility functions (auth helpers)
-├── scripts/        # Management scripts (seed_users.py, sync_users.py)
+│   ├── archive.py      # ArchiveService with archive/restore/delete logic
+│   ├── backup.py       # BackupService (pg_dump, Excel export)
+│   └── documents.py    # DocumentService (DOCX template generation)
+├── routes/         # API endpoints (HTTP layer)
+│   ├── auth.py         # /auth/* (login, JWT, Windows SSO)
+│   ├── main_table.py   # /main-table/* (CRUD operations)
+│   ├── files.py        # /files/* (upload/download with Cyrillic support)
+│   ├── archive.py      # /archive/* (archive/restore/delete)
+│   ├── pinned_documents.py  # /pinned-documents/* (shared PDFs)
+│   ├── backup.py       # /backup/* (database backup, Excel export)
+│   ├── health.py       # /health/* (system monitoring, logs)
+│   ├── contracts.py    # /contracts/* (contract balance notebook)
+│   └── documents.py    # /documents/* (label/act generation)
+├── middleware/     # Custom middleware
+│   └── logging_middleware.py  # Auto-logs all HTTP requests
+├── utils/          # Utility functions
+│   └── auth.py         # JWT creation, password hashing, dependencies
+├── scripts/        # Management scripts
+│   ├── seed_users.py          # Initial user creation
+│   ├── sync_users.py          # Sync from users_config.yaml
+│   └── import_equipment_data.py  # Excel data import
 └── tests/          # Test suite (152 tests total, all passing)
+```
+
+### Frontend Structure
+```
+frontend/
+├── src/
+│   ├── components/      # Vue components (SFC - Single File Components)
+│   │   ├── MainTable.vue         # Main equipment table with RevoGrid
+│   │   ├── ArchiveTable.vue      # Archive view with inline editing
+│   │   ├── EquipmentModal.vue    # Create/Edit/View equipment forms
+│   │   ├── FilterPanel.vue       # Advanced filtering interface
+│   │   ├── MetricsDashboard.vue  # 7 key metrics display
+│   │   ├── DocumentsPanel.vue    # Pinned documents modal
+│   │   ├── BackupPanel.vue       # Database backup + Excel export
+│   │   ├── SystemMonitor.vue     # Logs + system metrics (admin)
+│   │   ├── ContractsNotebook.vue # Contract balance tracking (admin)
+│   │   ├── AnalyticsDashboard.vue # Verification calendar (admin)
+│   │   ├── LaborantStatistics.vue # Date-range statistics
+│   │   ├── UserProfile.vue       # User dropdown with logout
+│   │   ├── AppLogo.vue           # Clickable logo component
+│   │   ├── AdminPanel.vue        # Admin dropdown menu
+│   │   └── DocumentActionsDropdown.vue # Label/act generation menu
+│   ├── composables/     # Reusable Vue composition functions
+│   │   ├── useAuth.js              # Authentication state and logic
+│   │   ├── useEquipmentMetrics.js  # Metrics calculation from data
+│   │   ├── useEquipmentFilters.js  # Advanced filtering logic
+│   │   └── useAnalytics.js         # Analytics computation
+│   ├── assets/styles/   # Global styles and fonts
+│   │   ├── fonts.css     # PT Astra Sans @font-face declarations
+│   │   ├── colors.css    # Corporate color CSS variables
+│   │   └── global.css    # Reset + body styles
+│   ├── App.vue          # Root component with NConfigProvider theme
+│   └── main.js          # Vue app entry point, axios config, global imports
+├── electron/            # Electron main process
+│   ├── main.js          # Main process (window management, IPC)
+│   └── preload.js       # Preload script (context bridge for security)
+├── public/              # Static assets (served directly)
+│   ├── favicon.png      # Custom favicon (30x35)
+│   ├── icon.png         # App icon (256x256)
+│   └── fonts/           # PT Astra Sans TTF files
+├── vite.config.js       # Vite build configuration
+├── package.json         # Dependencies and build scripts
+└── electron-builder.yml # Electron installer configuration
 ```
 
 ### Database Schema Overview
@@ -298,10 +361,16 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
 - **Finance data**: Included in main table response via LEFT JOIN (backend/services/main_table.py)
 
 **6. Authentication Flow**:
-- JWT tokens stored in localStorage
+- JWT tokens stored in localStorage (key: `authToken`)
 - Axios interceptors automatically add Bearer token to requests
+- 24-hour token expiration (`ACCESS_TOKEN_EXPIRE_MINUTES = 1440`)
 - Role-based UI: Components check `isAdmin`/`isLaborant` computed properties
 - User management via YAML config (config/users_config.yaml), not database admin panel
+- **Windows SSO Support**:
+  - Backend reads Windows username from `X-Windows-Username` header or environment
+  - Matches against `User.windows_username` field in database
+  - Password optional if Windows SSO configured for user
+  - Endpoint: `POST /auth/windows-login`
 
 **7. Pinned Documents** (`backend/routes/pinned_documents.py`, `frontend/src/components/DocumentsPanel.vue`):
 - PDF-only validation (50 MB limit), filename sanitization (supports Cyrillic)
@@ -450,7 +519,49 @@ All routes documented in Swagger UI at `http://localhost:8000/docs`
   - Table border preservation when generating labels from templates
   - Conservation act generation with automatic row numbering and point formatting
 
-**16. Laborant Statistics** (`frontend/src/components/LaborantStatistics.vue`):
+**16. Analytics Dashboard** (`frontend/src/components/AnalyticsDashboard.vue`, `frontend/src/composables/useAnalytics.js`):
+- **Purpose**: Admin-only verification calendar showing monthly verification counts by department
+- **Features**:
+  - Automatic year detection from equipment data
+  - Client-side calculation (no backend processing)
+  - Matrix display: Departments (rows) × Months (columns)
+  - Visual highlighting for non-zero values (light blue background)
+  - Total row showing aggregate counts per month
+- **Data Flow**:
+  - Receives `equipmentData` prop from MainTable
+  - Filters by `verification_date` year
+  - Groups by department and month
+  - Returns 2D matrix for display
+- **UI Integration**:
+  - Accessible from Admin Panel dropdown
+  - NModal with fullscreen option
+  - Responsive table with fixed header column
+  - Color coding: non-zero cells highlighted for quick scanning
+- **Access**: Admin-only (shows all departments)
+- **Location**: `frontend/src/components/AnalyticsDashboard.vue`
+
+**17. Contracts Notebook** (`frontend/src/components/ContractsNotebook.vue`, `backend/routes/contracts.py`):
+- **Purpose**: Admin-only contract balance tracking and management
+- **Features**:
+  - RevoGrid editable table with inline editing
+  - PostgreSQL computed `balance` column: `contract_amount - spent_amount`
+  - CRUD operations: Create, Update, Delete contracts
+  - Auto-save on cell edit (same pattern as MainTable)
+  - Fields: contract_name, contract_number, contract_amount, spent_amount, balance (computed), notes
+- **Data Flow**:
+  - `GET /contracts/` - List all contracts
+  - `POST /contracts/` - Create new contract
+  - `PUT /contracts/{id}` - Update contract (triggered by cell edit)
+  - `DELETE /contracts/{id}` - Delete contract
+- **UI Integration**:
+  - Accessible from Admin Panel dropdown ("Блокнот по договорам")
+  - NModal with RevoGrid table
+  - Add/Delete buttons in modal header
+  - Balance column auto-updates on amount changes
+- **Access**: Admin-only
+- **Location**: `frontend/src/components/ContractsNotebook.vue`
+
+**18. Laborant Statistics** (`frontend/src/components/LaborantStatistics.vue`):
 - **Purpose**: Verification statistics dashboard for laborants with date range filtering
 - **Features**:
   - Date range selector (default: current year, Jan 1 - Dec 31)
