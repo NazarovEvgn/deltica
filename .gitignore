@@ -40,3 +40,16 @@ prepare_*.py
 fix_*.py
 add_*.py
 check_*.py
+
+# Build artifacts (commercial deployment)
+dist/
+build/server/
+build/client/
+*.spec
+deltica-server.spec
+frontend/dist-electron/
+frontend/dist/
+frontend/public/config.json
+
+# Logs
+backend/logs/
