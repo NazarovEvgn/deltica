@@ -156,6 +156,87 @@ frontend/dist-electron/
     └── Deltica-Portable-1.0.0.exe  # Portable EXE (~70 MB)
 ```
 
+### Commercial Build System - ✅ РЕАЛИЗОВАНО (2025-11-09)
+
+**Назначение:** Создание коммерческих релизов для развертывания в компании без передачи исходного кода.
+
+**Архитектура развертывания:**
+```
+Личный ПК (разработчик):
+├── Исходный код (Python, Vue.js)
+├── Git репозиторий
+└── Build-скрипты
+
+Сервер компании:
+├── deltica-server.exe (PyInstaller, 61 MB)
+├── PostgreSQL 16
+├── .env (конфигурация)
+└── uploads/, logs/, backups/
+
+Клиентские ПК (10 шт):
+└── Deltica.exe (Electron, 146 MB) → подключение к серверу
+```
+
+**Build Scripts** (в `build-scripts/`):
+
+1. **build-server.ps1** - Компиляция backend в .exe
+   - Использует PyInstaller для компиляции Python в standalone .exe
+   - Результат: `dist/Deltica-Server-v1.0.0.zip` (~100 MB)
+   - Включает: deltica-server.exe, миграции, конфиги, скрипты запуска
+   - **Статус**: ✅ Успешно собрано (deltica-server.exe - 61 MB)
+
+2. **build-client.ps1** - Сборка Electron установщика
+   - Использует electron-builder для создания Windows установщиков
+   - Результат: `dist/Deltica-Client-v1.0.0.zip` (~50 MB)
+   - Включает: Setup.exe, Portable.exe
+   - **Статус**: 🔄 В процессе реализации
+
+3. **build-update.ps1** - Создание пакетов обновлений
+   - Вызывает build-server.ps1 и build-client.ps1
+   - Создает update packages для server и client
+   - Результат: `dist/Deltica-*-Update-v1.1.0.zip`
+   - **Статус**: ⏳ Ожидает завершения клиента
+
+**Команды запуска:**
+```powershell
+# Собрать серверную часть
+.\build-scripts\build-server.ps1
+
+# Собрать клиентскую часть
+.\build-scripts\build-client.ps1
+
+# Создать пакет обновлений (server + client)
+.\build-scripts\build-update.ps1
+```
+
+**PyInstaller Configuration** (`deltica-server.spec`):
+- Entry point: `backend/core/main.py`
+- Hidden imports: uvicorn, passlib, sqlalchemy, psycopg, psycopg2, alembic, docxtpl
+- Data files: migrations, alembic.ini, backend modules, config, docx-templates
+- Excludes: tkinter, matplotlib, scipy, pytest (уменьшение размера)
+- Result: Single-file executable (onefile mode)
+
+**Установка на сервере:**
+- Полная инструкция: `INSTALL_GUIDE.txt`
+- Требования: PostgreSQL 16, .env файл с настройками БД
+- Запуск: `start.bat` или Windows Service (`install-service.bat`)
+
+**Установка клиента:**
+- Portable ZIP или NSIS installer
+- Первый запуск: ввод IP адреса сервера
+- Логин: admin / admin123
+
+**Защита кода:**
+- Backend: PyInstaller bytecode compilation (уровень B - стандарт для корпоративного ПО)
+- Frontend: Electron ASAR упаковка + обфускация
+- Миграции с Tauri на Electron для лучшей совместимости
+
+**Документация:**
+- `build-scripts/README.md` - Руководство по build-скриптам
+- `INSTALL_GUIDE.txt` - Инструкция по установке на сервере
+- `INSTALL_GUIDE_DEV.txt` - Dev режим установки
+- `docs/deltica_dev_plan.md` - План коммерческого развертывания
+
 ### Database Management
 ```bash
 # Check current migration status

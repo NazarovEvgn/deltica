@@ -45,11 +45,12 @@ check_*.py
 dist/
 build/server/
 build/client/
-*.spec
-deltica-server.spec
 frontend/dist-electron/
 frontend/dist/
 frontend/public/config.json
+
+# deltica-server.spec is tracked in git (required for build)
+# Other *.spec files are ignored
 
 # Logs
 backend/logs/

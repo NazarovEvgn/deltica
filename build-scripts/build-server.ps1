@@ -56,7 +56,7 @@ Write-Host "  ✓ Старые сборки удалены" -ForegroundColor Gre
 # ═══════════════════════════════════════════════════════════
 Write-Host "[3/7] Создание PyInstaller spec файла..." -ForegroundColor Yellow
 
-$specContent = @"
+$specContent = @'
 # -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
@@ -136,7 +136,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-"@
+'@
 
 $specContent | Out-File -FilePath "deltica-server.spec" -Encoding UTF8
 Write-Host "  ✓ Spec файл создан: deltica-server.spec" -ForegroundColor Green
