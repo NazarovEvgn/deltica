@@ -18,6 +18,15 @@ Write-Host ""
 # Установка переменных окружения для отключения подписи кода
 $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
 
+# Очистка кэша electron-builder (решает проблему с symbolic links)
+$cacheDir = "$env:LOCALAPPDATA\electron-builder\Cache"
+if (Test-Path $cacheDir) {
+    Write-Host "Очистка кэша electron-builder..." -ForegroundColor Yellow
+    Remove-Item -Path $cacheDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "[OK] Кэш очищен" -ForegroundColor Green
+}
+Write-Host ""
+
 Write-Host "Запуск electron-builder..." -ForegroundColor Cyan
 npm run electron:build:win
 

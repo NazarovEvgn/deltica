@@ -63,13 +63,13 @@
 
 3. Откройте .env в Блокноте и отредактируйте:
 
+   DB_USER=deltica_user            ← Пользователь из Шага 2
+   DB_PASSWORD=deltica123          ← Пароль из Шага 2
    DB_HOST=localhost
    DB_PORT=5432
-   DB_USER=deltica_user
-   DB_PASSWORD=deltica123          ← Ваш пароль
    DB_NAME=deltica_db
 
-   SECRET_KEY=test_secret_key_12345678901234567890  ← Любая строка 32+ символов
+   ВАЖНО: Все остальные настройки (JWT, CORS) заданы в коде и не требуют настройки!
 
 4. Запустите сервер:
    - Дважды кликните C:\Deltica\start.bat
