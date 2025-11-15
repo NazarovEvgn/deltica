@@ -19,4 +19,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  // Используем относительные пути для Electron production build
+  base: './',
 })

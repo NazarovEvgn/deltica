@@ -319,6 +319,44 @@ ipcMain.handle('open-file', async (event, arrayBuffer, filename) => {
   }
 })
 
+// IPC обработчик для получения конфигурации
+ipcMain.handle('get-config', async () => {
+  try {
+    const userDataPath = app.getPath('userData')
+    const configPath = path.join(userDataPath, 'config.json')
+
+    // Если файл не существует, возвращаем null
+    if (!fs.existsSync(configPath)) {
+      return null
+    }
+
+    const configData = fs.readFileSync(configPath, 'utf-8')
+    return JSON.parse(configData)
+  } catch (error) {
+    console.error('Error reading config:', error)
+    return null
+  }
+})
+
+// IPC обработчик для сохранения конфигурации
+ipcMain.handle('save-config', async (event, config) => {
+  try {
+    const userDataPath = app.getPath('userData')
+    const configPath = path.join(userDataPath, 'config.json')
+
+    // Создаем директорию если её нет
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true })
+    }
+
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving config:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 app.whenReady().then(() => {
   createMenu()
   createSplashWindow()  // Сначала показываем splash screen

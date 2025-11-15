@@ -18,5 +18,12 @@ contextBridge.exposeInMainWorld('electron', {
   },
   removeUndoListener: () => {
     ipcRenderer.removeAllListeners('undo-action')
+  },
+  // API для работы с конфигурацией
+  getConfig: async () => {
+    return await ipcRenderer.invoke('get-config')
+  },
+  saveConfig: async (config) => {
+    return await ipcRenderer.invoke('save-config', config)
   }
 })

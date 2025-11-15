@@ -5,7 +5,9 @@ import MainTable from './components/MainTable.vue'
 import ArchiveTable from './components/ArchiveTable.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
 import LoginModal from './components/LoginModal.vue'
+import ConfigModal from './components/ConfigModal.vue'
 import { useAuth } from './composables/useAuth'
+import { updateApiBaseUrl } from './config/api.js'
 
 // Настройка темы Naive UI для использования PT Astra Sans и корпоративных цветов
 const themeOverrides = {
@@ -33,17 +35,43 @@ const isViewMode = ref(false)
 const mainTableRef = ref(null)
 const showArchive = ref(false)
 const showLoginModal = ref(false)
+const showConfigModal = ref(false)
 
 // Инициализация аутентификации
 const { initialize, isAuthenticated, isInitializing } = useAuth()
 
 onMounted(async () => {
+  // В Electron режиме сначала проверяем конфигурацию
+  if (window.electron) {
+    const config = await window.electron.getConfig()
+
+    // Если конфигурации нет - показываем диалог настройки
+    if (!config || !config.serverUrl) {
+      showConfigModal.value = true
+      return
+    }
+
+    // Если конфигурация есть - обновляем API URL
+    updateApiBaseUrl(config.serverUrl)
+  }
+
   // Попытка автоматического входа:
   // 1. Проверка сохраненного токена
   // 2. Если токена нет - попытка Windows SSO
   // 3. Если не получилось - показ формы логина
   await initialize()
 })
+
+// Обработка сохранения конфигурации
+const handleConfigSaved = async (serverUrl) => {
+  showConfigModal.value = false
+
+  // Обновляем API URL
+  updateApiBaseUrl(serverUrl)
+
+  // Продолжаем инициализацию
+  await initialize()
+}
 
 // Открыть модальное окно для добавления
 const handleAddEquipment = () => {
@@ -92,6 +120,12 @@ const handleLoginSuccess = () => {
   <n-config-provider :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-dialog-provider>
+        <!-- Диалог настройки сервера (первый запуск в Electron) -->
+        <ConfigModal
+          v-model:show="showConfigModal"
+          @config-saved="handleConfigSaved"
+        />
+
         <div id="app">
           <!-- Индикатор загрузки при инициализации -->
           <div v-if="isInitializing" class="loading-page">

@@ -1,25 +1,25 @@
-# ═══════════════════════════════════════════════════════════
-# Deltica Server Build Script - Коммерческий релиз
-# ═══════════════════════════════════════════════════════════
+﻿# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Deltica Server Build Script - ÐšÐ¾Ð¼Ð¼ÐµÑ€Ñ‡ÐµÑÐºÐ¸Ð¹ Ñ€ÐµÐ»Ð¸Ð·
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  Deltica Server Build Script v1.0" -ForegroundColor Cyan
-Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
+Write-Host "  Deltica Server Build Script v1.1" -ForegroundColor Cyan
+Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
 Write-Host ""
 
-# Проверка, что скрипт запущен из корня проекта
+# ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ°, Ñ‡Ñ‚Ð¾ ÑÐºÑ€Ð¸Ð¿Ñ‚ Ð·Ð°Ð¿ÑƒÑ‰ÐµÐ½ Ð¸Ð· ÐºÐ¾Ñ€Ð½Ñ Ð¿Ñ€Ð¾ÐµÐºÑ‚Ð°
 if (-not (Test-Path ".\backend")) {
-    Write-Host "ОШИБКА: Запустите скрипт из корня проекта" -ForegroundColor Red
-    Write-Host "Текущая директория: $(Get-Location)" -ForegroundColor Yellow
-    Write-Host "Ожидается: C:\Projects\deltica\" -ForegroundColor Yellow
+    Write-Host "ÐžÐ¨Ð˜Ð‘ÐšÐ: Ð—Ð°Ð¿ÑƒÑÑ‚Ð¸Ñ‚Ðµ ÑÐºÑ€Ð¸Ð¿Ñ‚ Ð¸Ð· ÐºÐ¾Ñ€Ð½Ñ Ð¿Ñ€Ð¾ÐµÐºÑ‚Ð°" -ForegroundColor Red
+    Write-Host "Ð¢ÐµÐºÑƒÑ‰Ð°Ñ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ñ: $(Get-Location)" -ForegroundColor Yellow
+    Write-Host "ÐžÐ¶Ð¸Ð´Ð°ÐµÑ‚ÑÑ: C:\Projects\deltica\" -ForegroundColor Yellow
     exit 1
 }
 
-# Получение версии из pyproject.toml
-$version = "1.0.0"
+# ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð²ÐµÑ€ÑÐ¸Ð¸ Ð¸Ð· pyproject.toml
+$version = "1.0.1"
 if (Test-Path "pyproject.toml") {
     $content = Get-Content "pyproject.toml" -Raw
     if ($content -match 'version\s*=\s*"([^"]+)"') {
@@ -27,34 +27,82 @@ if (Test-Path "pyproject.toml") {
     }
 }
 
-Write-Host "Версия релиза: $version" -ForegroundColor Green
+Write-Host "Ð’ÐµÑ€ÑÐ¸Ñ Ñ€ÐµÐ»Ð¸Ð·Ð°: $version" -ForegroundColor Green
 Write-Host ""
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 1: Установка PyInstaller
-# ═══════════════════════════════════════════════════════════
-Write-Host "[1/7] Установка PyInstaller..." -ForegroundColor Yellow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 1: Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð´Ð°Ð¼Ð¿Ð° Ð±Ð°Ð·Ñ‹ Ð´Ð°Ð½Ð½Ñ‹Ñ…
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[1/8] Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð´Ð°Ð¼Ð¿Ð° Ñ‚ÐµÐºÑƒÑ‰ÐµÐ¹ Ð±Ð°Ð·Ñ‹ Ð´Ð°Ð½Ð½Ñ‹Ñ…..." -ForegroundColor Yellow
+
+try {
+    if (-not (Test-Path ".\.env")) {
+        Write-Host "  âš  .env Ñ„Ð°Ð¹Ð» Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½, Ð¿Ñ€Ð¾Ð¿ÑƒÑÐº ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð´Ð°Ð¼Ð¿Ð°" -ForegroundColor Yellow
+    } else {
+        $envContent = Get-Content ".\.env" -Raw
+        $dbHost = if ($envContent -match 'DB_HOST=(.+)') { $matches[1].Trim() } else { "localhost" }
+        $dbPort = if ($envContent -match 'DB_PORT=(.+)') { $matches[1].Trim() } else { "5432" }
+        $dbUser = if ($envContent -match 'DB_USER=(.+)') { $matches[1].Trim() } else { "postgres" }
+        $dbPassword = if ($envContent -match 'DB_PASSWORD=(.+)') { $matches[1].Trim() } else { "" }
+        $dbName = if ($envContent -match 'DB_NAME=(.+)') { $matches[1].Trim() } else { "deltica_db" }
+
+        if (-not (Test-Path ".\backend\database_dumps")) {
+            New-Item -ItemType Directory -Path ".\backend\database_dumps" -Force | Out-Null
+        }
+
+        $pgDumpPath = "C:\Program Files\PostgreSQL\17\bin\pg_dump.exe"
+        if (-not (Test-Path $pgDumpPath)) {
+            $pgVersions = Get-ChildItem "C:\Program Files\PostgreSQL" -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending
+            if ($pgVersions) {
+                $pgDumpPath = Join-Path $pgVersions[0].FullName "bin\pg_dump.exe"
+            }
+        }
+
+        if (Test-Path $pgDumpPath) {
+            $env:PGPASSWORD = $dbPassword
+            $dumpPath = ".\backend\database_dumps\deltica_initial.dump"
+            & $pgDumpPath -h $dbHost -p $dbPort -U $dbUser -d $dbName -F c -b -f $dumpPath 2>&1 | Out-Null
+
+            if (Test-Path $dumpPath) {
+                $dumpSize = (Get-Item $dumpPath).Length / 1KB
+                Write-Host ("  âœ“ Ð”Ð°Ð¼Ð¿ Ð‘Ð” ÑÐ¾Ð·Ð´Ð°Ð½: deltica_initial.dump ({0:N2} KB)" -f $dumpSize) -ForegroundColor Green
+            } else {
+                Write-Host "  âš  ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¾Ð·Ð´Ð°Ñ‚ÑŒ Ð´Ð°Ð¼Ð¿ Ð‘Ð”" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "  âš  pg_dump Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½, Ð¿Ñ€Ð¾Ð¿ÑƒÑÐº ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð´Ð°Ð¼Ð¿Ð°" -ForegroundColor Yellow
+        }
+    }
+} catch {
+    Write-Host "  âš  ÐžÑˆÐ¸Ð±ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð´Ð°Ð¼Ð¿Ð°: $_" -ForegroundColor Yellow
+    Write-Host "  ÐŸÑ€Ð¾Ð´Ð¾Ð»Ð¶Ð°ÐµÐ¼ ÑÐ±Ð¾Ñ€ÐºÑƒ Ð±ÐµÐ· Ð´Ð°Ð¼Ð¿Ð° Ð‘Ð”" -ForegroundColor Yellow
+}
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 2: Ð£ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° PyInstaller
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[2/8] Ð£ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° PyInstaller..." -ForegroundColor Yellow
 try {
     uv pip install pyinstaller
-    Write-Host "  ✓ PyInstaller установлен" -ForegroundColor Green
+    Write-Host "  âœ“ PyInstaller ÑƒÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½" -ForegroundColor Green
 } catch {
-    Write-Host "  ✗ Ошибка установки PyInstaller: $_" -ForegroundColor Red
+    Write-Host "  âœ— ÐžÑˆÐ¸Ð±ÐºÐ° ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¸ PyInstaller: $_" -ForegroundColor Red
     exit 1
 }
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 2: Очистка старых сборок
-# ═══════════════════════════════════════════════════════════
-Write-Host "[2/7] Очистка старых сборок..." -ForegroundColor Yellow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 3: ÐžÑ‡Ð¸ÑÑ‚ÐºÐ° ÑÑ‚Ð°Ñ€Ñ‹Ñ… ÑÐ±Ð¾Ñ€Ð¾Ðº
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[3/8] ÐžÑ‡Ð¸ÑÑ‚ÐºÐ° ÑÑ‚Ð°Ñ€Ñ‹Ñ… ÑÐ±Ð¾Ñ€Ð¾Ðº..." -ForegroundColor Yellow
 if (Test-Path ".\dist\server") { Remove-Item -Recurse -Force ".\dist\server" }
 if (Test-Path ".\build\server") { Remove-Item -Recurse -Force ".\build\server" }
 if (Test-Path ".\deltica-server.spec") { Remove-Item -Force ".\deltica-server.spec" }
-Write-Host "  ✓ Старые сборки удалены" -ForegroundColor Green
+Write-Host "  âœ“ Ð¡Ñ‚Ð°Ñ€Ñ‹Ðµ ÑÐ±Ð¾Ñ€ÐºÐ¸ ÑƒÐ´Ð°Ð»ÐµÐ½Ñ‹" -ForegroundColor Green
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 3: Создание PyInstaller spec файла
-# ═══════════════════════════════════════════════════════════
-Write-Host "[3/7] Создание PyInstaller spec файла..." -ForegroundColor Yellow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 4: Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ PyInstaller spec Ñ„Ð°Ð¹Ð»Ð°
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[4/8] Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ PyInstaller spec Ñ„Ð°Ð¹Ð»Ð°..." -ForegroundColor Yellow
 
 $specContent = @'
 # -*- mode: python ; coding: utf-8 -*-
@@ -75,6 +123,7 @@ a = Analysis(
         ('backend/middleware', 'middleware'),
         ('backend/utils', 'utils'),
         ('backend/scripts', 'scripts'),
+        ('backend/database_dumps', 'database_dumps'),
         ('config', 'config'),
         ('docs/docx-templates', 'docs/docx-templates'),
     ],
@@ -139,349 +188,237 @@ exe = EXE(
 '@
 
 $specContent | Out-File -FilePath "deltica-server.spec" -Encoding UTF8
-Write-Host "  ✓ Spec файл создан: deltica-server.spec" -ForegroundColor Green
+Write-Host "  âœ“ Spec Ñ„Ð°Ð¹Ð» ÑÐ¾Ð·Ð´Ð°Ð½: deltica-server.spec" -ForegroundColor Green
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 4: Компиляция backend в .exe
-# ═══════════════════════════════════════════════════════════
-Write-Host "[4/7] Компиляция backend в .exe (2-5 минут)..." -ForegroundColor Yellow
-Write-Host "  Это может занять несколько минут, подождите..." -ForegroundColor Gray
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 5: ÐšÐ¾Ð¼Ð¿Ð¸Ð»ÑÑ†Ð¸Ñ backend Ð² .exe
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[5/8] ÐšÐ¾Ð¼Ð¿Ð¸Ð»ÑÑ†Ð¸Ñ backend Ð² .exe (2-5 Ð¼Ð¸Ð½ÑƒÑ‚)..." -ForegroundColor Yellow
+Write-Host "  Ð­Ñ‚Ð¾ Ð¼Ð¾Ð¶ÐµÑ‚ Ð·Ð°Ð½ÑÑ‚ÑŒ Ð½ÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¼Ð¸Ð½ÑƒÑ‚, Ð¿Ð¾Ð´Ð¾Ð¶Ð´Ð¸Ñ‚Ðµ..." -ForegroundColor Gray
 
 try {
     uv run pyinstaller deltica-server.spec --clean --distpath .\dist\server --workpath .\build\server
 
     if (-not (Test-Path ".\dist\server\deltica-server.exe")) {
-        throw "Файл deltica-server.exe не найден после сборки"
+        throw "Ð¤Ð°Ð¹Ð» deltica-server.exe Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½ Ð¿Ð¾ÑÐ»Ðµ ÑÐ±Ð¾Ñ€ÐºÐ¸"
     }
 
     $exeSize = (Get-Item ".\dist\server\deltica-server.exe").Length / 1MB
-    Write-Host "  ✓ Backend скомпилирован: deltica-server.exe (${exeSize:N2} MB)" -ForegroundColor Green
+    Write-Host ("  âœ“ Backend ÑÐºÐ¾Ð¼Ð¿Ð¸Ð»Ð¸Ñ€Ð¾Ð²Ð°Ð½: deltica-server.exe ({0:N2} MB)" -f $exeSize) -ForegroundColor Green
 } catch {
-    Write-Host "  ✗ Ошибка компиляции: $_" -ForegroundColor Red
+    Write-Host "  âœ— ÐžÑˆÐ¸Ð±ÐºÐ° ÐºÐ¾Ð¼Ð¿Ð¸Ð»ÑÑ†Ð¸Ð¸: $_" -ForegroundColor Red
     exit 1
 }
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 5: Создание структуры релиза
-# ═══════════════════════════════════════════════════════════
-Write-Host "[5/7] Создание структуры релиза..." -ForegroundColor Yellow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 6: Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñ‹ Ñ€ÐµÐ»Ð¸Ð·Ð°
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[6/8] Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñ‹ Ñ€ÐµÐ»Ð¸Ð·Ð°..." -ForegroundColor Yellow
 
 $releaseDir = ".\dist\Deltica-Server-v$version"
 if (Test-Path $releaseDir) { Remove-Item -Recurse -Force $releaseDir }
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 
-# Копируем скомпилированный сервер
 Copy-Item ".\dist\server\deltica-server.exe" "$releaseDir\deltica-server.exe"
-Write-Host "  ✓ Скопирован deltica-server.exe" -ForegroundColor Green
+Write-Host "  âœ“ Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½ deltica-server.exe" -ForegroundColor Green
 
-# Создаем папки для данных
 New-Item -ItemType Directory -Path "$releaseDir\uploads" -Force | Out-Null
 New-Item -ItemType Directory -Path "$releaseDir\logs" -Force | Out-Null
 New-Item -ItemType Directory -Path "$releaseDir\backups" -Force | Out-Null
-Write-Host "  ✓ Созданы папки: uploads, logs, backups" -ForegroundColor Green
+Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½Ñ‹ Ð¿Ð°Ð¿ÐºÐ¸: uploads, logs, backups" -ForegroundColor Green
 
-# Создаем шаблон конфига
-$configTemplate = @"
-{
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "user": "deltica_user",
-    "password": "CHANGE_ME_TO_SECURE_PASSWORD",
-    "database": "deltica_db"
-  },
-  "server": {
-    "host": "0.0.0.0",
-    "port": 8000
-  },
-  "security": {
-    "secret_key": "GENERATE_RANDOM_SECRET_KEY_HERE_MIN_32_CHARS",
-    "algorithm": "HS256",
-    "access_token_expire_minutes": 1440
-  }
-}
-"@
-$configTemplate | Out-File -FilePath "$releaseDir\config.template.json" -Encoding UTF8
-Write-Host "  ✓ Создан config.template.json" -ForegroundColor Green
-
-# Создаем .env.example для сервера
 $envExample = @"
-# База данных PostgreSQL
+# Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… PostgreSQL
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=deltica_user
 DB_PASSWORD=your_secure_password_here
 DB_NAME=deltica_db
-
-# API сервер
-API_HOST=0.0.0.0
-API_PORT=8000
-
-# Безопасность (JWT)
-SECRET_KEY=generate_random_secret_key_min_32_characters
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
 "@
 $envExample | Out-File -FilePath "$releaseDir\.env.example" -Encoding UTF8
-Write-Host "  ✓ Создан .env.example" -ForegroundColor Green
+Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½ .env.example" -ForegroundColor Green
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 6: Создание скриптов запуска
-# ═══════════════════════════════════════════════════════════
-Write-Host "[6/7] Создание скриптов запуска..." -ForegroundColor Yellow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 7: Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ð² Ð·Ð°Ð¿ÑƒÑÐºÐ° Ð¸ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð‘Ð”
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[7/8] Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ð² Ð·Ð°Ð¿ÑƒÑÐºÐ° Ð¸ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð‘Ð”..." -ForegroundColor Yellow
 
-# Скрипт первого запуска
-$firstRunScript = @"
+$startScript = @"
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo   Deltica Server - Первый запуск
+echo   Deltica Server - Ð—Ð°Ð¿ÑƒÑÐº
 echo ========================================
 echo.
 
-REM Проверка наличия .env
 if not exist .env (
-    echo [ОШИБКА] Файл .env не найден!
-    echo.
-    echo Скопируйте .env.example в .env и отредактируйте:
-    echo   copy .env.example .env
-    echo   notepad .env
-    echo.
+    echo [ÐžÐ¨Ð˜Ð‘ÐšÐ] Ð¤Ð°Ð¹Ð» .env Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½!
+    echo Ð¡ÐºÐ¾Ð¿Ð¸Ñ€ÑƒÐ¹Ñ‚Ðµ .env.example Ð² .env Ð¸ Ð¾Ñ‚Ñ€ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€ÑƒÐ¹Ñ‚Ðµ
     pause
     exit /b 1
 )
 
-REM Проверка PostgreSQL
-echo [1/3] Проверка PostgreSQL...
-pg_isready -h localhost -p 5432 >nul 2>&1
-if errorlevel 1 (
-    echo [ОШИБКА] PostgreSQL не запущен!
-    echo.
-    echo Установите PostgreSQL и запустите службу:
-    echo   https://www.postgresql.org/download/windows/
-    echo.
-    pause
-    exit /b 1
-)
-echo   ✓ PostgreSQL запущен
-
-REM Информация о запуске
-echo.
-echo [2/3] Настройка окружения...
-echo   ✓ Переменные окружения загружены из .env
-
-REM Запуск сервера
-echo.
-echo [3/3] Запуск Deltica Server...
-echo   API: http://localhost:8000
-echo   Swagger UI: http://localhost:8000/docs
-echo.
-echo Нажмите Ctrl+C для остановки сервера
+echo Ð—Ð°Ð¿ÑƒÑÐº Deltica Server...
+echo API: http://localhost:8000
+echo Swagger UI: http://localhost:8000/docs
 echo.
 deltica-server.exe
 
 pause
 "@
-$firstRunScript | Out-File -FilePath "$releaseDir\start.bat" -Encoding ASCII
-Write-Host "  ✓ Создан start.bat" -ForegroundColor Green
+$startScript | Out-File -FilePath "$releaseDir\start.bat" -Encoding ASCII
+Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½ start.bat" -ForegroundColor Green
 
-# Скрипт создания Windows Service
-$serviceScript = @"
+$initDbScript = @"
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo   Установка Deltica как службы Windows
+echo   Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð±Ð°Ð·Ñ‹ Ð´Ð°Ð½Ð½Ñ‹Ñ… Deltica
 echo ========================================
 echo.
-echo ВНИМАНИЕ: Требуются права администратора!
-echo.
-pause
 
-REM Проверка прав администратора
-net session >nul 2>&1
-if errorlevel 1 (
-    echo [ОШИБКА] Запустите скрипт от имени администратора!
+if not exist .env (
+    echo [ÐžÐ¨Ð˜Ð‘ÐšÐ] Ð¤Ð°Ð¹Ð» .env Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½!
     pause
     exit /b 1
 )
 
-REM Установка службы через Task Scheduler
-echo Создание задачи в планировщике Windows...
-
-schtasks /create /tn "Deltica Server" /tr "%CD%\deltica-server.exe" /sc onstart /ru SYSTEM /f
-
-if errorlevel 0 (
-    echo.
-    echo ✓ Служба Deltica Server установлена!
-    echo.
-    echo Для управления службой:
-    echo   - Запуск: schtasks /run /tn "Deltica Server"
-    echo   - Остановка: taskkill /F /IM deltica-server.exe
-    echo   - Удаление: schtasks /delete /tn "Deltica Server" /f
-    echo.
-) else (
-    echo.
-    echo [ОШИБКА] Не удалось создать службу
+for /f "tokens=1,2 delims==" %%a in (.env) do (
+    if "%%a"=="DB_HOST" set DB_HOST=%%b
+    if "%%a"=="DB_PORT" set DB_PORT=%%b
+    if "%%a"=="DB_USER" set DB_USER=%%b
+    if "%%a"=="DB_PASSWORD" set DB_PASSWORD=%%b
+    if "%%a"=="DB_NAME" set DB_NAME=%%b
 )
 
+echo [1/4] ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° PostgreSQL...
+set PGPASSWORD=%DB_PASSWORD%
+pg_isready -h %DB_HOST% -p %DB_PORT% >nul 2>&1
+if errorlevel 1 (
+    echo [ÐžÐ¨Ð˜Ð‘ÐšÐ] PostgreSQL Ð½Ðµ Ð´Ð¾ÑÑ‚ÑƒÐ¿ÐµÐ½!
+    pause
+    exit /b 1
+)
+echo   OK PostgreSQL Ð´Ð¾ÑÑ‚ÑƒÐ¿ÐµÐ½
+
+echo.
+echo [2/4] ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð±Ð°Ð·Ñ‹ Ð´Ð°Ð½Ð½Ñ‹Ñ…...
+psql -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -lqt 2>nul | find "%DB_NAME%" >nul 2>&1
+if errorlevel 1 (
+    echo   Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð½Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚, ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ...
+    createdb -h %DB_HOST% -p %DB_PORT% -U %DB_USER% %DB_NAME%
+    echo   OK Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… ÑÐ¾Ð·Ð´Ð°Ð½Ð°
+) else (
+    echo   OK Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚
+)
+
+echo.
+echo [3/4] ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ñ‚Ð°Ð±Ð»Ð¸Ñ†...
+psql -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d %DB_NAME% -c "\dt" 2>nul | find "users" >nul 2>&1
+if errorlevel 1 (
+    echo   Ð¢Ð°Ð±Ð»Ð¸Ñ†Ñ‹ Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½Ñ‹, Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ðµ Ð¸Ð· Ð´Ð°Ð¼Ð¿Ð°...
+
+    set PG_RESTORE=pg_restore
+    if exist "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" set PG_RESTORE="C:\Program Files\PostgreSQL\17\bin\pg_restore.exe"
+    if exist "C:\Program Files\PostgreSQL\16\bin\pg_restore.exe" set PG_RESTORE="C:\Program Files\PostgreSQL\16\bin\pg_restore.exe"
+
+    %PG_RESTORE% -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d %DB_NAME% --clean --if-exists --no-owner database_dumps\deltica_initial.dump
+
+    if errorlevel 1 (
+        echo [ÐžÐ¨Ð˜Ð‘ÐšÐ] ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð‘Ð” Ð¸Ð· Ð´Ð°Ð¼Ð¿Ð°!
+        pause
+        exit /b 1
+    )
+    echo   OK Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð°
+) else (
+    echo   OK Ð¢Ð°Ð±Ð»Ð¸Ñ†Ñ‹ ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‚
+)
+
+echo.
+echo [4/4] ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð´Ð°Ð½Ð½Ñ‹Ñ…...
+psql -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d %DB_NAME% -c "SELECT COUNT(*) FROM users" 2>nul | find "0" >nul 2>&1
+if not errorlevel 1 (
+    echo   Ð’ÐÐ˜ÐœÐÐÐ˜Ð•: Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¿ÑƒÑÑ‚Ð°
+)
+
+echo.
+echo ========================================
+echo   Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð·Ð°Ð²ÐµÑ€ÑˆÐµÐ½Ð° ÑƒÑÐ¿ÐµÑˆÐ½Ð¾!
+echo ========================================
+echo.
 pause
 "@
-$serviceScript | Out-File -FilePath "$releaseDir\install-service.bat" -Encoding ASCII
-Write-Host "  ✓ Создан install-service.bat" -ForegroundColor Green
+$initDbScript | Out-File -FilePath "$releaseDir\init-database.bat" -Encoding ASCII
+Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½ init-database.bat" -ForegroundColor Green
 
-# ═══════════════════════════════════════════════════════════
-# Шаг 7: Создание README
-# ═══════════════════════════════════════════════════════════
-Write-Host "[7/7] Создание документации..." -ForegroundColor Yellow
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¨Ð°Ð³ 8: Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ README
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+Write-Host "[8/8] Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð´Ð¾ÐºÑƒÐ¼ÐµÐ½Ñ‚Ð°Ñ†Ð¸Ð¸..." -ForegroundColor Yellow
 
 $readme = @"
-═══════════════════════════════════════════════════════════
-  Deltica Server v$version - Инструкция по установке
-═══════════════════════════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  Deltica Server v$version - Ð˜Ð½ÑÑ‚Ñ€ÑƒÐºÑ†Ð¸Ñ Ð¿Ð¾ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐµ
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-## СИСТЕМНЫЕ ТРЕБОВАНИЯ
+Ð¡Ð˜Ð¡Ð¢Ð•ÐœÐÐ«Ð• Ð¢Ð Ð•Ð‘ÐžÐ’ÐÐÐ˜Ð¯:
+- Windows Server 2016+ Ð¸Ð»Ð¸ Windows 10/11
+- PostgreSQL 13+ (ÑƒÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½ Ð¸ Ð·Ð°Ð¿ÑƒÑ‰ÐµÐ½)
+- 2 GB RAM, 1 GB ÑÐ²Ð¾Ð±Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð¼ÐµÑÑ‚Ð°
 
-- Windows Server 2016+ или Windows 10/11
-- PostgreSQL 13+ (установлен и запущен)
-- 2 GB RAM
-- 1 GB свободного места на диске
-- Сетевое подключение (для клиентов)
+Ð£Ð¡Ð¢ÐÐÐžÐ’ÐšÐ:
 
-═══════════════════════════════════════════════════════════
-  УСТАНОВКА НА СЕРВЕРЕ
-═══════════════════════════════════════════════════════════
-
-### Шаг 1: Установите PostgreSQL
-
-Скачайте и установите PostgreSQL:
+Ð¨Ð°Ð³ 1: Ð£ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚Ðµ PostgreSQL
 https://www.postgresql.org/download/windows/
 
-При установке:
-- Запомните пароль для пользователя postgres
-- Порт по умолчанию: 5432
+Ð¨Ð°Ð³ 2: Ð¡Ð¾Ð·Ð´Ð°Ð¹Ñ‚Ðµ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ PostgreSQL
+Ð’ pgAdmin Ð¸Ð»Ð¸ psql Ð²Ñ‹Ð¿Ð¾Ð»Ð½Ð¸Ñ‚Ðµ:
+  CREATE USER deltica_user WITH PASSWORD 'Ð²Ð°Ñˆ_Ð¿Ð°Ñ€Ð¾Ð»ÑŒ' CREATEDB;
 
-### Шаг 2: Создайте базу данных
+Ð¨Ð°Ð³ 3: ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹Ñ‚Ðµ Deltica Server
+1. Ð Ð°ÑÐ¿Ð°ÐºÑƒÐ¹Ñ‚Ðµ ÑÑ‚Ñƒ Ð¿Ð°Ð¿ÐºÑƒ Ð² C:\Deltica\
+2. Ð¡ÐºÐ¾Ð¿Ð¸Ñ€ÑƒÐ¹Ñ‚Ðµ .env.example Ð² .env
+3. ÐžÑ‚Ñ€ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€ÑƒÐ¹Ñ‚Ðµ .env (ÑƒÐºÐ°Ð¶Ð¸Ñ‚Ðµ Ð¿Ð°Ñ€Ð¾Ð»ÑŒ)
 
-Откройте pgAdmin или psql и выполните:
+Ð¨Ð°Ð³ 4: Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð‘Ð” (ÐžÐ”Ð˜Ð Ð ÐÐ—!)
+Ð—Ð°Ð¿ÑƒÑÑ‚Ð¸Ñ‚Ðµ: init-database.bat
 
-    CREATE DATABASE deltica_db;
-    CREATE USER deltica_user WITH PASSWORD 'ваш_надежный_пароль';
-    GRANT ALL PRIVILEGES ON DATABASE deltica_db TO deltica_user;
+Ð¡ÐºÑ€Ð¸Ð¿Ñ‚ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸:
+- Ð¡Ð¾Ð·Ð´Ð°ÑÑ‚ Ð±Ð°Ð·Ñƒ Ð´Ð°Ð½Ð½Ñ‹Ñ… deltica_db
+- Ð’Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñƒ Ñ‚Ð°Ð±Ð»Ð¸Ñ†
+- Ð˜Ð¼Ð¿Ð¾Ñ€Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ Ð²ÑÐµ Ð´Ð°Ð½Ð½Ñ‹Ðµ
 
-### Шаг 3: Настройте Deltica Server
+Ð¨Ð°Ð³ 5: Ð—Ð°Ð¿ÑƒÑÐº ÑÐµÑ€Ð²ÐµÑ€Ð°
+Ð—Ð°Ð¿ÑƒÑÑ‚Ð¸Ñ‚Ðµ: start.bat
 
-1. Распакуйте эту папку в C:\Deltica\
-2. Скопируйте .env.example в .env:
+ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒÑ‚Ðµ: http://localhost:8000/docs
 
-   copy .env.example .env
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-3. Отредактируйте .env (откройте в Блокноте):
-
-   - DB_PASSWORD - укажите пароль из Шага 2
-   - SECRET_KEY - сгенерируйте случайную строку (минимум 32 символа)
-
-### Шаг 4: Первый запуск
-
-Дважды кликните на start.bat
-
-Если все настроено правильно, вы увидите:
-  ✓ PostgreSQL запущен
-  ✓ API: http://localhost:8000
-  ✓ Swagger UI: http://localhost:8000/docs
-
-Откройте браузер: http://localhost:8000/docs
-Вы должны увидеть API документацию.
-
-### Шаг 5: Автозапуск (опционально)
-
-Чтобы сервер запускался автоматически при загрузке Windows:
-
-1. Запустите install-service.bat от имени администратора
-   (правый клик → Запуск от имени администратора)
-
-2. Служба будет создана и настроена на автозапуск
-
-═══════════════════════════════════════════════════════════
-  ПРОВЕРКА РАБОТЫ
-═══════════════════════════════════════════════════════════
-
-1. Откройте браузер: http://localhost:8000/docs
-2. Вы должны увидеть Swagger UI с документацией API
-3. Попробуйте войти:
-   - Логин: admin
-   - Пароль: admin123
-
-═══════════════════════════════════════════════════════════
-  НАСТРОЙКА ДОСТУПА ПО СЕТИ
-═══════════════════════════════════════════════════════════
-
-Чтобы клиенты могли подключаться к серверу:
-
-### 1. Настройка Windows Firewall
-
-Откройте порт 8000:
-1. Windows Defender Firewall → Дополнительные параметры
-2. Правила для входящих подключений → Создать правило
-3. Тип: Для порта → TCP → 8000
-4. Действие: Разрешить подключение
-5. Название: "Deltica Server API"
-
-### 2. Узнайте IP адрес сервера
-
-Откройте cmd и выполните:
-    ipconfig
-
-Найдите IPv4-адрес (например: 192.168.1.10)
-Этот адрес нужно будет ввести при установке клиентов.
-
-═══════════════════════════════════════════════════════════
-  СТРУКТУРА ПАПОК
-═══════════════════════════════════════════════════════════
-
+Ð¡Ð¢Ð Ð£ÐšÐ¢Ð£Ð Ð:
 C:\Deltica\
-├── deltica-server.exe       - Основное приложение
-├── .env                      - Конфигурация (создайте из .env.example)
-├── start.bat                 - Скрипт запуска
-├── install-service.bat       - Установка как службы Windows
-├── uploads\                  - Загруженные файлы
-├── logs\                     - Логи работы сервера
-└── backups\                  - Резервные копии БД
+â”œâ”€â”€ deltica-server.exe       - ÐžÑÐ½Ð¾Ð²Ð½Ð¾Ðµ Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ
+â”œâ”€â”€ .env                      - ÐšÐ¾Ð½Ñ„Ð¸Ð³ÑƒÑ€Ð°Ñ†Ð¸Ñ
+â”œâ”€â”€ init-database.bat         - Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð‘Ð” (Ð¾Ð´Ð¸Ð½ Ñ€Ð°Ð·)
+â”œâ”€â”€ start.bat                 - Ð—Ð°Ð¿ÑƒÑÐº ÑÐµÑ€Ð²ÐµÑ€Ð°
+â”œâ”€â”€ database_dumps\           - Ð”Ð°Ð¼Ð¿ Ð‘Ð”
+â”œâ”€â”€ uploads\                  - Ð—Ð°Ð³Ñ€ÑƒÐ¶ÐµÐ½Ð½Ñ‹Ðµ Ñ„Ð°Ð¹Ð»Ñ‹
+â”œâ”€â”€ logs\                     - Ð›Ð¾Ð³Ð¸
+â””â”€â”€ backups\                  - Ð ÐµÐ·ÐµÑ€Ð²Ð½Ñ‹Ðµ ÐºÐ¾Ð¿Ð¸Ð¸
 
-═══════════════════════════════════════════════════════════
-  ЛОГИ И ДИАГНОСТИКА
-═══════════════════════════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-Логи сохраняются в: C:\Deltica\logs\deltica.log
-
-При возникновении проблем:
-1. Проверьте логи
-2. Убедитесь, что PostgreSQL запущен
-3. Проверьте настройки в .env
-
-═══════════════════════════════════════════════════════════
-  ТЕХНИЧЕСКАЯ ПОДДЕРЖКА
-═══════════════════════════════════════════════════════════
-
-При возникновении проблем свяжитесь с разработчиком.
-
-Приложите:
-- Файл logs\deltica.log
-- Скриншот ошибки
-- Описание действий, которые привели к ошибке
-
-═══════════════════════════════════════════════════════════
-
-Версия: $version
-Дата сборки: $(Get-Date -Format "yyyy-MM-dd")
+Ð’ÐµÑ€ÑÐ¸Ñ: $version
+Ð”Ð°Ñ‚Ð°: $(Get-Date -Format "yyyy-MM-dd")
 "@
 $readme | Out-File -FilePath "$releaseDir\README.txt" -Encoding UTF8
-Write-Host "  ✓ Создан README.txt" -ForegroundColor Green
+Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½ README.txt" -ForegroundColor Green
 
-# ═══════════════════════════════════════════════════════════
-# Создание ZIP архива
-# ═══════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ZIP Ð°Ñ€Ñ…Ð¸Ð²Ð°
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Write-Host ""
-Write-Host "Создание ZIP архива..." -ForegroundColor Yellow
+Write-Host "Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ZIP Ð°Ñ€Ñ…Ð¸Ð²Ð°..." -ForegroundColor Yellow
 
 $zipPath = ".\dist\Deltica-Server-v$version.zip"
 if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
@@ -489,39 +426,37 @@ if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
 try {
     Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipPath -CompressionLevel Optimal -Force
     $zipSize = (Get-Item $zipPath).Length / 1MB
-    Write-Host "  ✓ ZIP создан: Deltica-Server-v$version.zip (${zipSize:N2} MB)" -ForegroundColor Green
+    Write-Host ("  âœ“ ZIP ÑÐ¾Ð·Ð´Ð°Ð½: Deltica-Server-v{0}.zip ({1:N2} MB)" -f $version, $zipSize) -ForegroundColor Green
 } catch {
-    Write-Host "  ✗ Ошибка создания ZIP: $_" -ForegroundColor Red
+    Write-Host "  âœ— ÐžÑˆÐ¸Ð±ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ ZIP: $_" -ForegroundColor Red
     exit 1
 }
 
-# ═══════════════════════════════════════════════════════════
-# Итоговая информация
-# ═══════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Ð˜Ñ‚Ð¾Ð³Ð¾Ð²Ð°Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Write-Host ""
-Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "  ✅ СБОРКА СЕРВЕРА ЗАВЕРШЕНА УСПЕШНО!" -ForegroundColor Green
-Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Green
+Write-Host "  âœ… Ð¡Ð‘ÐžÐ ÐšÐ Ð¡Ð•Ð Ð’Ð•Ð Ð Ð—ÐÐ’Ð•Ð Ð¨Ð•ÐÐ Ð£Ð¡ÐŸÐ•Ð¨ÐÐž!" -ForegroundColor Green
+Write-Host "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Green
 Write-Host ""
-Write-Host "Результаты сборки:" -ForegroundColor Cyan
+Write-Host "Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚Ñ‹ ÑÐ±Ð¾Ñ€ÐºÐ¸:" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  📦 ZIP релиз:     .\dist\Deltica-Server-v$version.zip" -ForegroundColor White
-Write-Host "  📁 Папка релиза:  .\dist\Deltica-Server-v$version\" -ForegroundColor White
-Write-Host "  💾 Размер .exe:   ${exeSize:N2} MB" -ForegroundColor White
-Write-Host "  💾 Размер ZIP:    ${zipSize:N2} MB" -ForegroundColor White
+Write-Host "  ðŸ“¦ ZIP Ñ€ÐµÐ»Ð¸Ð·:     .\dist\Deltica-Server-v$version.zip" -ForegroundColor White
+Write-Host "  ðŸ“ ÐŸÐ°Ð¿ÐºÐ° Ñ€ÐµÐ»Ð¸Ð·Ð°:  .\dist\Deltica-Server-v$version\" -ForegroundColor White
+Write-Host ("  ðŸ’¾ Ð Ð°Ð·Ð¼ÐµÑ€ .exe:   {0:N2} MB" -f $exeSize) -ForegroundColor White
+Write-Host ("  ðŸ’¾ Ð Ð°Ð·Ð¼ÐµÑ€ ZIP:    {0:N2} MB" -f $zipSize) -ForegroundColor White
 Write-Host ""
-Write-Host "Содержимое релиза:" -ForegroundColor Cyan
-Write-Host "  ✓ deltica-server.exe       - Скомпилированный backend" -ForegroundColor Gray
-Write-Host "  ✓ .env.example             - Шаблон конфигурации" -ForegroundColor Gray
-Write-Host "  ✓ start.bat                - Скрипт запуска" -ForegroundColor Gray
-Write-Host "  ✓ install-service.bat      - Установка как службы" -ForegroundColor Gray
-Write-Host "  ✓ README.txt               - Инструкция по установке" -ForegroundColor Gray
+Write-Host "Ð¡Ð¾Ð´ÐµÑ€Ð¶Ð¸Ð¼Ð¾Ðµ Ñ€ÐµÐ»Ð¸Ð·Ð°:" -ForegroundColor Cyan
+Write-Host "  âœ“ deltica-server.exe       - Ð¡ÐºÐ¾Ð¼Ð¿Ð¸Ð»Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ backend" -ForegroundColor Gray
+Write-Host "  âœ“ .env.example             - Ð¨Ð°Ð±Ð»Ð¾Ð½ ÐºÐ¾Ð½Ñ„Ð¸Ð³ÑƒÑ€Ð°Ñ†Ð¸Ð¸" -ForegroundColor Gray
+Write-Host "  âœ“ init-database.bat        - Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð‘Ð” (Ð¿ÐµÑ€Ð²Ñ‹Ð¹ Ð·Ð°Ð¿ÑƒÑÐº)" -ForegroundColor Gray
+Write-Host "  âœ“ start.bat                - Ð¡ÐºÑ€Ð¸Ð¿Ñ‚ Ð·Ð°Ð¿ÑƒÑÐºÐ° ÑÐµÑ€Ð²ÐµÑ€Ð°" -ForegroundColor Gray
+Write-Host "  âœ“ database_dumps\          - Ð”Ð°Ð¼Ð¿ Ð‘Ð” Ñ Ñ‚ÐµÐºÑƒÑ‰Ð¸Ð¼Ð¸ Ð´Ð°Ð½Ð½Ñ‹Ð¼Ð¸" -ForegroundColor Gray
+Write-Host "  âœ“ README.txt               - Ð˜Ð½ÑÑ‚Ñ€ÑƒÐºÑ†Ð¸Ñ Ð¿Ð¾ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐµ" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Следующие шаги:" -ForegroundColor Yellow
-Write-Host "  1. Протестируйте релиз на тестовом сервере" -ForegroundColor White
-Write-Host "  2. Передайте ZIP файл заказчику" -ForegroundColor White
-Write-Host "  3. Заказчик следует инструкции из README.txt" -ForegroundColor White
+Write-Host "Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ðµ ÑˆÐ°Ð³Ð¸:" -ForegroundColor Yellow
+Write-Host "  1. ÐŸÑ€Ð¾Ñ‚ÐµÑÑ‚Ð¸Ñ€ÑƒÐ¹Ñ‚Ðµ Ñ€ÐµÐ»Ð¸Ð· Ð½Ð° Ñ‚ÐµÑÑ‚Ð¾Ð²Ð¾Ð¼ ÑÐµÑ€Ð²ÐµÑ€Ðµ" -ForegroundColor White
+Write-Host "  2. ÐŸÐµÑ€ÐµÐ´Ð°Ð¹Ñ‚Ðµ ZIP Ñ„Ð°Ð¹Ð» Ð·Ð°ÐºÐ°Ð·Ñ‡Ð¸ÐºÑƒ" -ForegroundColor White
 Write-Host ""
-Write-Host "Для сборки клиентской части запустите:" -ForegroundColor Yellow
-Write-Host "  .\build-scripts\build-client.ps1" -ForegroundColor White
-Write-Host ""
+
