@@ -1,0 +1,206 @@
+================================================================================
+  DELTICA DATABASE - РУКОВОДСТВО ПО РУЧНОМУ ВОССТАНОВЛЕНИЮ
+================================================================================
+
+Если автоматические скрипты init-database.bat не работают, используйте один из
+этих методов ручного восстановления базы данных.
+
+================================================================================
+МЕТОД 1: Восстановление через pgAdmin (Recommended)
+================================================================================
+
+Этот метод использует бинарный дамп и работает быстрее всего.
+
+1. Откройте pgAdmin 4
+
+2. Создайте базу данных (если еще не создана):
+   - Right-click на "Databases" → Create → Database
+   - Database name: deltica_db
+   - Owner: deltica_user (или postgres)
+   - Click "Save"
+
+3. Восстановите данные:
+   - Right-click на "deltica_db" → Restore
+   - Format: Custom or tar
+   - Filename: Выберите файл "deltica_initial.dump"
+   - Role name: deltica_user (или оставьте пустым)
+   - На вкладке "Options":
+     ☑ Owner: NO
+     ☑ Privilege: NO
+   - Click "Restore"
+
+4. Если появляются ошибки прав доступа, выполните в Query Tool:
+   ```sql
+   GRANT ALL ON SCHEMA public TO deltica_user;
+   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO deltica_user;
+   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO deltica_user;
+   ALTER DATABASE deltica_db OWNER TO deltica_user;
+   ```
+
+5. Повторите шаг 3.
+
+================================================================================
+МЕТОД 2: Восстановление через SQL файл в pgAdmin
+================================================================================
+
+Если МЕТОД 1 не работает, используйте этот метод с plain SQL файлом.
+
+1. Откройте pgAdmin 4
+
+2. Создайте базу данных (если еще не создана):
+   - Right-click на "Databases" → Create → Database
+   - Database name: deltica_db
+   - Owner: deltica_user
+   - Click "Save"
+
+3. Откройте Query Tool:
+   - Click на "deltica_db"
+   - Tools → Query Tool (или F4)
+
+4. Загрузите SQL файл:
+   - Click "Open File" (иконка папки)
+   - Выберите файл "deltica_initial.sql"
+   - Click "Execute" (F5)
+
+5. Дождитесь выполнения (может занять 1-2 минуты).
+   В нижней панели должно появиться "Query returned successfully".
+
+6. Проверьте результат:
+   ```sql
+   SELECT COUNT(*) FROM users;
+   ```
+   Должно вернуть число больше 0.
+
+================================================================================
+МЕТОД 3: Восстановление через командную строку
+================================================================================
+
+Для опытных пользователей, если pgAdmin недоступен.
+
+▶ Вариант A: pg_restore (бинарный дамп)
+-------------------------------------------
+1. Откройте CMD или PowerShell
+
+2. Установите переменную окружения:
+   set PGPASSWORD=your_password
+
+   (или для PowerShell: $env:PGPASSWORD='your_password')
+
+3. Выполните восстановление:
+   "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" ^
+     -h 127.0.0.1 -p 5432 -U deltica_user ^
+     -d deltica_db --no-owner --verbose ^
+     deltica_initial.dump
+
+▶ Вариант B: psql (plain SQL файл)
+-------------------------------------------
+1. Откройте CMD или PowerShell
+
+2. Установите переменную окружения:
+   set PGPASSWORD=your_password
+
+3. Выполните восстановление:
+   "C:\Program Files\PostgreSQL\17\bin\psql.exe" ^
+     -h 127.0.0.1 -p 5432 -U deltica_user ^
+     -d deltica_db -f deltica_initial.sql
+
+================================================================================
+МЕТОД 4: Автоматический скрипт (если шаг 3 проблемный)
+================================================================================
+
+Если init-database.bat падает на шаге 3 (права доступа), сделайте так:
+
+1. Откройте pgAdmin → Query Tool на базе postgres (не deltica_db!)
+
+2. Выполните эти команды ОДИН РАЗ:
+   ```sql
+   -- Создать пользователя если не существует
+   DO $$
+   BEGIN
+       IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'deltica_user') THEN
+           CREATE USER deltica_user WITH PASSWORD 'deltica123' CREATEDB;
+       END IF;
+   END
+   $$;
+
+   -- Создать базу данных если не существует
+   SELECT 'CREATE DATABASE deltica_db OWNER deltica_user'
+   WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'deltica_db');
+   \gexec
+
+   -- Переключиться на deltica_db и выдать права
+   \c deltica_db
+   GRANT ALL ON SCHEMA public TO deltica_user;
+   ALTER DATABASE deltica_db OWNER TO deltica_user;
+   ```
+
+3. Теперь запустите init-database.bat снова.
+   Он должен пропустить шаг 3 и успешно восстановить данные.
+
+================================================================================
+ПРОВЕРКА УСПЕШНОСТИ ВОССТАНОВЛЕНИЯ
+================================================================================
+
+После восстановления любым методом, проверьте что все работает:
+
+1. Откройте pgAdmin → deltica_db → Query Tool
+
+2. Выполните:
+   ```sql
+   -- Проверка таблиц
+   SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+
+   -- Должны быть таблицы:
+   -- users, equipment, verification, responsibility, finance,
+   -- archived_equipment, archived_verification, archived_responsibility, archived_finance,
+   -- equipment_files, pinned_documents, contract, alembic_version
+
+   -- Проверка пользователей
+   SELECT username, role FROM users;
+
+   -- Должен быть хотя бы:
+   -- admin | admin
+
+   -- Проверка оборудования
+   SELECT COUNT(*) FROM equipment;
+
+   -- Должно быть больше 0 если есть тестовые данные
+   ```
+
+3. Если все запросы выполнились успешно - база данных восстановлена!
+
+================================================================================
+ТИПИЧНЫЕ ОШИБКИ И РЕШЕНИЯ
+================================================================================
+
+❌ ERROR: permission denied for schema public
+✅ РЕШЕНИЕ: Выполните в pgAdmin от имени postgres:
+   GRANT ALL ON SCHEMA public TO deltica_user;
+   ALTER DATABASE deltica_db OWNER TO deltica_user;
+
+❌ ERROR: role "postgres" does not exist in dump
+✅ РЕШЕНИЕ: Используйте опцию --no-owner при pg_restore
+   (или снимите галочку Owner в pgAdmin)
+
+❌ ERROR: database "deltica_db" does not exist
+✅ РЕШЕНИЕ: Создайте базу данных вручную в pgAdmin перед восстановлением
+
+❌ ERROR: password authentication failed
+✅ РЕШЕНИЕ: Проверьте пароль в .env файле или в переменной PGPASSWORD
+
+❌ Таблицы создались, но данных нет (users = 0)
+✅ РЕШЕНИЕ:
+   1. Проверьте права доступа (см. выше)
+   2. Убедитесь что файл дампа не пустой (должен быть > 100 KB)
+   3. Попробуйте МЕТОД 2 (SQL файл через pgAdmin)
+
+================================================================================
+КОНТАКТЫ ДЛЯ ПОДДЕРЖКИ
+================================================================================
+
+Если ничего не помогло:
+1. Проверьте логи: restore.log, restore_sql.log
+2. Сделайте скриншот ошибки
+3. Обратитесь к разработчику с описанием проблемы
+
+================================================================================

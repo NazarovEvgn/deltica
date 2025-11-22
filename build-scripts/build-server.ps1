@@ -114,8 +114,6 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('backend/alembic', 'alembic'),
-        ('backend/alembic.ini', '.'),
         ('backend/app', 'app'),
         ('backend/core', 'core'),
         ('backend/routes', 'routes'),
@@ -123,9 +121,6 @@ a = Analysis(
         ('backend/middleware', 'middleware'),
         ('backend/utils', 'utils'),
         ('backend/scripts', 'scripts'),
-        ('backend/database_dumps', 'database_dumps'),
-        ('config', 'config'),
-        ('docs/docx-templates', 'docs/docx-templates'),
     ],
     hiddenimports=[
         'uvicorn.logging',
@@ -225,7 +220,41 @@ Write-Host "  âœ“ Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½ deltica-server.e
 New-Item -ItemType Directory -Path "$releaseDir\uploads" -Force | Out-Null
 New-Item -ItemType Directory -Path "$releaseDir\logs" -Force | Out-Null
 New-Item -ItemType Directory -Path "$releaseDir\backups" -Force | Out-Null
-Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½Ñ‹ Ð¿Ð°Ð¿ÐºÐ¸: uploads, logs, backups" -ForegroundColor Green
+Write-Host "  âœ" Ð¡Ð¾Ð·Ð´Ð°Ð½Ñ‹ Ð¿Ð°Ð¿ÐºÐ¸: uploads, logs, backups" -ForegroundColor Green
+
+# Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ database_dumps Ð¿Ð°Ð¿ÐºÑƒ Ñ Ð´Ð°Ð¼Ð¿Ð¾Ð¼
+if (Test-Path ".\backend\database_dumps\deltica_initial.dump") {
+    New-Item -ItemType Directory -Path "$releaseDir\database_dumps" -Force | Out-Null
+    Copy-Item ".\backend\database_dumps\deltica_initial.dump" "$releaseDir\database_dumps\deltica_initial.dump"
+    $dumpSize = (Get-Item "$releaseDir\database_dumps\deltica_initial.dump").Length / 1KB
+    Write-Host ("  âœ" Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½ Ð´Ð°Ð¼Ð¿ Ð'Ð": deltica_initial.dump ({0:N2} KB)" -f $dumpSize) -ForegroundColor Green
+} else {
+    Write-Host "  âš  Ð'ÐÐ˜ÐœÐÐÐ˜Ð•: Ð"Ð°Ð¼Ð¿ Ð'Ð" Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½! Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð'Ð" Ð½Ðµ Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÐµÑ‚!" -ForegroundColor Yellow
+}
+
+# Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ config Ð¿Ð°Ð¿ÐºÑƒ
+if (Test-Path ".\config") {
+    Copy-Item ".\config" "$releaseDir\config" -Recurse -Force
+    Write-Host "  âœ" Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð° Ð¿Ð°Ð¿ÐºÐ°: config" -ForegroundColor Green
+}
+
+# Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ docs Ð¿Ð°Ð¿ÐºÑƒ
+if (Test-Path ".\docs") {
+    Copy-Item ".\docs" "$releaseDir\docs" -Recurse -Force
+    Write-Host "  âœ" Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð° Ð¿Ð°Ð¿ÐºÐ°: docs" -ForegroundColor Green
+}
+
+# Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ migrations Ð¿Ð°Ð¿ÐºÑƒ
+if (Test-Path ".\migrations") {
+    Copy-Item ".\migrations" "$releaseDir\migrations" -Recurse -Force
+    Write-Host "  âœ" Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð° Ð¿Ð°Ð¿ÐºÐ°: migrations" -ForegroundColor Green
+}
+
+# Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ alembic.ini
+if (Test-Path ".\alembic.ini") {
+    Copy-Item ".\alembic.ini" "$releaseDir\alembic.ini"
+    Write-Host "  âœ" Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½: alembic.ini" -ForegroundColor Green
+}
 
 $envExample = @"
 # Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… PostgreSQL
@@ -459,4 +488,5 @@ Write-Host "Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ðµ ÑˆÐ°Ð³Ð¸:" -Foreground
 Write-Host "  1. ÐŸÑ€Ð¾Ñ‚ÐµÑÑ‚Ð¸Ñ€ÑƒÐ¹Ñ‚Ðµ Ñ€ÐµÐ»Ð¸Ð· Ð½Ð° Ñ‚ÐµÑÑ‚Ð¾Ð²Ð¾Ð¼ ÑÐµÑ€Ð²ÐµÑ€Ðµ" -ForegroundColor White
 Write-Host "  2. ÐŸÐµÑ€ÐµÐ´Ð°Ð¹Ñ‚Ðµ ZIP Ñ„Ð°Ð¹Ð» Ð·Ð°ÐºÐ°Ð·Ñ‡Ð¸ÐºÑƒ" -ForegroundColor White
 Write-Host ""
+
 

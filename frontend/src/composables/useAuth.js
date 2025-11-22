@@ -3,26 +3,24 @@
 
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import { getApiBaseUrl } from '../config/api.js'
 
-// API URL загружается из config.json (можно изменить без пересборки)
-let API_URL = 'http://localhost:8000' // Fallback значение
-
-// Загрузка конфигурации при старте
-async function loadConfig() {
-  try {
-    const response = await fetch('/config.json')
-    const config = await response.json()
-    if (config.apiUrl) {
-      API_URL = config.apiUrl
-      console.log('API URL загружен из конфигурации:', API_URL)
+// API URL получаем из того же источника что и остальное приложение
+async function getAuthApiUrl() {
+  // В Electron режиме получаем URL из сохраненной конфигурации
+  if (window.electron) {
+    try {
+      const config = await window.electron.getConfig()
+      if (config && config.serverUrl) {
+        return config.serverUrl
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки конфигурации для auth:', error)
     }
-  } catch (error) {
-    console.warn('Не удалось загрузить config.json, используется localhost:', error)
   }
+  // Fallback для веб-режима
+  return 'http://localhost:8000'
 }
-
-// Загружаем конфигурацию сразу
-await loadConfig()
 
 // Глобальное состояние (shared state)
 const currentUser = ref(null)
@@ -121,7 +119,8 @@ const fetchCurrentUser = async () => {
     isLoading.value = true
     authError.value = null
 
-    const response = await axios.get(`${API_URL}/auth/me`)
+    const apiUrl = await getAuthApiUrl()
+    const response = await axios.get(`${apiUrl}/auth/me`)
     currentUser.value = response.data
     isAuthenticated.value = true
   } catch (error) {
@@ -141,7 +140,8 @@ const login = async (username, password) => {
     isLoading.value = true
     authError.value = null
 
-    const response = await axios.post(`${API_URL}/auth/login`, {
+    const apiUrl = await getAuthApiUrl()
+    const response = await axios.post(`${apiUrl}/auth/login`, {
       username,
       password
     })
@@ -178,7 +178,8 @@ const loginWithWindows = async () => {
     isLoading.value = true
     authError.value = null
 
-    const response = await axios.post(`${API_URL}/auth/windows-login`)
+    const apiUrl = await getAuthApiUrl()
+    const response = await axios.post(`${apiUrl}/auth/windows-login`)
 
     const { access_token, user } = response.data
 
@@ -209,7 +210,8 @@ const loginWithWindows = async () => {
 // Тихая попытка Windows SSO (без показа ошибок пользователю)
 const tryAutoLogin = async () => {
   try {
-    const response = await axios.post(`${API_URL}/auth/windows-login`)
+    const apiUrl = await getAuthApiUrl()
+    const response = await axios.post(`${apiUrl}/auth/windows-login`)
     const { access_token, user } = response.data
 
     // Сохраняем токен и данные пользователя
