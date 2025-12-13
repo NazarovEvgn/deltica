@@ -23,10 +23,15 @@ const emit = defineEmits(['metric-click', 'reset-filters'])
 
 // Обработчик клика на метрику
 const handleMetricClick = (metricKey) => {
-  if (metricKey === 'total') {
-    // Клик на "Всего" сбрасывает все фильтры
+  // Проверяем, является ли кликнутая метрика уже активной
+  if (metricKey === activeMetricKey.value) {
+    // Повторный клик на активную метрику сбрасывает фильтр
+    emit('reset-filters')
+  } else if (metricKey === 'total') {
+    // Клик на "Всего" также сбрасывает все фильтры
     emit('reset-filters')
   } else {
+    // Клик на неактивную метрику применяет фильтр
     emit('metric-click', metricKey)
   }
 }
