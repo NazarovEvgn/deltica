@@ -145,6 +145,9 @@ const loadData = async () => {
     const response = await axios.get(API_ENDPOINTS.mainTable)
     let data = response.data
 
+    console.log('[MainTable] loadData received:', data.length, 'items')
+    console.log('[MainTable] First item equipment_specs:', data[0]?.equipment_specs)
+
     // Фильтрация данных для лаборанта (показываем только оборудование его подразделения)
     if (isLaborant.value && currentUser.value?.department) {
       data = data.filter(item => item.department === currentUser.value.department)
