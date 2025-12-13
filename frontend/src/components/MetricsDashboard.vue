@@ -50,7 +50,7 @@ const metricColors = {
 // Определяем активную метрику на основе activeFilters
 const activeMetricKey = computed(() => {
   if (!props.activeFilters || Object.keys(props.activeFilters).length === 0) {
-    return 'total' // Нет фильтров = показываем все
+    return null // Нет фильтров = не подсвечиваем ни одну метрику
   }
 
   // Проверяем какой фильтр активен
