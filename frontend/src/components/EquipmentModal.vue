@@ -579,7 +579,7 @@ watch(() => props.show, (newValue) => {
             <span class="info-value">{{ formValue.equipment_year }}</span>
           </div>
           <div class="info-item" v-if="formValue.equipment_specs">
-            <span class="info-label">Спецификация:</span>
+            <span class="info-label">Характеристики:</span>
             <span class="info-value">{{ formValue.equipment_specs }}</span>
           </div>
         </div>
@@ -768,8 +768,8 @@ watch(() => props.show, (newValue) => {
         </n-grid-item>
 
         <n-grid-item :span="3">
-          <n-form-item label="Спецификация">
-            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите спецификацию" />
+          <n-form-item label="Характеристики">
+            <n-input v-model:value="formValue.equipment_specs" type="textarea" placeholder="Введите характеристики" />
           </n-form-item>
         </n-grid-item>
 
