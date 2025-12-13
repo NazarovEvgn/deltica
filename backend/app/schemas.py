@@ -133,6 +133,7 @@ class MainTableResponse(BaseModel):
     equipment_name: str
     equipment_model: str
     equipment_type: EquipmentTypeEnum
+    equipment_specs: Optional[str] = None
     factory_number: str
     inventory_number: str
     equipment_year: int
