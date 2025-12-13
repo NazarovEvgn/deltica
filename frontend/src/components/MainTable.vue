@@ -80,6 +80,64 @@ const formatDate = (dateString) => {
   return `${day}.${month}.${year}`
 }
 
+// Функция для сравнения дат в формате dd.mm.yyyy (для сортировки)
+const compareDates = (dateStr1, dateStr2) => {
+  // Пустые значения всегда в конце
+  if (!dateStr1 && !dateStr2) return 0
+  if (!dateStr1) return 1
+  if (!dateStr2) return -1
+
+  // Парсим даты из формата dd.mm.yyyy
+  const parseDate = (str) => {
+    const match = str.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+    if (!match) return null
+    const [, day, month, year] = match
+    return new Date(year, month - 1, day)
+  }
+
+  const date1 = parseDate(dateStr1)
+  const date2 = parseDate(dateStr2)
+
+  // Если парсинг не удался, сравниваем как строки
+  if (!date1 || !date2) return String(dateStr1).localeCompare(String(dateStr2))
+
+  // Сравниваем timestamp
+  return date1.getTime() - date2.getTime()
+}
+
+// Функция для сравнения месяцев в формате "Месяц YYYY" (для сортировки)
+const compareMonthYear = (monthYearStr1, monthYearStr2) => {
+  // Пустые значения всегда в конце
+  if (!monthYearStr1 && !monthYearStr2) return 0
+  if (!monthYearStr1) return 1
+  if (!monthYearStr2) return -1
+
+  const monthNames = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ]
+
+  // Парсим месяц и год
+  const parseMonthYear = (str) => {
+    const parts = str.split(' ')
+    if (parts.length !== 2) return null
+    const monthIndex = monthNames.indexOf(parts[0])
+    if (monthIndex === -1) return null
+    const year = parseInt(parts[1])
+    if (isNaN(year)) return null
+    return new Date(year, monthIndex, 1)
+  }
+
+  const date1 = parseMonthYear(monthYearStr1)
+  const date2 = parseMonthYear(monthYearStr2)
+
+  // Если парсинг не удался, сравниваем как строки
+  if (!date1 || !date2) return String(monthYearStr1).localeCompare(String(monthYearStr2))
+
+  // Сравниваем timestamp
+  return date1.getTime() - date2.getTime()
+}
+
 // Функция форматирования месяца и года (например: Октябрь 2025)
 const formatMonthYear = (dateString) => {
   if (!dateString) return ''
@@ -323,6 +381,13 @@ const dynamicColumns = computed(() => {
       filter: isAdmin.value ? 'string' : false, // Фильтрация только для администратора
       // Убираем readonly для verification_due, несмотря на то что это computed поле
       readonly: (fieldKey === 'verification_due') ? false : (fieldDef?.computed || false)
+    }
+
+    // Добавляем кастомный comparator для столбцов с датами
+    if (fieldKey === 'verification_date' || fieldKey === 'verification_due' || fieldKey === 'payment_date') {
+      columnConfig.comparator = (a, b) => compareDates(a, b)
+    } else if (fieldKey === 'verification_plan') {
+      columnConfig.comparator = (a, b) => compareMonthYear(a, b)
     }
 
     // Добавляем cellTemplate для форматирования
