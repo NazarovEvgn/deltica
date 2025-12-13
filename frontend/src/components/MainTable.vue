@@ -567,7 +567,7 @@ const saveCellToServer = async (equipmentId, prop, val) => {
     console.log(`[saveCellToServer] Sending PUT request with:`, fullData)
 
     // Отправляем обновление на сервер
-    await axios.put(API_ENDPOINTS.mainTableFull(equipmentId), fullData)
+    await axios.put(API_ENDPOINTS.mainTableById(equipmentId), fullData)
 
     console.log(`[saveCellToServer] Successfully saved ${prop} = ${val}`)
     return true
