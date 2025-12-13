@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { NButton, NModal, NSpace, NCard, NTabs, NTabPane, NStatistic, useMessage } from 'naive-ui'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../config/api.js'
 
 const message = useMessage()
 
@@ -18,7 +19,7 @@ const loadingLogs = ref(false)
 const loadSystemInfo = async () => {
   loadingSystem.value = true
   try {
-    const response = await axios.get('http://localhost:8000/health/system')
+    const response = await axios.get(API_ENDPOINTS.healthSystem)
     systemInfo.value = response.data
   } catch (error) {
     console.error('Ошибка при загрузке информации о системе:', error)
@@ -32,7 +33,7 @@ const loadSystemInfo = async () => {
 const loadLogs = async (limit = 100) => {
   loadingLogs.value = true
   try {
-    const response = await axios.get(`http://localhost:8000/health/logs?limit=${limit}`)
+    const response = await axios.get(API_ENDPOINTS.healthLogs(limit))
     logs.value = response.data.logs || []
   } catch (error) {
     console.error('Ошибка при загрузке логов:', error)

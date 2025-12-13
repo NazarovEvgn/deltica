@@ -23,6 +23,7 @@ import {
   FolderOpenOutline as FolderIcon
 } from '@vicons/ionicons5'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../config/api.js'
 import { useAuth } from '../composables/useAuth'
 
 const message = useMessage()
@@ -37,7 +38,7 @@ const isLoading = ref(false)
 const loadDocuments = async () => {
   try {
     isLoading.value = true
-    const response = await axios.get('http://localhost:8000/pinned-documents/')
+    const response = await axios.get(API_ENDPOINTS.pinnedDocuments)
     documents.value = response.data
   } catch (error) {
     console.error('Ошибка при загрузке документов:', error)
@@ -70,7 +71,7 @@ const handleFileUpload = async ({ file }) => {
     formData.append('file', file.file)
 
     await axios.post(
-      'http://localhost:8000/pinned-documents/upload',
+      API_ENDPOINTS.pinnedDocumentUpload,
       formData,
       {
         headers: {
@@ -92,7 +93,7 @@ const handleFileUpload = async ({ file }) => {
 // Открытие документа для просмотра в новой вкладке
 const openDocument = async (documentId) => {
   try {
-    const response = await axios.get(`http://localhost:8000/pinned-documents/view/${documentId}`, {
+    const response = await axios.get(API_ENDPOINTS.pinnedDocumentView(documentId), {
       responseType: 'blob'
     })
 
@@ -114,7 +115,7 @@ const openDocument = async (documentId) => {
 // Скачивание документа
 const downloadDocument = async (documentId, fileName) => {
   try {
-    const response = await axios.get(`http://localhost:8000/pinned-documents/download/${documentId}`, {
+    const response = await axios.get(API_ENDPOINTS.pinnedDocumentDownload(documentId), {
       responseType: 'blob'
     })
 
@@ -152,7 +153,7 @@ const deleteDocument = async (documentId, documentName) => {
     negativeText: 'Отмена',
     onPositiveClick: async () => {
       try {
-        await axios.delete(`http://localhost:8000/pinned-documents/${documentId}`)
+        await axios.delete(API_ENDPOINTS.pinnedDocumentDelete(documentId))
         message.success('Документ успешно удален')
         await loadDocuments()
       } catch (error) {

@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { NModal, NButton, NSpace, useMessage, useDialog } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../config/api.js'
 
 const props = defineProps({
   show: {
@@ -155,7 +156,7 @@ const formatMoney = (value) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8000/contracts/')
+    const response = await axios.get(API_ENDPOINTS.contracts)
     source.value = response.data
   } catch (error) {
     console.error('Ошибка при загрузке договоров:', error)
@@ -178,7 +179,7 @@ const handleAfterEdit = async (event) => {
     if (!contract) return
 
     // Обновляем данные на сервере
-    await axios.put(`http://localhost:8000/contracts/${contract.id}`, {
+    await axios.put(API_ENDPOINTS.contractById(contract.id), {
       executor_name: contract.executor_name,
       contract_number: contract.contract_number,
       valid_until: contract.valid_until,
@@ -209,7 +210,7 @@ const addContract = async () => {
       current_balance: null
     }
 
-    await axios.post('http://localhost:8000/contracts/', newContract)
+    await axios.post(API_ENDPOINTS.contracts, newContract)
     await loadData()
     message.success('Договор добавлен')
   } catch (error) {
@@ -230,7 +231,7 @@ const deleteContract = async (contractId) => {
     negativeText: 'Отмена',
     onPositiveClick: async () => {
       try {
-        await axios.delete(`http://localhost:8000/contracts/${contractId}`)
+        await axios.delete(API_ENDPOINTS.contractById(contractId))
         await loadData()
         message.success('Договор удален')
       } catch (error) {

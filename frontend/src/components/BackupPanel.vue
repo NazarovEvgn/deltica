@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { NButton, NModal, NSpace, NCard, useMessage } from 'naive-ui'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../config/api.js'
 
 const message = useMessage()
 
@@ -18,7 +19,7 @@ const exporting = ref(false)
 const loadBackupHistory = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8000/backup/history?limit=20')
+    const response = await axios.get(API_ENDPOINTS.backupHistory(20))
     backupHistory.value = response.data
   } catch (error) {
     console.error('Ошибка при загрузке истории backup:', error)
@@ -32,7 +33,7 @@ const loadBackupHistory = async () => {
 const createBackup = async () => {
   creating.value = true
   try {
-    const response = await axios.post('http://localhost:8000/backup/create')
+    const response = await axios.post(API_ENDPOINTS.backupCreate)
     message.success('Резервная копия создана')
     await loadBackupHistory()
   } catch (error) {
@@ -68,7 +69,7 @@ const formatSize = (bytes) => {
 const exportToExcel = async () => {
   exporting.value = true
   try {
-    const response = await axios.get('http://localhost:8000/backup/export-excel', {
+    const response = await axios.get(API_ENDPOINTS.backupExportExcel, {
       responseType: 'blob'
     })
 

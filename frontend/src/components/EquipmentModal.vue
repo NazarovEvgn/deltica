@@ -94,7 +94,11 @@ const formValue = ref({
   total_cost: null,
   invoice_number: '',
   paid_amount: null,
-  payment_date: null
+  payment_date: null,
+
+  // Archive (только для архивных записей)
+  archived_at: null,
+  archive_reason: null
 })
 
 // Опции для select-ов
@@ -291,7 +295,11 @@ const loadEquipmentData = async () => {
       total_cost: data.total_cost,
       invoice_number: data.invoice_number || '',
       paid_amount: data.paid_amount,
-      payment_date: data.payment_date ? new Date(data.payment_date).getTime() : null
+      payment_date: data.payment_date ? new Date(data.payment_date).getTime() : null,
+
+      // Archive (только для архивных записей)
+      archived_at: data.archived_at ? new Date(data.archived_at).getTime() : null,
+      archive_reason: data.archive_reason || null
     }
 
     // Для архивных данных загружаем файлы из ответа
@@ -335,7 +343,11 @@ const resetForm = () => {
     total_cost: null,
     invoice_number: '',
     paid_amount: null,
-    payment_date: null
+    payment_date: null,
+
+    // Archive
+    archived_at: null,
+    archive_reason: null
   }
 }
 
@@ -524,6 +536,17 @@ const formatDisplayMonth = (timestamp) => {
   return `${months[date.getMonth()]} ${date.getFullYear()}`
 }
 
+const formatDisplayDateTime = (timestamp) => {
+  if (!timestamp) return 'Не указано'
+  const date = new Date(timestamp)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${day}.${month}.${year} ${hours}:${minutes}`
+}
+
 // Наблюдение за изменением show и equipmentId
 watch(() => props.show, (newValue) => {
   if (newValue) {
@@ -682,6 +705,21 @@ watch(() => props.show, (newValue) => {
           <div class="info-item">
             <span class="info-label">Дата оплаты:</span>
             <span class="info-value">{{ formatDisplayDate(formValue.payment_date) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Секция: Архив (только для архивных записей) -->
+      <div class="info-section" v-if="isArchive">
+        <h3>Архив</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Дата архивирования:</span>
+            <span class="info-value">{{ formatDisplayDateTime(formValue.archived_at) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Причина списания:</span>
+            <span class="info-value">{{ formValue.archive_reason || 'Не указано' }}</span>
           </div>
         </div>
       </div>

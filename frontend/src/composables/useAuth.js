@@ -179,7 +179,16 @@ const loginWithWindows = async () => {
     authError.value = null
 
     const apiUrl = await getAuthApiUrl()
-    const response = await axios.post(`${apiUrl}/auth/windows-login`)
+
+    // Получаем Windows username с клиента (если это Electron)
+    const headers = {}
+    if (window.electron && window.electron.getWindowsUsername) {
+      const windowsUsername = window.electron.getWindowsUsername()
+      headers['X-Windows-Username'] = windowsUsername
+      console.log('Отправляем Windows username:', windowsUsername)
+    }
+
+    const response = await axios.post(`${apiUrl}/auth/windows-login`, {}, { headers })
 
     const { access_token, user } = response.data
 
@@ -211,7 +220,16 @@ const loginWithWindows = async () => {
 const tryAutoLogin = async () => {
   try {
     const apiUrl = await getAuthApiUrl()
-    const response = await axios.post(`${apiUrl}/auth/windows-login`)
+
+    // Получаем Windows username с клиента (если это Electron)
+    const headers = {}
+    if (window.electron && window.electron.getWindowsUsername) {
+      const windowsUsername = window.electron.getWindowsUsername()
+      headers['X-Windows-Username'] = windowsUsername
+      console.log('Отправляем Windows username:', windowsUsername)
+    }
+
+    const response = await axios.post(`${apiUrl}/auth/windows-login`, {}, { headers })
     const { access_token, user } = response.data
 
     // Сохраняем токен и данные пользователя

@@ -11,6 +11,7 @@ import {
   useMessage
 } from 'naive-ui'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../config/api.js'
 import { useAuth } from '../composables/useAuth'
 
 const message = useMessage()
@@ -47,7 +48,7 @@ const closeModal = () => {
 const loadArchiveData = async () => {
   try {
     isLoading.value = true
-    const response = await axios.get('http://localhost:8000/archive/', {
+    const response = await axios.get(API_ENDPOINTS.archive, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }

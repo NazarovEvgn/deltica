@@ -45,7 +45,7 @@ function createEndpoints(baseUrl) {
     archive: `${baseUrl}/archive`,
     archiveRestore: (id) => `${baseUrl}/archive/restore/${id}`,
     archiveDelete: (id) => `${baseUrl}/archive/${id}`,
-    archiveEquipment: (id) => `${baseUrl}/archive/equipment/${id}`,
+    archiveEquipment: (id) => `${baseUrl}/archive/${id}/full`,
 
     // Pinned documents
     pinnedDocuments: `${baseUrl}/pinned-documents`,

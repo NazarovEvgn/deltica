@@ -25,5 +25,9 @@ contextBridge.exposeInMainWorld('electron', {
   },
   saveConfig: async (config) => {
     return await ipcRenderer.invoke('save-config', config)
+  },
+  // API для получения Windows username
+  getWindowsUsername: () => {
+    return process.env.USERNAME || process.env.USER || 'unknown'
   }
 })

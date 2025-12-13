@@ -5,6 +5,9 @@ import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
 import AppLogo from './AppLogo.vue'
 import EquipmentModal from './EquipmentModal.vue'
+import SearchBar from './SearchBar.vue'
+import { API_ENDPOINTS } from '../config/api.js'
+import { useEquipmentFilters } from '../composables/useEquipmentFilters.js'
 
 const emit = defineEmits(['back-to-main', 'restored'])
 const message = useMessage()
@@ -13,6 +16,9 @@ const dialog = useDialog()
 // Данные архивной таблицы
 const source = ref([])
 const loading = ref(false)
+
+// Поиск и фильтрация
+const { searchQuery, filteredData, filterStats } = useEquipmentFilters(source)
 
 // Состояние для модального окна просмотра
 const showViewModal = ref(false)
@@ -28,24 +34,39 @@ const formatDate = (dateString) => {
   return `${day}.${month}.${year}`
 }
 
+// Маппинг для подразделений
+const departmentMap = {
+  'gruppa_sm': 'Группа СМ',
+  'gtl': 'ГТЛ',
+  'lbr': 'ЛБР',
+  'ltr': 'ЛТР',
+  'lhaiei': 'ЛХАиЭИ',
+  'ogmk': 'ОГМК',
+  'oii': 'ОИИ',
+  'ooops': 'ОООПС',
+  'smtsik': 'СМТСиК',
+  'soii': 'СОИИ',
+  'to': 'ТО',
+  'tsz': 'ЦСЗ'
+}
+
 // Определение колонок для RevoGrid
 const columns = ref([
   { prop: 'equipment_name', name: 'Наименование', size: 300, readonly: true, sortable: true, filter: 'string' },
   { prop: 'equipment_model', name: 'Модель', size: 220, readonly: true, sortable: true, filter: 'string' },
-  { prop: 'factory_number', name: 'Заводской номер', size: 150, readonly: true, sortable: true, filter: 'string' },
-  { prop: 'inventory_number', name: 'Инвентарный номер', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'factory_number', name: 'Зав. №', size: 150, readonly: true, sortable: true, filter: 'string' },
+  { prop: 'inventory_number', name: 'Инв. №', size: 150, readonly: true, sortable: true, filter: 'string' },
   {
-    prop: 'equipment_type',
-    name: 'Тип',
-    size: 100,
+    prop: 'department',
+    name: 'Подразделение',
+    size: 120,
     readonly: true,
     sortable: true,
     filter: 'string',
     cellTemplate: (createElement, props) => {
-      const typeMap = { 'SI': 'СИ', 'IO': 'ИО' }
       const currentValue = props.model[props.prop] || ''
       return createElement('span', {
-        textContent: typeMap[currentValue] || currentValue,
+        textContent: departmentMap[currentValue] || currentValue,
         style: { padding: '0 4px' }
       })
     }
@@ -135,7 +156,7 @@ const columns = ref([
 const loadData = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8000/archive/')
+    const response = await axios.get(API_ENDPOINTS.archive)
     source.value = response.data
   } catch (error) {
     console.error('Ошибка при загрузке архива:', error)
@@ -163,7 +184,7 @@ const restoreEquipment = async (archivedId) => {
     negativeText: 'Отмена',
     onPositiveClick: async () => {
       try {
-        await axios.post(`http://localhost:8000/archive/restore/${archivedId}`)
+        await axios.post(API_ENDPOINTS.archiveRestore(archivedId))
         message.success('Оборудование успешно восстановлено из архива')
         await loadData()
         emit('restored')
@@ -187,7 +208,7 @@ const deleteForever = async (archivedId) => {
     negativeText: 'Отмена',
     onPositiveClick: async () => {
       try {
-        await axios.delete(`http://localhost:8000/archive/${archivedId}`)
+        await axios.delete(API_ENDPOINTS.archiveDelete(archivedId))
         message.success('Оборудование удалено из архива навсегда')
         await loadData()
       } catch (error) {
@@ -210,7 +231,7 @@ const handleAfterEdit = async (event) => {
 
   try {
     // Отправляем запрос на обновление причины
-    await axios.patch(`http://localhost:8000/archive/${archivedId}/reason`, {
+    await axios.patch(`${API_ENDPOINTS.archive}/${archivedId}/reason`, {
       archive_reason: newReason
     })
 
@@ -249,12 +270,22 @@ onMounted(() => {
           </n-button>
         </n-space>
       </div>
+
+      <!-- Поиск -->
+      <div class="search-section">
+        <SearchBar
+          v-model="searchQuery"
+          :total-count="filterStats.total"
+          :filtered-count="filterStats.filtered"
+          placeholder="Поиск по всем полям архива..."
+        />
+      </div>
     </div>
 
-    <div class="table-wrapper" v-if="source.length > 0">
+    <div class="table-wrapper" v-if="filteredData.length > 0">
       <v-grid
         ref="grid"
-        :source="source"
+        :source="filteredData"
         :columns="columns"
         theme="material"
         :resize="true"
@@ -265,13 +296,25 @@ onMounted(() => {
     </div>
 
     <n-empty
-      v-else
+      v-else-if="source.length === 0"
       description="Архив пуст"
       style="margin-top: 100px;"
     >
       <template #extra>
         <n-button @click="$emit('back-to-main')">
           Вернуться к основной таблице
+        </n-button>
+      </template>
+    </n-empty>
+
+    <n-empty
+      v-else
+      description="Ничего не найдено"
+      style="margin-top: 100px;"
+    >
+      <template #extra>
+        <n-button @click="searchQuery = ''">
+          Сбросить поиск
         </n-button>
       </template>
     </n-empty>
@@ -306,6 +349,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.search-section {
+  display: flex;
+  justify-content: center;
   margin-bottom: 12px;
 }
 
@@ -378,5 +427,16 @@ onMounted(() => {
 .table-wrapper :deep(.rgCell) {
   display: flex;
   align-items: center;
+}
+
+/* Убрать серую заливку ячеек */
+.table-wrapper :deep(revogr-data .rgCell),
+.table-wrapper :deep(.rgCell) {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.table-wrapper :deep(revogr-data .rgRow:hover .rgCell) {
+  background-color: #f5f5f5 !important;
 }
 </style>
