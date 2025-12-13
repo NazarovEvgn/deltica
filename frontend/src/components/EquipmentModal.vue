@@ -384,9 +384,6 @@ const handleSave = async () => {
         : null
     }
 
-    console.log('[EquipmentModal] Saving with payload:', payload)
-    console.log('[EquipmentModal] equipment_specs value:', payload.equipment_specs)
-
     if (isEdit.value) {
       // Обновление
       await axios.put(API_ENDPOINTS.mainTableById(props.equipmentId), payload)
