@@ -31,6 +31,7 @@ function createEndpoints(baseUrl) {
   return {
     // Main table
     mainTable: `${baseUrl}/main-table`,
+    mainTableById: (id) => `${baseUrl}/main-table/${id}`,
     mainTableFull: (id) => `${baseUrl}/main-table/${id}/full`,
 
     // Files
@@ -60,6 +61,7 @@ function createEndpoints(baseUrl) {
     // Backup
     backupHistory: (limit = 20) => `${baseUrl}/backup/history?limit=${limit}`,
     backupCreate: `${baseUrl}/backup/create`,
+    backupExportExcel: `${baseUrl}/backup/export-excel`,
 
     // Health & Monitoring
     healthSystem: `${baseUrl}/health/system`,
@@ -68,7 +70,15 @@ function createEndpoints(baseUrl) {
     // Auth
     auth: `${baseUrl}/auth`,
     login: `${baseUrl}/auth/login`,
-    me: `${baseUrl}/auth/me`
+    me: `${baseUrl}/auth/me`,
+
+    // Documents
+    documentLabels: `${baseUrl}/documents/labels`,
+    documentConservationAct: `${baseUrl}/documents/conservation-act`,
+    documentBidPoverka: `${baseUrl}/documents/bid-poverka`,
+    documentBidCalibrovka: `${baseUrl}/documents/bid-calibrovka`,
+    documentRequest: `${baseUrl}/documents/request`,
+    documentCommissioningTemplate: `${baseUrl}/documents/commissioning-template`
   }
 }
 

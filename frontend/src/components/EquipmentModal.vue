@@ -30,6 +30,7 @@ import {
 import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon } from '@vicons/ionicons5'
 import axios from 'axios'
 import { useAuth } from '@/composables/useAuth'
+import { API_ENDPOINTS } from '../config/api.js'
 
 const message = useMessage()
 const dialog = useDialog()
@@ -175,7 +176,7 @@ const loadEquipmentFiles = async () => {
   if (props.isArchive) return
 
   try {
-    const response = await axios.get(`http://localhost:8000/files/equipment/${props.equipmentId}`)
+    const response = await axios.get(API_ENDPOINTS.files(props.equipmentId))
     equipmentFiles.value = response.data
   } catch (error) {
     console.error('Ошибка при загрузке файлов:', error)
@@ -195,7 +196,7 @@ const handleFileUpload = async ({ file }) => {
     formData.append('file_type', 'other')
 
     await axios.post(
-      `http://localhost:8000/files/upload/${props.equipmentId}`,
+      API_ENDPOINTS.fileUpload(props.equipmentId),
       formData,
       {
         headers: {
@@ -217,19 +218,19 @@ const handleFileUpload = async ({ file }) => {
 // Открытие файла для просмотра
 const openFile = (fileId, fileName) => {
   // Открываем файл в новой вкладке для просмотра
-  window.open(`http://localhost:8000/files/view/${fileId}`, '_blank')
+  window.open(API_ENDPOINTS.fileView(fileId), '_blank')
 }
 
 // Скачивание файла (принудительное скачивание)
 const downloadFile = (fileId, fileName) => {
   // Используем endpoint для скачивания
-  window.location.href = `http://localhost:8000/files/download/${fileId}`
+  window.location.href = API_ENDPOINTS.fileDownload(fileId)
 }
 
 // Удаление файла
 const deleteFile = async (fileId) => {
   try {
-    await axios.delete(`http://localhost:8000/files/${fileId}`)
+    await axios.delete(API_ENDPOINTS.fileDelete(fileId))
     message.success('Файл успешно удален')
     await loadEquipmentFiles()
   } catch (error) {
@@ -253,8 +254,8 @@ const loadEquipmentData = async () => {
   try {
     // Выбираем API endpoint в зависимости от того, архивное ли это оборудование
     const apiUrl = props.isArchive
-      ? `http://localhost:8000/archive/${props.equipmentId}/full`
-      : `http://localhost:8000/main-table/${props.equipmentId}/full`
+      ? API_ENDPOINTS.archiveEquipment(props.equipmentId)
+      : API_ENDPOINTS.mainTableFull(props.equipmentId)
 
     const response = await axios.get(apiUrl)
     const data = response.data
@@ -385,10 +386,10 @@ const handleSave = async () => {
 
     if (isEdit.value) {
       // Обновление
-      await axios.put(`http://localhost:8000/main-table/${props.equipmentId}`, payload)
+      await axios.put(API_ENDPOINTS.mainTableById(props.equipmentId), payload)
     } else {
       // Создание
-      await axios.post('http://localhost:8000/main-table/', payload)
+      await axios.post(API_ENDPOINTS.mainTable, payload)
     }
 
     message.success(isEdit.value ? 'Данные успешно обновлены' : 'Оборудование успешно добавлено')
@@ -434,7 +435,7 @@ const handleArchive = async () => {
     negativeText: 'Отмена',
     onPositiveClick: async () => {
       try {
-        await axios.post(`http://localhost:8000/archive/equipment/${props.equipmentId}`, {
+        await axios.post(API_ENDPOINTS.archiveEquipment(props.equipmentId), {
           archive_reason: null  // Можно добавить поле для ввода причины
         })
         message.success('Оборудование успешно архивировано')
