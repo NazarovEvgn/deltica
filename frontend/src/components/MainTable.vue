@@ -19,6 +19,7 @@ import DocumentActionsDropdown from './DocumentActionsDropdown.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
+import { API_ENDPOINTS, getApiBaseUrl } from '../config/api.js'
 
 const emit = defineEmits(['add-equipment', 'edit-equipment', 'view-equipment', 'show-archive', 'show-login'])
 
@@ -141,7 +142,7 @@ const statusMap = {
 const loadData = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8000/main-table/')
+    const response = await axios.get(API_ENDPOINTS.mainTable)
     let data = response.data
 
     // Фильтрация данных для лаборанта (показываем только оборудование его подразделения)
@@ -160,7 +161,7 @@ const loadData = async () => {
 // Загрузка архивных данных для метрики "Списано"
 const loadArchiveData = async () => {
   try {
-    const response = await axios.get('http://localhost:8000/archive/', {
+    const response = await axios.get(API_ENDPOINTS.archive, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -536,7 +537,7 @@ const saveCellToServer = async (equipmentId, prop, val) => {
     console.log(`[saveCellToServer] Saving: equipmentId=${equipmentId}, prop=${prop}, val=${val}, type=${typeof val}`)
 
     // Получаем полные данные для обновления
-    const fullDataResponse = await axios.get(`http://localhost:8000/main-table/${equipmentId}/full`)
+    const fullDataResponse = await axios.get(API_ENDPOINTS.mainTableFull(equipmentId))
     const fullData = fullDataResponse.data
 
     console.log(`[saveCellToServer] Full data received:`, fullData)
@@ -547,7 +548,7 @@ const saveCellToServer = async (equipmentId, prop, val) => {
     console.log(`[saveCellToServer] Sending PUT request with:`, fullData)
 
     // Отправляем обновление на сервер
-    await axios.put(`http://localhost:8000/main-table/${equipmentId}`, fullData)
+    await axios.put(API_ENDPOINTS.mainTableFull(equipmentId), fullData)
 
     console.log(`[saveCellToServer] Successfully saved ${prop} = ${val}`)
     return true
@@ -716,7 +717,7 @@ const deleteEquipment = async (equipmentId) => {
   }
 
   try {
-    await axios.delete(`http://localhost:8000/main-table/${equipmentId}`)
+    await axios.delete(API_ENDPOINTS.mainTableFull(equipmentId))
     await loadData() // Перезагрузка данных после удаления
   } catch (error) {
     console.error('Ошибка при удалении:', error)
@@ -775,7 +776,7 @@ const printLabels = async () => {
     const equipmentIds = Array.from(selectedIds.value)
 
     const response = await axios.post(
-      'http://localhost:8000/documents/labels',
+      API_ENDPOINTS.documentLabels,
       { equipment_ids: equipmentIds },
       {
         responseType: 'blob',
@@ -815,7 +816,7 @@ const printConservationAct = async () => {
     const equipmentIds = Array.from(selectedIds.value)
 
     const response = await axios.post(
-      'http://localhost:8000/documents/conservation-act',
+      API_ENDPOINTS.documentConservationAct,
       { equipment_ids: equipmentIds },
       {
         responseType: 'blob',
@@ -856,7 +857,7 @@ const printBidPoverka = async () => {
     const equipmentIds = Array.from(selectedIds.value)
 
     const response = await axios.post(
-      'http://localhost:8000/documents/bid-poverka',
+      API_ENDPOINTS.documentBidPoverka,
       { equipment_ids: equipmentIds },
       {
         responseType: 'blob',
@@ -895,7 +896,7 @@ const printBidCalibrovka = async () => {
     const equipmentIds = Array.from(selectedIds.value)
 
     const response = await axios.post(
-      'http://localhost:8000/documents/bid-calibrovka',
+      API_ENDPOINTS.documentBidCalibrovka,
       { equipment_ids: equipmentIds },
       {
         responseType: 'blob',
@@ -934,7 +935,7 @@ const printRequest = async () => {
     const equipmentIds = Array.from(selectedIds.value)
 
     const response = await axios.post(
-      'http://localhost:8000/documents/request',
+      API_ENDPOINTS.documentRequest,
       { equipment_ids: equipmentIds },
       {
         responseType: 'blob',
@@ -975,7 +976,7 @@ const downloadCommissioningTemplate = async () => {
     loading.value = true
 
     const response = await axios.get(
-      'http://localhost:8000/documents/commissioning-template',
+      API_ENDPOINTS.documentCommissioningTemplate,
       {
         responseType: 'blob',
         headers: {
@@ -1002,6 +1003,23 @@ const downloadCommissioningTemplate = async () => {
 // Обработчик клика по логотипу - прокрутка к началу страницы
 const handleLogoClick = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Обработчик клика по метрике в дашборде - применяет соответствующий фильтр
+const handleMetricClick = (metricKey) => {
+  // Маппинг ключей метрик на фильтры
+  const metricToFilterMap = {
+    fit: 'fit',
+    expired: 'expired',
+    onVerification: 'on_verification',
+    inStorage: 'in_storage',
+    inRepair: 'in_repair'
+  }
+
+  const filterName = metricToFilterMap[metricKey]
+  if (filterName) {
+    applyQuickFilter(filterName)
+  }
 }
 
 onMounted(() => {
@@ -1069,7 +1087,11 @@ defineExpose({
 
         <!-- Центральная часть: Дашборд с метриками -->
         <div class="header-center">
-          <MetricsDashboard :metrics="metrics" :is-admin="isAdmin" />
+          <MetricsDashboard
+            :metrics="metrics"
+            :is-admin="isAdmin"
+            @metric-click="handleMetricClick"
+          />
         </div>
 
         <!-- Правая часть: UserProfile -->

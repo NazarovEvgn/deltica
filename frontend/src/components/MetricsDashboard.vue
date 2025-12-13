@@ -14,6 +14,14 @@ const props = defineProps({
   }
 })
 
+// Эмитим событие клика на метрику
+const emit = defineEmits(['metric-click'])
+
+// Обработчик клика на метрику
+const handleMetricClick = (metricKey) => {
+  emit('metric-click', metricKey)
+}
+
 // Убираем цвета из метрик согласно плану UI/UX
 const metricColors = {
   total: '#333333',
@@ -88,7 +96,9 @@ const displayMetrics = computed(() => {
         v-for="metric in displayMetrics"
         :key="metric.key"
         class="metric-card"
+        :class="{ clickable: metric.key !== 'total' }"
         :style="{ borderLeftColor: metric.color }"
+        @click="metric.key !== 'total' ? handleMetricClick(metric.key) : null"
       >
         <div class="metric-value" :style="{ color: metric.color }">
           {{ metric.value }}
@@ -119,9 +129,19 @@ const displayMetrics = computed(() => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.metric-card:hover {
+.metric-card.clickable {
+  cursor: pointer;
+}
+
+.metric-card.clickable:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
+  background: #f8f9fa;
+}
+
+.metric-card.clickable:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .metric-value {
