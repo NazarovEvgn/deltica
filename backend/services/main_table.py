@@ -100,9 +100,18 @@ class MainTableService:
 
         result = self.db.execute(query).fetchall()
 
-        # Преобразование результата в список схем
-        return [
-            MainTableResponse(
+        # Преобразование результата в список схем с пересчетом статуса
+        responses = []
+        for row in result:
+            # Пересчитываем статус на основе текущей даты
+            calculated_status = row.status or ""
+            if row.verification_due and row.verification_state:
+                calculated_status = calculate_status(
+                    verification_due=row.verification_due,
+                    verification_state=row.verification_state
+                )
+
+            responses.append(MainTableResponse(
                 equipment_id=row.equipment_id,
                 equipment_name=row.equipment_name,
                 equipment_model=row.equipment_model,
@@ -117,7 +126,7 @@ class MainTableService:
                 verification_due=row.verification_due,
                 verification_plan=row.verification_plan,
                 verification_state=row.verification_state or "",
-                status=row.status or "",
+                status=calculated_status,  # Используем пересчитанный статус
                 department=row.department,
                 responsible_person=row.responsible_person,
                 verifier_org=row.verifier_org,
@@ -130,9 +139,9 @@ class MainTableService:
                 invoice_number=row.invoice_number,
                 paid_amount=row.paid_amount,
                 payment_date=row.payment_date
-            )
-            for row in result
-        ]
+            ))
+
+        return responses
 
     def create_equipment_full(self, data: MainTableCreate) -> MainTableResponse:
         """
@@ -377,6 +386,14 @@ class MainTableService:
         if not result:
             return None
 
+        # Пересчитываем статус на основе текущей даты
+        calculated_status = result.status or ""
+        if result.verification_due and result.verification_state:
+            calculated_status = calculate_status(
+                verification_due=result.verification_due,
+                verification_state=result.verification_state
+            )
+
         return MainTableResponse(
             equipment_id=result.equipment_id,
             equipment_name=result.equipment_name,
@@ -390,7 +407,7 @@ class MainTableService:
             verification_due=result.verification_due,
             verification_plan=result.verification_plan,
             verification_state=result.verification_state or "",
-            status=result.status or "",
+            status=calculated_status,  # Используем пересчитанный статус
             department=result.department,
             responsible_person=result.responsible_person,
             verifier_org=result.verifier_org
@@ -407,6 +424,14 @@ class MainTableService:
         verification = self.db.query(Verification).filter(Verification.equipment_id == equipment_id).first()
         responsibility = self.db.query(Responsibility).filter(Responsibility.equipment_id == equipment_id).first()
         finance = self.db.query(Finance).filter(Finance.equipment_model_id == equipment_id).first()
+
+        # Пересчитываем статус на основе текущей даты
+        calculated_status = verification.status if verification else ""
+        if verification and verification.verification_due and verification.verification_state:
+            calculated_status = calculate_status(
+                verification_due=verification.verification_due,
+                verification_state=verification.verification_state
+            )
 
         return {
             # Equipment fields
@@ -426,7 +451,7 @@ class MainTableService:
             "verification_due": verification.verification_due if verification else None,
             "verification_plan": verification.verification_plan if verification else None,
             "verification_state": verification.verification_state if verification else "",
-            "status": verification.status if verification else "",
+            "status": calculated_status,  # Используем пересчитанный статус
 
             # Responsibility fields
             "department": responsibility.department if responsibility else "",
