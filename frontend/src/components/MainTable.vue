@@ -1090,7 +1090,9 @@ defineExpose({
           <MetricsDashboard
             :metrics="metrics"
             :is-admin="isAdmin"
+            :active-filters="activeFilters"
             @metric-click="handleMetricClick"
+            @reset-filters="resetFilters"
           />
         </div>
 

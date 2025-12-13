@@ -11,15 +11,24 @@ const props = defineProps({
   isAdmin: {
     type: Boolean,
     default: false
+  },
+  activeFilters: {
+    type: Object,
+    default: () => ({})
   }
 })
 
-// Эмитим событие клика на метрику
-const emit = defineEmits(['metric-click'])
+// Эмитим события
+const emit = defineEmits(['metric-click', 'reset-filters'])
 
 // Обработчик клика на метрику
 const handleMetricClick = (metricKey) => {
-  emit('metric-click', metricKey)
+  if (metricKey === 'total') {
+    // Клик на "Всего" сбрасывает все фильтры
+    emit('reset-filters')
+  } else {
+    emit('metric-click', metricKey)
+  }
 }
 
 // Убираем цвета из метрик согласно плану UI/UX
@@ -32,6 +41,36 @@ const metricColors = {
   inRepair: '#333333',
   failed: '#333333'
 }
+
+// Определяем активную метрику на основе activeFilters
+const activeMetricKey = computed(() => {
+  if (!props.activeFilters || Object.keys(props.activeFilters).length === 0) {
+    return 'total' // Нет фильтров = показываем все
+  }
+
+  // Проверяем какой фильтр активен
+  if (props.activeFilters.status) {
+    const statusFilters = Array.isArray(props.activeFilters.status)
+      ? props.activeFilters.status
+      : [props.activeFilters.status]
+
+    if (statusFilters.includes('status_fit')) return 'fit'
+    if (statusFilters.includes('status_expired')) return 'expired'
+    if (statusFilters.includes('status_expiring')) return 'expiring'
+  }
+
+  if (props.activeFilters.verification_state) {
+    const stateFilters = Array.isArray(props.activeFilters.verification_state)
+      ? props.activeFilters.verification_state
+      : [props.activeFilters.verification_state]
+
+    if (stateFilters.includes('state_verification')) return 'onVerification'
+    if (stateFilters.includes('state_storage')) return 'inStorage'
+    if (stateFilters.includes('state_repair')) return 'inRepair'
+  }
+
+  return null
+})
 
 // Конфигурация отображаемых метрик
 const displayMetrics = computed(() => {
@@ -95,10 +134,10 @@ const displayMetrics = computed(() => {
       <div
         v-for="metric in displayMetrics"
         :key="metric.key"
-        class="metric-card"
-        :class="{ clickable: metric.key !== 'total' }"
+        class="metric-card clickable"
+        :class="{ active: metric.key === activeMetricKey }"
         :style="{ borderLeftColor: metric.color }"
-        @click="metric.key !== 'total' ? handleMetricClick(metric.key) : null"
+        @click="handleMetricClick(metric.key)"
       >
         <div class="metric-value" :style="{ color: metric.color }">
           {{ metric.value }}
@@ -142,6 +181,17 @@ const displayMetrics = computed(() => {
 .metric-card.clickable:active {
   transform: translateY(0);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card.active {
+  background: #e3f2fd;
+  border-color: #0071BC;
+  box-shadow: 0 2px 8px rgba(0, 113, 188, 0.2);
+}
+
+.metric-card.active .metric-value {
+  color: #0071BC !important;
+  font-weight: 700;
 }
 
 .metric-value {
