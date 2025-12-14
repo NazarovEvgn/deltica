@@ -100,7 +100,7 @@ class DocumentService:
     def generate_labels_batch(self, equipment_ids: List[int]) -> Optional[str]:
         """
         Генерировать пакет этикеток для нескольких единиц оборудования
-        Использует простой шаблон, этикетки идут одна под другой без разрывов страниц
+        Размещает этикетки компактно друг под другом с минимальными отступами
         Возвращает путь к сгенерированному файлу или None при ошибке
         """
         if not equipment_ids:
@@ -122,7 +122,9 @@ class DocumentService:
             raise FileNotFoundError(f"Шаблон не найден: {template_path}")
 
         from docx import Document
-        from docx.shared import Cm
+        from docx.shared import Cm, Pt
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
 
         # Генерируем первую этикетку - она станет основой документа
         template = DocxTemplate(template_path)
@@ -140,12 +142,14 @@ class DocumentService:
 
             # Устанавливаем минимальные поля
             section = result_doc.sections[0]
-            section.top_margin = Cm(1)
-            section.bottom_margin = Cm(1)
-            section.left_margin = Cm(1.5)
-            section.right_margin = Cm(1.5)
+            section.top_margin = Cm(0.5)
+            section.bottom_margin = Cm(0.5)
+            section.left_margin = Cm(1)
+            section.right_margin = Cm(1)
 
             # Для остальных единиц оборудования генерируем этикетки
+            # Размещаем в столбик с отступами
+
             for idx in range(1, len(equipments_data)):
                 equipment_data = equipments_data[idx]
 
@@ -166,22 +170,11 @@ class DocumentService:
                     new_table_element = deepcopy(source_table._element)
                     result_doc.element.body.append(new_table_element)
 
-                    # Принудительно устанавливаем выравнивание по левому краю
-                    from docx.oxml import OxmlElement
-                    from docx.oxml.ns import qn
-
-                    # Находим элемент tblPr (table properties)
-                    tblPr = new_table_element.find(qn('w:tblPr'))
-                    if tblPr is not None:
-                        # Удаляем существующее выравнивание если есть
-                        jc = tblPr.find(qn('w:jc'))
-                        if jc is not None:
-                            tblPr.remove(jc)
-
-                        # Добавляем выравнивание по левому краю
-                        jc = OxmlElement('w:jc')
-                        jc.set(qn('w:val'), 'left')
-                        tblPr.append(jc)
+                # Добавляем пустые параграфы для разделения этикеток
+                # FIXME: Проблема - этикетки все еще могут накладываться друг на друга
+                # при недостаточном отступе
+                for _ in range(2):
+                    result_doc.add_paragraph()
 
                 # Удаляем временный файл
                 temp_path.unlink()
