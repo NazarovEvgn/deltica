@@ -37,6 +37,10 @@ const showArchive = ref(false)
 const showLoginModal = ref(false)
 const showConfigModal = ref(false)
 
+// Параметры для архива (режим просмотра для лаборанта)
+const archiveReadOnly = ref(false)
+const archiveDepartmentFilter = ref(null)
+
 // Инициализация аутентификации
 const { initialize, isAuthenticated, isInitializing } = useAuth()
 
@@ -100,8 +104,35 @@ const handleSaved = () => {
 }
 
 // Переключение отображения архива
-const toggleArchive = () => {
-  showArchive.value = !showArchive.value
+const toggleArchive = (options = {}) => {
+  console.log('[App.vue] toggleArchive вызван с параметрами:', options)
+  console.log('[App.vue] Текущее состояние showArchive:', showArchive.value)
+
+  // Если переданы параметры (например, из метрики "Списано"), всегда открываем архив
+  if (options.readOnly !== undefined || options.departmentFilter !== undefined) {
+    console.log('[App.vue] Открываем архив с параметрами (режим метрики Списано)')
+    showArchive.value = true
+    archiveReadOnly.value = options.readOnly || false
+    archiveDepartmentFilter.value = options.departmentFilter || null
+  } else if (showArchive.value) {
+    // Если параметры не переданы и архив уже открыт - закрываем
+    console.log('[App.vue] Закрываем архив (переключатель)')
+    showArchive.value = false
+    archiveReadOnly.value = false
+    archiveDepartmentFilter.value = null
+  } else {
+    // Открываем архив без параметров (обычный режим)
+    console.log('[App.vue] Открываем архив в обычном режиме')
+    showArchive.value = true
+    archiveReadOnly.value = false
+    archiveDepartmentFilter.value = null
+  }
+
+  console.log('[App.vue] Новое состояние:', {
+    showArchive: showArchive.value,
+    readOnly: archiveReadOnly.value,
+    departmentFilter: archiveDepartmentFilter.value
+  })
 }
 
 // Показать окно логина
@@ -167,6 +198,8 @@ const handleLoginSuccess = () => {
             />
             <ArchiveTable
               v-else
+              :read-only="archiveReadOnly"
+              :department-filter="archiveDepartmentFilter"
               @back-to-main="toggleArchive"
               @restored="handleSaved"
             />

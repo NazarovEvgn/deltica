@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { NModal, NButton, NSpace, useMessage, useDialog } from 'naive-ui'
+import { NModal, NButton, NSpace, NEmpty, useMessage, useDialog } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
 import { API_ENDPOINTS } from '../config/api.js'

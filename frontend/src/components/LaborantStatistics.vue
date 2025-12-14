@@ -136,6 +136,23 @@ const statistics = computed(() => {
   }
 })
 
+// Emit для событий
+const emit = defineEmits(['show-archive-for-failed'])
+
+// Обработчик клика на метрику "Списано"
+const handleFailedClick = () => {
+  console.log('[LaborantStatistics] Клик на метрику Списано')
+  console.log('[LaborantStatistics] Подразделение:', currentUser.value?.department)
+  console.log('[LaborantStatistics] Кол-во списанного:', statistics.value.failed)
+
+  // Закрываем модальное окно статистики
+  showModal.value = false
+
+  // Отправляем событие родителю с подразделением лаборанта
+  emit('show-archive-for-failed', currentUser.value?.department)
+  console.log('[LaborantStatistics] Событие show-archive-for-failed отправлено')
+}
+
 // Экспортируем метод открытия для родительского компонента
 defineExpose({
   openModal
@@ -200,7 +217,7 @@ defineExpose({
       <!-- Блок: Не прошедшие поверку -->
       <n-card title="Не прошедшие поверку (из архива)" size="small">
         <n-space vertical :size="12">
-          <div class="stat-row">
+          <div class="stat-row clickable" @click="handleFailedClick">
             <n-text depth="3">Извещение о непригодности:</n-text>
             <n-text strong style="font-size: 16px; color: #d03050;">{{ statistics.failed }}</n-text>
           </div>
@@ -234,10 +251,23 @@ defineExpose({
   border-radius: 4px;
 }
 
+.stat-row.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.stat-row.clickable:hover {
+  background-color: rgba(0, 113, 188, 0.1);
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .stat-row {
     background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .stat-row.clickable:hover {
+    background-color: rgba(0, 113, 188, 0.2);
   }
 }
 </style>

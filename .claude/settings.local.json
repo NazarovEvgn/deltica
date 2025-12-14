@@ -3,7 +3,21 @@
     "allow": [
       "Bash(uv run:*)",
       "Bash(curl -s http://127.0.0.1:8000/openapi.json)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(powershell -Command \"Move-Item -Path ''C:\\Projects\\deltica\\RESULTS_SUMMARY.md'' -Destination ''C:\\Projects\\deltica\\docs\\guides\\'' -Force\")",
+      "Bash(test:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(psql:*)",
+      "Bash(curl:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run build:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

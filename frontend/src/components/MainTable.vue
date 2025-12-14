@@ -1026,6 +1026,22 @@ const handleLogoClick = () => {
 
 // Обработчик клика по метрике в дашборде - применяет соответствующий фильтр
 const handleMetricClick = (metricKey) => {
+  console.log('[MainTable] Клик на метрику:', metricKey)
+
+  // Специальная обработка для метрики "Списано"
+  if (metricKey === 'failed') {
+    console.log('[MainTable] Метрика "Списано" - открываем архив')
+    console.log('[MainTable] Роль пользователя:', isLaborant.value ? 'Лаборант' : 'Админ')
+    console.log('[MainTable] Подразделение:', currentUser.value?.department)
+
+    // Открываем архив в режиме просмотра с фильтром по подразделению
+    emit('show-archive', {
+      readOnly: true,
+      departmentFilter: currentUser.value?.department
+    })
+    return
+  }
+
   // Маппинг ключей метрик на фильтры
   const metricToFilterMap = {
     fit: 'fit',
@@ -1039,6 +1055,22 @@ const handleMetricClick = (metricKey) => {
   if (filterName) {
     applyQuickFilter(filterName)
   }
+}
+
+// Обработчик клика на метрику "Списано" из LaborantStatistics
+const handleShowArchiveForFailed = (department) => {
+  console.log('[MainTable] Получено событие show-archive-for-failed')
+  console.log('[MainTable] Подразделение для фильтрации:', department)
+
+  // Передаем событие в App.vue с параметрами для режима просмотра
+  emit('show-archive', {
+    readOnly: true,
+    departmentFilter: department
+  })
+  console.log('[MainTable] Событие show-archive отправлено в App.vue с параметрами:', {
+    readOnly: true,
+    departmentFilter: department
+  })
 }
 
 onMounted(() => {
@@ -1215,7 +1247,11 @@ defineExpose({
     <!-- Модальные окна для BackupPanel, SystemMonitor, ContractsNotebook, AnalyticsDashboard и LaborantStatistics -->
     <BackupPanel ref="backupPanelRef" />
     <SystemMonitor ref="systemMonitorRef" />
-    <LaborantStatistics ref="statisticsRef" :equipment-data="source" />
+    <LaborantStatistics
+      ref="statisticsRef"
+      :equipment-data="source"
+      @show-archive-for-failed="handleShowArchiveForFailed"
+    />
     <ContractsNotebook v-model:show="showContractsNotebook" />
     <AnalyticsDashboard v-model:show="showAnalyticsDashboard" :equipment-data="source" />
   </div>
