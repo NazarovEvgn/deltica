@@ -10,7 +10,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Поиск по всем полям...'
+    default: 'Поиск...'
   },
   totalCount: {
     type: Number,

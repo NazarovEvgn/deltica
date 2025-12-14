@@ -322,7 +322,7 @@ onMounted(() => {
         <div class="logo-title-section">
           <AppLogo @click="$emit('back-to-main')" />
           <h2 style="color: #333333; font-weight: bold; margin: 0; font-family: 'PT Astra Sans', sans-serif;">
-            {{ readOnly ? 'Архив оборудования (просмотр)' : 'Архив оборудования' }}
+            Архив
           </h2>
         </div>
         <n-space>
@@ -338,7 +338,7 @@ onMounted(() => {
           v-model="searchQuery"
           :total-count="filterStats.total"
           :filtered-count="filterStats.filtered"
-          placeholder="Поиск по всем полям архива..."
+          placeholder="Поиск..."
         />
       </div>
     </div>

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, h, computed, watch } from 'vue'
-import { NButton, NSpace, NDrawer, NDrawerContent } from 'naive-ui'
+import { NButton, NSpace, NDrawer, NDrawerContent, NIcon } from 'naive-ui'
 import { VGrid } from '@revolist/vue3-datagrid'
 import axios from 'axios'
 import SearchBar from './SearchBar.vue'
@@ -1188,17 +1188,36 @@ defineExpose({
 
         <!-- Правая часть: Этикетки и акты -->
         <div class="header-right">
-          <DocumentActionsDropdown
-            :selected-count="selectedIds.size"
-            :is-admin="isAdmin"
-            @print-labels="printLabels"
-            @print-conservation-act="printConservationAct"
-            @print-bid-poverka="printBidPoverka"
-            @print-bid-calibrovka="printBidCalibrovka"
-            @print-request="printRequest"
-            @clear-selection="clearSelection"
-            @download-commissioning-template="downloadCommissioningTemplate"
-          />
+          <n-space :size="8">
+            <!-- Кнопка сброса выделения -->
+            <n-button
+              v-if="selectedIds.size > 0"
+              circle
+              secondary
+              type="error"
+              @click="clearSelection"
+              title="Снять выделение"
+            >
+              <template #icon>
+                <n-icon>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
+                    <path d="M289.94 256l95-95A24 24 0 00351 127l-95 95-95-95a24 24 0 00-34 34l95 95-95 95a24 24 0 1034 34l95-95 95 95a24 24 0 0034-34z"/>
+                  </svg>
+                </n-icon>
+              </template>
+            </n-button>
+
+            <DocumentActionsDropdown
+              :selected-count="selectedIds.size"
+              :is-admin="isAdmin"
+              @print-labels="printLabels"
+              @print-conservation-act="printConservationAct"
+              @print-bid-poverka="printBidPoverka"
+              @print-bid-calibrovka="printBidCalibrovka"
+              @print-request="printRequest"
+              @download-commissioning-template="downloadCommissioningTemplate"
+            />
+          </n-space>
         </div>
       </div>
     </div>
