@@ -87,7 +87,7 @@ class EquipmentFile(Base):
     equipment_id = Column(Integer, ForeignKey("equipment.id", ondelete="CASCADE"), nullable=False)
     file_name = Column(String, nullable=False)  # Оригинальное имя файла
     file_path = Column(String, nullable=False)  # Относительный путь к файлу
-    file_type = Column(Enum('certificate', 'passport', 'technical_doc', 'other', name='file_type_enum'), nullable=False, default='other')
+    file_type = Column(Enum('verification_docs', 'general_docs', 'active_certificate', name='file_type_enum'), nullable=False, default='general_docs')
     file_size = Column(Integer, nullable=False)  # Размер в байтах
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -192,7 +192,7 @@ class ArchivedEquipmentFile(Base):
     original_equipment_id = Column(Integer, nullable=False)
     file_name = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
-    file_type = Column(Enum('certificate', 'passport', 'technical_doc', 'other', name='file_type_enum'), nullable=False, default='other')
+    file_type = Column(Enum('verification_docs', 'general_docs', 'active_certificate', name='file_type_enum'), nullable=False, default='general_docs')
     file_size = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), nullable=False)  # Копируем дату оригинальной загрузки
 

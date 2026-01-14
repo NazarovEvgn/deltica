@@ -206,15 +206,14 @@ class MainTableUpdate(MainTableCreate):
 
 # Схемы для EquipmentFile
 class FileTypeEnum(str, Enum):
-    certificate = "certificate"  # Свидетельство о поверке
-    passport = "passport"  # Паспорт
-    technical_doc = "technical_doc"  # Техническая документация
-    other = "other"  # Прочее
+    verification_docs = "verification_docs"  # Документы по поверке/калибровке/аттестации
+    general_docs = "general_docs"  # Общие документы по оборудованию
+    active_certificate = "active_certificate"  # Действующее свидетельство/сертификат
 
 
 class EquipmentFileBase(BaseModel):
     file_name: str
-    file_type: FileTypeEnum = FileTypeEnum.other
+    file_type: FileTypeEnum = FileTypeEnum.general_docs
 
 
 class EquipmentFileResponse(EquipmentFileBase):

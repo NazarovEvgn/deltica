@@ -69,7 +69,7 @@ async def upload_file(
 
     - **equipment_id**: ID оборудования
     - **file**: Загружаемый файл
-    - **file_type**: Тип файла (certificate, passport, technical_doc, other)
+    - **file_type**: Тип файла (verification_docs, general_docs, active_certificate)
     """
     # Проверка существования оборудования
     equipment = db.query(Equipment).filter(Equipment.id == equipment_id).first()
