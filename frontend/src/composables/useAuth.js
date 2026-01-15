@@ -3,7 +3,7 @@
 
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import { getApiBaseUrl } from '../config/api.js'
+import { API_BASE_URL } from '../config/api.js'
 
 // API URL получаем из того же источника что и остальное приложение
 async function getAuthApiUrl() {
@@ -18,8 +18,8 @@ async function getAuthApiUrl() {
       console.error('Ошибка загрузки конфигурации для auth:', error)
     }
   }
-  // Fallback для веб-режима
-  return 'http://localhost:8000'
+  // Fallback - используем текущий API_BASE_URL (может быть обновлен через updateApiBaseUrl)
+  return API_BASE_URL
 }
 
 // Глобальное состояние (shared state)

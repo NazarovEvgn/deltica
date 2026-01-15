@@ -23,8 +23,8 @@ import {
   NList,
   NListItem,
   NThing,
-  NTabs,
-  NTabPane,
+  NCollapse,
+  NCollapseItem,
   useMessage,
   useDialog,
   NDialogProvider
@@ -997,11 +997,14 @@ watch(() => props.show, (newValue) => {
           </n-grid-item>
 
           <n-grid-item :span="3">
-            <!-- Действующее свидетельство/сертификат (отдельный слот) -->
-            <n-card title="Действующее свидетельство/сертификат" size="small" style="margin-bottom: 16px;">
-              <n-space vertical>
+            <n-collapse :default-expanded-names="['certificate', 'verification', 'general']">
+              <!-- Секция 1: Действующее свидетельство/сертификат -->
+              <n-collapse-item name="certificate">
+                <template #header>
+                  <span class="file-section-title">Действующее свидетельство/сертификат</span>
+                </template>
                 <!-- Текущий активный сертификат -->
-                <div v-if="activeCertificate">
+                <div v-if="activeCertificate" style="margin-bottom: 12px;">
                   <n-thing>
                     <template #avatar>
                       <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
@@ -1032,10 +1035,9 @@ watch(() => props.show, (newValue) => {
                     </template>
                   </n-thing>
                 </div>
-                <n-text v-else depth="3">
+                <n-text v-else depth="3" style="display: block; margin-bottom: 12px;">
                   Действующее свидетельство не загружено
                 </n-text>
-
                 <!-- Загрузчик активного сертификата -->
                 <n-upload
                   v-if="!readOnly"
@@ -1054,143 +1056,140 @@ watch(() => props.show, (newValue) => {
                     </n-text>
                   </n-upload-dragger>
                 </n-upload>
-              </n-space>
-            </n-card>
+              </n-collapse-item>
 
-            <!-- Вкладки для остальных документов -->
-            <n-tabs type="segment" animated>
-              <!-- Вкладка 1: Документы по поверке/калибровке/аттестации -->
-              <n-tab-pane name="verification" tab="Документы по поверке/калибровке/аттестации">
-                <n-space vertical>
-                  <!-- Список файлов поверки -->
-                  <n-list v-if="verificationFiles.length > 0" bordered>
-                    <n-list-item v-for="file in verificationFiles" :key="file.id">
-                      <n-thing>
-                        <template #avatar>
-                          <n-icon size="24" :component="DocumentIcon" />
-                        </template>
-                        <template #header>
-                          <a
-                            href="#"
-                            @click.prevent="openFile(file.id, file.file_name)"
-                            style="color: #18a058; text-decoration: none; cursor: pointer;"
-                            @mouseover="$event.target.style.textDecoration = 'underline'"
-                            @mouseleave="$event.target.style.textDecoration = 'none'"
-                          >
-                            {{ file.file_name }}
-                          </a>
-                        </template>
-                        <template #action>
-                          <n-space>
-                            <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                              Скачать
-                            </n-button>
-                            <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
-                              <template #icon>
-                                <n-icon :component="TrashIcon" />
-                              </template>
-                              Удалить
-                            </n-button>
-                          </n-space>
-                        </template>
-                      </n-thing>
-                    </n-list-item>
-                  </n-list>
-                  <n-text v-else depth="3">
-                    Документы по поверке не загружены
-                  </n-text>
+              <!-- Секция 2: Документы по поверке/калибровке/аттестации -->
+              <n-collapse-item name="verification">
+                <template #header>
+                  <span class="file-section-title">Документы по поверке/калибровке/аттестации</span>
+                </template>
+                <!-- Список файлов поверки -->
+                <n-list v-if="verificationFiles.length > 0" bordered style="margin-bottom: 12px;">
+                  <n-list-item v-for="file in verificationFiles" :key="file.id">
+                    <n-thing>
+                      <template #avatar>
+                        <n-icon size="24" :component="DocumentIcon" />
+                      </template>
+                      <template #header>
+                        <a
+                          href="#"
+                          @click.prevent="openFile(file.id, file.file_name)"
+                          style="color: #18a058; text-decoration: none; cursor: pointer;"
+                          @mouseover="$event.target.style.textDecoration = 'underline'"
+                          @mouseleave="$event.target.style.textDecoration = 'none'"
+                        >
+                          {{ file.file_name }}
+                        </a>
+                      </template>
+                      <template #action>
+                        <n-space>
+                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                            Скачать
+                          </n-button>
+                          <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
+                            <template #icon>
+                              <n-icon :component="TrashIcon" />
+                            </template>
+                            Удалить
+                          </n-button>
+                        </n-space>
+                      </template>
+                    </n-thing>
+                  </n-list-item>
+                </n-list>
+                <n-text v-else depth="3" style="display: block; margin-bottom: 12px;">
+                  Документы по поверке не загружены
+                </n-text>
+                <!-- Загрузчик для документов поверки -->
+                <n-upload
+                  v-if="!readOnly"
+                  :custom-request="(options) => handleFileUpload(options, 'verification_docs')"
+                  :show-file-list="false"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                >
+                  <n-upload-dragger>
+                    <div style="margin-bottom: 12px">
+                      <n-icon size="48" :depth="3">
+                        <cloud-upload-icon />
+                      </n-icon>
+                    </div>
+                    <n-text style="font-size: 16px">
+                      Перетащите файл сюда или нажмите для загрузки
+                    </n-text>
+                    <n-p depth="3" style="margin: 8px 0 0 0">
+                      Допустимые форматы: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX<br />
+                      Максимальный размер: 50 МБ
+                    </n-p>
+                  </n-upload-dragger>
+                </n-upload>
+              </n-collapse-item>
 
-                  <!-- Загрузчик для документов поверки -->
-                  <n-upload
-                    v-if="!readOnly"
-                    :custom-request="(options) => handleFileUpload(options, 'verification_docs')"
-                    :show-file-list="false"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
-                  >
-                    <n-upload-dragger>
-                      <div style="margin-bottom: 12px">
-                        <n-icon size="48" :depth="3">
-                          <cloud-upload-icon />
-                        </n-icon>
-                      </div>
-                      <n-text style="font-size: 16px">
-                        Перетащите файл сюда или нажмите для загрузки
-                      </n-text>
-                      <n-p depth="3" style="margin: 8px 0 0 0">
-                        Допустимые форматы: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX<br />
-                        Максимальный размер: 50 МБ
-                      </n-p>
-                    </n-upload-dragger>
-                  </n-upload>
-                </n-space>
-              </n-tab-pane>
-
-              <!-- Вкладка 2: Общие документы по оборудованию -->
-              <n-tab-pane name="general" tab="Общие документы по оборудованию">
-                <n-space vertical>
-                  <!-- Список общих файлов -->
-                  <n-list v-if="generalFiles.length > 0" bordered>
-                    <n-list-item v-for="file in generalFiles" :key="file.id">
-                      <n-thing>
-                        <template #avatar>
-                          <n-icon size="24" :component="DocumentIcon" />
-                        </template>
-                        <template #header>
-                          <a
-                            href="#"
-                            @click.prevent="openFile(file.id, file.file_name)"
-                            style="color: #18a058; text-decoration: none; cursor: pointer;"
-                            @mouseover="$event.target.style.textDecoration = 'underline'"
-                            @mouseleave="$event.target.style.textDecoration = 'none'"
-                          >
-                            {{ file.file_name }}
-                          </a>
-                        </template>
-                        <template #action>
-                          <n-space>
-                            <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                              Скачать
-                            </n-button>
-                            <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
-                              <template #icon>
-                                <n-icon :component="TrashIcon" />
-                              </template>
-                              Удалить
-                            </n-button>
-                          </n-space>
-                        </template>
-                      </n-thing>
-                    </n-list-item>
-                  </n-list>
-                  <n-text v-else depth="3">
-                    Общие документы не загружены
-                  </n-text>
-
-                  <!-- Загрузчик для общих документов -->
-                  <n-upload
-                    v-if="!readOnly"
-                    :custom-request="(options) => handleFileUpload(options, 'general_docs')"
-                    :show-file-list="false"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
-                  >
-                    <n-upload-dragger>
-                      <div style="margin-bottom: 12px">
-                        <n-icon size="48" :depth="3">
-                          <cloud-upload-icon />
-                        </n-icon>
-                      </div>
-                      <n-text style="font-size: 16px">
-                        Перетащите файл сюда или нажмите для загрузки
-                      </n-text>
-                      <n-p depth="3" style="margin: 8px 0 0 0">
-                        Допустимые форматы: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX<br />
-                        Максимальный размер: 50 МБ
-                      </n-p>
-                    </n-upload-dragger>
-                  </n-upload>
-                </n-space>
-              </n-tab-pane>
-            </n-tabs>
+              <!-- Секция 3: Общие документы по оборудованию -->
+              <n-collapse-item name="general">
+                <template #header>
+                  <span class="file-section-title">Общие документы по оборудованию</span>
+                </template>
+                <!-- Список общих файлов -->
+                <n-list v-if="generalFiles.length > 0" bordered style="margin-bottom: 12px;">
+                  <n-list-item v-for="file in generalFiles" :key="file.id">
+                    <n-thing>
+                      <template #avatar>
+                        <n-icon size="24" :component="DocumentIcon" />
+                      </template>
+                      <template #header>
+                        <a
+                          href="#"
+                          @click.prevent="openFile(file.id, file.file_name)"
+                          style="color: #18a058; text-decoration: none; cursor: pointer;"
+                          @mouseover="$event.target.style.textDecoration = 'underline'"
+                          @mouseleave="$event.target.style.textDecoration = 'none'"
+                        >
+                          {{ file.file_name }}
+                        </a>
+                      </template>
+                      <template #action>
+                        <n-space>
+                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                            Скачать
+                          </n-button>
+                          <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
+                            <template #icon>
+                              <n-icon :component="TrashIcon" />
+                            </template>
+                            Удалить
+                          </n-button>
+                        </n-space>
+                      </template>
+                    </n-thing>
+                  </n-list-item>
+                </n-list>
+                <n-text v-else depth="3" style="display: block; margin-bottom: 12px;">
+                  Общие документы не загружены
+                </n-text>
+                <!-- Загрузчик для общих документов -->
+                <n-upload
+                  v-if="!readOnly"
+                  :custom-request="(options) => handleFileUpload(options, 'general_docs')"
+                  :show-file-list="false"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                >
+                  <n-upload-dragger>
+                    <div style="margin-bottom: 12px">
+                      <n-icon size="48" :depth="3">
+                        <cloud-upload-icon />
+                      </n-icon>
+                    </div>
+                    <n-text style="font-size: 16px">
+                      Перетащите файл сюда или нажмите для загрузки
+                    </n-text>
+                    <n-p depth="3" style="margin: 8px 0 0 0">
+                      Допустимые форматы: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX<br />
+                      Максимальный размер: 50 МБ
+                    </n-p>
+                  </n-upload-dragger>
+                </n-upload>
+              </n-collapse-item>
+            </n-collapse>
           </n-grid-item>
         </template>
       </n-grid>
@@ -1232,6 +1231,13 @@ h3 {
   color: #333;
   border-bottom: 2px solid var(--gpn-blue-primary, #0071BC);
   padding-bottom: 8px;
+}
+
+/* Стили для заголовков секций файлов */
+.file-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
 }
 
 /* Стили для текстового вида информации (readOnly режим) */

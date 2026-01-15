@@ -19,7 +19,7 @@ if (-not (Test-Path ".\backend")) {
 }
 
 # ÐŸÐ¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð²ÐµÑ€ÑÐ¸Ð¸ Ð¸Ð· pyproject.toml
-$version = "1.0.1"
+$version = "1.0.4"
 if (Test-Path "pyproject.toml") {
     $content = Get-Content "pyproject.toml" -Raw
     if ($content -match 'version\s*=\s*"([^"]+)"') {
@@ -106,22 +106,34 @@ Write-Host "[4/8] Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ PyInstaller spec Ñ„Ð°Ð�
 
 $specContent = @'
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_data_files
+import os
 
 block_cipher = None
+
+# Функция для сбора файлов backend БЕЗ папки uploads
+def get_backend_datas():
+    """Собирает файлы из backend, исключая uploads
+
+    ВАЖНО: uploads/ намеренно НЕ включена в сборку!
+    Причина: runtime папка для файлов пользователей, должна быть пустой при установке
+    """
+    datas = []
+    # uploads НАМЕРЕННО отсутствует в списке - это runtime папка
+    backend_subdirs = ['app', 'core', 'routes', 'services', 'middleware', 'utils', 'database_dumps']
+
+    for subdir in backend_subdirs:
+        src_path = os.path.join('backend', subdir)
+        if os.path.exists(src_path):
+            datas.append((src_path, os.path.join('backend', subdir)))
+
+    return datas
 
 a = Analysis(
     ['backend/core/main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('backend/app', 'app'),
-        ('backend/core', 'core'),
-        ('backend/routes', 'routes'),
-        ('backend/services', 'services'),
-        ('backend/middleware', 'middleware'),
-        ('backend/utils', 'utils'),
-        ('backend/scripts', 'scripts'),
-    ],
+    datas=get_backend_datas(),
     hiddenimports=[
         'uvicorn.logging',
         'uvicorn.loops',
@@ -257,7 +269,7 @@ if (Test-Path ".\alembic.ini") {
 }
 
 $envExample = @"
-# Ð‘Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… PostgreSQL
+# Ð'Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… PostgreSQL
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=deltica_user
@@ -265,7 +277,19 @@ DB_PASSWORD=your_secure_password_here
 DB_NAME=deltica_db
 "@
 $envExample | Out-File -FilePath "$releaseDir\.env.example" -Encoding UTF8
-Write-Host "  âœ“ Ð¡Ð¾Ð·Ð´Ð°Ð½ .env.example" -ForegroundColor Green
+Write-Host "  âœ" Ð¡Ð¾Ð·Ð´Ð°Ð½ .env.example" -ForegroundColor Green
+
+# Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ð³Ð¾Ñ‚Ð¾Ð²Ñ‹Ð¹ .env Ñ„Ð°Ð¹Ð» Ñ Ð±Ð¾ÐµÐ²Ñ‹Ð¼Ð¸ Ð´Ð°Ð½Ð½Ñ‹Ð¼Ð¸
+$envProduction = @"
+# Ð'Ð°Ð·Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… PostgreSQL - ÐŸÑ€Ð¾Ð´ÑƒÐºÑ‚Ð¸Ð² ÐºÐ¾Ð½Ñ„Ð¸Ð³ÑƒÑ€Ð°Ñ†Ð¸Ñ
+DB_HOST=10.190.168.78
+DB_PORT=5432
+DB_USER=deltica_user
+DB_PASSWORD=deltica123
+DB_NAME=deltica_db
+"@
+$envProduction | Out-File -FilePath "$releaseDir\.env" -Encoding UTF8
+Write-Host "  âœ" Ð¡Ð¾Ð·Ð´Ð°Ð½ .env (Ð³Ð¾Ñ‚Ð¾Ð²Ñ‹Ð¹)" -ForegroundColor Green
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # Ð¨Ð°Ð³ 7: Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ð² Ð·Ð°Ð¿ÑƒÑÐºÐ° Ð¸ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð‘Ð”

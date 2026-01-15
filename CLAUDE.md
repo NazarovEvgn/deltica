@@ -91,18 +91,74 @@ npm run build && npm run electron:build:win
 ```
 
 ### Commercial Build
-```bash
-# Server build (PyInstaller)
-.\build-scripts\build-server.ps1
-# → dist/Deltica-Server-v1.0.0.zip
 
-# Client build (electron-builder, требует admin)
+**⚠️ КРИТИЧНО: Перед сборкой сервера обязательно очистить backend/uploads/**
+
+```bash
+# 1. ОЧИСТИТЬ backend/uploads/ (ОБЯЗАТЕЛЬНО!)
+# PyInstaller упаковывает все файлы из backend/uploads/ в .exe
+# Файлы с длинными именами вызовут ошибку при извлечении:
+# "Failed to extract backend\uploads\equipment_1\aaaa...pdf: failed to open target file!"
+rm -rf backend/uploads/equipment_*
+rm -rf backend/uploads/pinned_documents
+# Оставить только .gitkeep
+
+# 2. Server build (PyInstaller) - ВАРИАНТ 1
+.\build-scripts\build-server.ps1
+# → dist/Deltica-Server-v1.0.X.zip
+# ВАЖНО: Запускать из PowerShell, не из bash/IDE
+# Создает готовый .env файл с production credentials (DB_HOST=10.190.168.78)
+
+# Server build - ВАРИАНТ 2 (рекомендуется если проблемы с кодировкой)
+uv run python build_server_simple.py
+# → dist/Deltica-Server-v1.0.1/
+# Преимущества: нет проблем с Unicode, работает из любой среды
+# Создает готовый .env файл с production credentials (DB_HOST=10.190.168.78)
+
+# 3. Client build (electron-builder, требует admin)
 .\build-scripts\build-client.ps1
 # → dist/Deltica-Client-v1.0.0.zip
 
 # Результат:
-# dist/Deltica-Server-v1.0.0/ - сервер для установки
+# dist/Deltica-Server-v1.0.X/ - сервер для установки (с готовым .env)
 # dist/Deltica-Client-v1.0.0/ - установщики + README
+```
+
+### Windows Service (Production Server)
+```bash
+# Для запуска сервера как службы Windows на рабочем сервере:
+
+# 1. Скачать NSSM (Non-Sucking Service Manager)
+# Ссылка: https://nssm.cc/download
+# Копировать nssm.exe (из папки win64) в директорию с deltica-server.exe
+
+# 2. Установка службы (от администратора)
+.\install-service.bat
+# Создает службу DelticaServer с автозапуском
+
+# 3. Запуск службы (от администратора)
+.\start-service.bat
+# или: net start DelticaServer
+
+# 4. Остановка службы (от администратора)
+.\stop-service.bat
+# или: net stop DelticaServer
+
+# 5. Удаление службы (от администратора)
+.\uninstall-service.bat
+
+# Проверка статуса
+sc query DelticaServer
+
+# Логи службы (создаются автоматически)
+logs\service-output.log  # Стандартный вывод
+logs\service-error.log   # Ошибки
+
+# ВАЖНО:
+# - Служба запускается автоматически при старте Windows
+# - Автоматический перезапуск при падении (задержка 5 сек)
+# - Требуются права администратора для установки/управления
+# - См. SERVICE_INSTALL_GUIDE.txt для подробной инструкции
 ```
 
 ### Database
@@ -131,6 +187,13 @@ pg_dump -h 127.0.0.1 -p 5432 -U postgres -d deltica_db \
 #
 # Не требует миграций Alembic или seed scripts!
 ```
+
+**ВАЖНО: DB_HOST должен быть 127.0.0.1**
+
+В `.env` файле ОБЯЗАТЕЛЬНО использовать `DB_HOST=127.0.0.1`, а НЕ `localhost`!
+- Причина: На некоторых Windows системах `localhost` не резолвится правильно (проблемы IPv6/IPv4)
+- `127.0.0.1` гарантированно работает как IPv4 loopback адрес
+- Это критично для init-database.bat и работы сервера
 
 **ВАЖНО: PostgreSQL Permissions Issue**
 
@@ -285,27 +348,84 @@ Contract (balance tracking, computed column)
 - RFC 5987 headers для Cyrillic filenames
 
 ### 8. First-Run Configuration (Electron)
-- **ConfigModal.vue**: Диалог для ввода IP сервера при первом запуске
-  - Автоматически добавляет `http://` если протокол не указан
-  - Автоматически добавляет `:8000` если порт не указан
-  - Пример: `192.168.1.10` → `http://192.168.1.10:8000`
-- **IPC Methods** (preload.js):
-  - `window.electron.getConfig()` - чтение из userData/config.json
-  - `window.electron.saveConfig(config)` - сохранение конфигурации
-- **Динамическое обновление API** (config/api.js):
-  - `updateApiBaseUrl(newUrl)` - обновляет все endpoints после настройки
-  - `createEndpoints(baseUrl)` - фабрика для генерации endpoint URLs
-  - `getApiBaseUrl()` - асинхронное получение URL из конфигурации
-- **Auth конфигурация** (composables/useAuth.js):
-  - `getAuthApiUrl()` - получает URL из того же источника что и api.js
-  - Все auth функции используют динамический URL через `window.electron.getConfig()`
-- **App.vue логика**:
-  - Проверка конфигурации при onMounted
-  - Если config отсутствует → показать ConfigModal
-  - После сохранения → обновить API_BASE_URL → продолжить инициализацию
-- **Хранение**: `app.getPath('userData')/config.json` (Windows: `C:\Users\{user}\AppData\Roaming\Deltica\config.json`)
+**ConfigModal.vue**: Диалог для ввода IP сервера при первом запуске
+- Автоматически добавляет `http://` если протокол не указан
+- Автоматически добавляет `:8000` если порт не указан
+- Пример: `192.168.1.10` → `http://192.168.1.10:8000`
 
-### 9. Electron Build Issues
+**IPC Methods** (preload.js):
+- `window.electron.getConfig()` - чтение из userData/config.json
+- `window.electron.saveConfig(config)` - сохранение конфигурации
+- `window.electron.getWindowsUsername()` - получение текущего Windows username
+
+**Динамическое обновление API** (config/api.js):
+- ❗ **КРИТИЧНО**: ВСЕ компоненты ДОЛЖНЫ использовать `API_ENDPOINTS`, НЕ хардкоженные URL
+- `updateApiBaseUrl(newUrl)` - обновляет все endpoints после настройки
+- `createEndpoints(baseUrl)` - фабрика для генерации endpoint URLs
+- `getApiBaseUrl()` - асинхронное получение URL из конфигурации
+- **Доступные endpoints**: mainTable, files, archive, pinnedDocuments, contracts, backup, health, auth, documents
+
+**App.vue логика**:
+- Проверка конфигурации при onMounted
+- Если config отсутствует → показать ConfigModal
+- После сохранения → обновить API_BASE_URL → продолжить инициализацию
+
+**Хранение**: `app.getPath('userData')/config.json`
+- Windows: `C:\Users\{user}\AppData\Roaming\Deltica\config.json`
+
+### 9. Windows SSO Authentication
+**Как работает**:
+1. При запуске Electron вызывается `tryAutoLogin()` из useAuth.js
+2. Клиент получает Windows username через `window.electron.getWindowsUsername()`
+3. Отправляет POST `/auth/windows-login` с заголовком `X-Windows-Username`
+4. Backend ищет пользователя по `windows_username` в БД
+5. Возвращает JWT токен для найденного пользователя
+
+**КРИТИЧНО**:
+- Клиент ОБЯЗАН отправлять заголовок `X-Windows-Username` с текущим Windows username
+- БЕЗ заголовка backend использует `os.environ.get('USERNAME')` - это username **на сервере**, не на клиенте!
+- Каждый пользователь входит под своим Windows логином из `users_config.yaml`
+
+**Код в useAuth.js**:
+```javascript
+const headers = {}
+if (window.electron && window.electron.getWindowsUsername) {
+  const windowsUsername = window.electron.getWindowsUsername()
+  headers['X-Windows-Username'] = windowsUsername
+}
+const response = await axios.post(`${apiUrl}/auth/windows-login`, {}, { headers })
+```
+
+### 10. API Endpoints Configuration
+**КРИТИЧНО**: Все HTTP запросы ДОЛЖНЫ использовать `API_ENDPOINTS` из `config/api.js`
+
+**НЕПРАВИЛЬНО**:
+```javascript
+await axios.get('http://localhost:8000/main-table/')  // ❌ Хардкоженный URL
+await axios.get(`http://localhost:8000/files/${id}`)  // ❌ Не работает с удаленным сервером
+```
+
+**ПРАВИЛЬНО**:
+```javascript
+import { API_ENDPOINTS } from '../config/api.js'
+
+await axios.get(API_ENDPOINTS.mainTable)              // ✅ Динамический URL
+await axios.get(API_ENDPOINTS.files(equipmentId))     // ✅ Работает с любым сервером
+await axios.post(API_ENDPOINTS.documentLabels, data)  // ✅ Правильно
+```
+
+**Все endpoints в api.js**:
+- Main table: `mainTable`, `mainTableFull(id)`
+- Files: `files(equipmentId)`, `fileUpload(equipmentId)`, `fileView(id)`, `fileDownload(id)`, `fileDelete(id)`
+- Archive: `archive`, `archiveRestore(id)`, `archiveDelete(id)`, `archiveEquipment(id)`
+- Documents: `pinnedDocuments`, `pinnedDocumentUpload`, `pinnedDocumentView(id)`, `pinnedDocumentDownload(id)`, `pinnedDocumentDelete(id)`
+- Documents generation: `documentLabels`, `documentConservationAct`, `documentBidPoverka`, `documentBidCalibrovka`, `documentRequest`, `documentCommissioningTemplate`
+- Contracts: `contracts`, `contractById(id)`
+- Backup: `backupHistory(limit)`, `backupCreate`, `backupExportExcel`
+- Health: `healthSystem`, `healthLogs(limit)`
+- Auth: `auth`, `login`, `me`
+
+### 11. Electron Build Issues
 - ❗ **NSIS требует `icon.ico`** (не PNG!) в `frontend/public/`
 - ❗ Запуск от администратора для NSIS установщика
 - ❗ Очистка кэша: `Remove-Item $env:LOCALAPPDATA\electron-builder\Cache -Recurse -Force`
@@ -313,6 +433,41 @@ Contract (balance tracking, computed column)
   - БЕЗ этого Electron показывает белое окно (абсолютные пути `/assets/*` не работают с `loadFile()`)
 - Config: `forceCodeSigning: false`, `signAndEditExecutable: false`
 - Portable версия работает без admin прав
+
+### 12. Windows Service Setup (Production Server)
+**Назначение**: Запуск Deltica Server как службы Windows для рабочих серверов
+
+**Инструмент**: NSSM (Non-Sucking Service Manager) - https://nssm.cc/download
+
+**Установка**:
+1. Скачать NSSM и скопировать `nssm.exe` (из папки win64) в директорию с `deltica-server.exe`
+2. Запустить `install-service.bat` **от администратора**
+3. Служба создается с именем `DelticaServer` и настраивается на автозапуск
+
+**Управление службой**:
+- Запуск: `start-service.bat` (от администратора) или `net start DelticaServer`
+- Остановка: `stop-service.bat` (от администратора) или `net stop DelticaServer`
+- Удаление: `uninstall-service.bat` (от администратора)
+- Проверка статуса: `sc query DelticaServer`
+
+**Особенности**:
+- Автоматический запуск при старте Windows
+- Автоматический перезапуск при падении (задержка 5 секунд)
+- Логирование в `logs/service-output.log` и `logs/service-error.log`
+- Рабочая директория: папка с `deltica-server.exe`
+- API доступен на http://localhost:8000
+
+**КРИТИЧНО**:
+- Требуются права администратора для всех операций со службой
+- Файл `.env` должен быть настроен перед установкой службы
+- **DB_HOST должен быть IP адресом** (НЕ localhost!) - используйте 127.0.0.1 для локальной БД или IP сервера для удаленной
+- После изменения `.env` или обновления `deltica-server.exe` нужно перезапустить службу
+
+**Troubleshooting**:
+- Если служба не запускается → проверить `logs/service-error.log`
+- Если база не подключается → проверить PostgreSQL запущен, и `.env` содержит правильный IP адрес в DB_HOST
+- Если порт 8000 занят → изменить порт в коде или освободить порт
+- Подробная инструкция: `SERVICE_INSTALL_GUIDE.txt`
 
 ## Important Notes
 
@@ -327,6 +482,39 @@ Contract (balance tracking, computed column)
 ## Known Issues
 
 ### Critical (Commercial Deployment)
+
+- ⚠️ **PyInstaller упаковывает backend/uploads/ в .exe** (2025-01-14):
+  - ПРОБЛЕМА: Если в `backend/uploads/` есть файлы перед сборкой, PyInstaller упаковывает их в .exe
+  - Симптомы: При запуске deltica-server.exe ошибка "Failed to extract backend\uploads\equipment_1\aaaa...pdf: failed to open target file!"
+  - ПРИЧИНА: Файлы с очень длинными именами превышают ограничения Windows на длину пути (260 символов)
+  - **РЕШЕНИЕ**: ОБЯЗАТЕЛЬНО очищать `backend/uploads/` перед каждой сборкой:
+    ```bash
+    rm -rf backend/uploads/equipment_*
+    rm -rf backend/uploads/pinned_documents
+    # Оставить только .gitkeep
+    ```
+  - Build-скрипты автоматически создают пустую папку `uploads/` в release, но НЕ очищают исходную папку
+  - При переносе старых файлов в production - копировать вручную ПОСЛЕ установки сервера
+
+- ✅ **РЕШЕНО (2025-12-23)**: ModuleNotFoundError: No module named 'backend'
+  - Проблема: PyInstaller spec файл копировал папки БЕЗ родительской директории backend/
+  - Симптомы: При запуске deltica-server.exe ошибка "ModuleNotFoundError: No module named 'backend'" в main.py:5
+  - РЕШЕНИЕ: Изменен spec файл в build-server.ps1:
+    ```python
+    # Было (неправильно):
+    datas=[
+        ('backend/app', 'app'),      # создавало app/ напрямую
+        ('backend/core', 'core'),
+        ...
+    ]
+
+    # Стало (правильно):
+    datas=[
+        ('backend', 'backend'),      # сохраняет структуру backend/
+    ]
+    ```
+  - Результат: Структура импортов `from backend.routes import ...` теперь работает корректно
+  - Альтернатива: Использовать `build_server_simple.py` (Python скрипт без проблем с кодировкой PowerShell)
 
 - **Критические файлы отсутствуют в сборке**:
   - PyInstaller упаковывает все data files ВНУТРЬ .exe, но некоторые скрипты ищут их рядом с .exe
@@ -379,6 +567,17 @@ Contract (balance tracking, computed column)
   - `useAuth.js` и `api.js` используют единый источник конфигурации через `window.electron.getConfig()`
   - При вводе `192.168.1.10` автоматически преобразуется в `http://192.168.1.10:8000`
 
+- ✅ **РЕШЕНО (2025-01-25)**: Хардкоженные URL заменены на динамические
+  - Проблема: Компоненты использовали `'http://localhost:8000/...'` вместо `API_ENDPOINTS`
+  - Решение: Все компоненты (MainTable, EquipmentModal, ArchiveTable, DocumentsPanel, BackupPanel, ContractsNotebook, SystemMonitor, LaborantStatistics) используют `API_ENDPOINTS` из `config/api.js`
+  - Результат: Клиент корректно работает с удаленным сервером
+
+- ✅ **РЕШЕНО (2025-01-25)**: Windows SSO определял неправильного пользователя
+  - Проблема: Backend использовал `os.environ.get('USERNAME')` - username на **сервере**, а не на клиенте
+  - Решение: Клиент отправляет заголовок `X-Windows-Username` с текущим Windows username
+  - Код: `window.electron.getWindowsUsername()` в preload.js получает username на клиенте
+  - Результат: Каждый пользователь входит под своим Windows логином
+
 ### Minor Issues
 
 - `alembic.ini` line 87: hardcoded DB credentials (should use .env)
@@ -386,9 +585,10 @@ Contract (balance tracking, computed column)
 - `docs/` в `.gitignore` (не в version control)
 - No cleanup для orphaned files (если upload failed after save)
 - **PowerShell scripts encoding** (build-server.ps1, build-client.ps1):
-  - Русский текст отображается некорректно при запуске через bash
-  - РЕШЕНИЕ: Запускать напрямую из PowerShell: `.\build-scripts\build-server.ps1`
-  - Скрипты РАБОТАЮТ корректно, проблема только в отображении
+  - Русский текст отображается некорректно при запуске через bash или из IDE
+  - РЕШЕНИЕ 1: Запускать напрямую из PowerShell: `.\build-scripts\build-server.ps1`
+  - РЕШЕНИЕ 2: Использовать `build_server_simple.py` (Python скрипт без проблем с кодировкой)
+  - Скрипты РАБОТАЮТ корректно, проблема только в отображении Unicode символов
 
 ## Test Users
 
@@ -452,8 +652,14 @@ Contract (balance tracking, computed column)
 
 2. **Сборка сервера** (с автоинициализацией БД):
    ```bash
+   # ⚠️ КРИТИЧНО: Очистить backend/uploads/ ПЕРЕД сборкой!
+   rm -rf backend/uploads/equipment_*
+   rm -rf backend/uploads/pinned_documents
+   # Оставить только .gitkeep
+
    # Пересобрать сервер (⚠️ build-server.ps1 имеет проблемы с кодировкой при выводе)
    .\build-scripts\build-server.ps1
+   # Создает готовый .env с production credentials (DB_HOST=10.190.168.78)
 
    # КРИТИЧНО: Проверить что database_dumps скопирован
    ls .\dist\Deltica-Server-v1.0.X\database_dumps\deltica_initial.dump
@@ -484,6 +690,7 @@ Contract (balance tracking, computed column)
    - `dist/ЧТО_КОПИРОВАТЬ_НА_ФЛЕШКУ.txt` (инструкция)
 
 **Чеклист перед релизом:**
+- ✅ **КРИТИЧНО**: Очищена папка backend/uploads/ перед сборкой? (equipment_*, pinned_documents)
 - ✅ Создан свежий дамп БД с актуальными данными?
 - ✅ **КРИТИЧНО**: Все папки скопированы в dist/Deltica-Server-v1.0.X/? (PyInstaller НЕ копирует автоматически!)
   - database_dumps/deltica_initial.dump (>100KB)
@@ -493,16 +700,66 @@ Contract (balance tracking, computed column)
   - alembic.ini
 - ✅ Проверен размер дампа (должен быть >100KB)?
 - ✅ В дампе есть пользователи (особенно admin)?
+- ✅ В dist есть готовый .env с production credentials (DB_HOST=10.190.168.78)?
 - ✅ ZIP архив пересоздан после копирования всех файлов?
 - ✅ Протестирована установка на чистой системе?
 
-### Процесс установки на тестовом ПК:
+### Процесс ОБНОВЛЕНИЯ серверной части (если БД уже работает):
+
+1. **Остановить текущий сервер** (закрыть окно start.bat)
+2. **Заменить ТОЛЬКО deltica-server.exe** новой версией
+3. **НЕ трогать**: .env, uploads/, logs/, backups/, database_dumps/
+4. **Запустить start.bat** → проверить http://localhost:8000/docs
+5. **НЕ запускать init-database.bat** (БД уже содержит данные)
+
+### Сценарии установки серверной части
+
+Есть два основных сценария установки в зависимости от того, существует ли уже база данных:
+
+---
+
+## СЦЕНАРИЙ A: Подключение к существующей БД (Production)
+
+**Когда использовать**: База данных уже работает на сервере (например, 10.190.168.78), нужно только установить Deltica Server для подключения к ней.
+
+1. **Распаковать сервер** → проверить `.env` (уже готовый!):
+   ```env
+   # .env уже содержит production credentials:
+   DB_HOST=10.190.168.78     # IP рабочего сервера БД
+   DB_PORT=5432
+   DB_USER=deltica_user
+   DB_PASSWORD=deltica123
+   DB_NAME=deltica_db
+   ```
+   ⚠️ `.env` уже настроен с правильным IP - если БД на другом адресе, отредактировать DB_HOST
+
+2. **❌ НЕ ЗАПУСКАТЬ init-database.bat!** (база уже существует и содержит данные)
+
+3. **Запустить `start.bat`** → сервер подключится к существующей БД
+   - API: http://localhost:8000
+   - Swagger: http://localhost:8000/docs
+
+4. **Установить клиент** → Deltica-Setup-1.0.0.exe
+
+5. **При первом запуске клиента** → ConfigModal появится автоматически:
+   - Если сервер на том же ПК: `127.0.0.1` или `localhost`
+   - Если сервер в локальной сети: `192.168.X.X`
+   - Порт `:8000` добавится автоматически
+
+6. **Войти** используя существующие учетные данные из БД
+
+---
+
+## СЦЕНАРИЙ B: Новая установка с нуля (Fresh Install)
+
+**Когда использовать**: Устанавливаем на новый сервер, база данных НЕ существует, нужно создать все с нуля.
 
 1. **Установить PostgreSQL 16/17** → создать пользователя `deltica_user` с правами createdb
 
-2. **Распаковать сервер** → настроить `.env`:
+2. **Распаковать сервер** → отредактировать `.env`:
    ```env
-   DB_HOST=127.0.0.1          # ВАЖНО: Не localhost!
+   # Для локальной установки:
+   DB_HOST=127.0.0.1         # ВАЖНО: 127.0.0.1, НЕ localhost!
    DB_PORT=5432
    DB_USER=deltica_user
    DB_PASSWORD=deltica123

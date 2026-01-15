@@ -11,7 +11,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show', 'config-saved'])
 
-const serverUrl = ref('http://localhost:8000')
+const serverUrl = ref('')
 const isSaving = ref(false)
 
 // Обработка сохранения конфигурации

@@ -19,7 +19,7 @@ import DocumentActionsDropdown from './DocumentActionsDropdown.vue'
 import { useEquipmentFilters } from '../composables/useEquipmentFilters'
 import { useEquipmentMetrics } from '../composables/useEquipmentMetrics'
 import { useAuth } from '../composables/useAuth'
-import { API_ENDPOINTS, getApiBaseUrl } from '../config/api.js'
+import { API_ENDPOINTS } from '../config/api.js'
 
 const emit = defineEmits(['add-equipment', 'edit-equipment', 'view-equipment', 'show-archive', 'show-login'])
 
