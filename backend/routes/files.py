@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.database import get_db
 from backend.app.models import EquipmentFile, Equipment, ArchivedEquipmentFile
-from backend.app.schemas import EquipmentFileResponse
+from backend.app.schemas import EquipmentFileResponse, FileOrderUpdate
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -136,12 +136,14 @@ async def upload_file(
 
 @router.get("/equipment/{equipment_id}", response_model=List[EquipmentFileResponse])
 def get_equipment_files(equipment_id: int, db: Session = Depends(get_db)):
-    """Получить список всех файлов для оборудования."""
+    """Получить список всех файлов для оборудования (отсортированный по sort_order)."""
     equipment = db.query(Equipment).filter(Equipment.id == equipment_id).first()
     if not equipment:
         raise HTTPException(status_code=404, detail="Оборудование не найдено")
 
-    files = db.query(EquipmentFile).filter(EquipmentFile.equipment_id == equipment_id).all()
+    files = db.query(EquipmentFile).filter(
+        EquipmentFile.equipment_id == equipment_id
+    ).order_by(EquipmentFile.sort_order, EquipmentFile.id).all()
     return files
 
 
@@ -238,6 +240,37 @@ def set_file_as_active_certificate(file_id: int, db: Session = Depends(get_db)):
             "is_active_certificate": db_file.is_active_certificate
         }
     }
+
+
+@router.put("/equipment/{equipment_id}/reorder")
+def reorder_files(equipment_id: int, order_update: FileOrderUpdate, db: Session = Depends(get_db)):
+    """
+    Обновить порядок файлов для оборудования.
+
+    - **equipment_id**: ID оборудования
+    - **file_ids**: Список ID файлов в нужном порядке
+    """
+    equipment = db.query(Equipment).filter(Equipment.id == equipment_id).first()
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Оборудование не найдено")
+
+    # Обновляем sort_order для каждого файла
+    for index, file_id in enumerate(order_update.file_ids):
+        db_file = db.query(EquipmentFile).filter(
+            EquipmentFile.id == file_id,
+            EquipmentFile.equipment_id == equipment_id
+        ).first()
+        if db_file:
+            db_file.sort_order = index
+
+    db.commit()
+
+    # Возвращаем обновленный список файлов
+    files = db.query(EquipmentFile).filter(
+        EquipmentFile.equipment_id == equipment_id
+    ).order_by(EquipmentFile.sort_order, EquipmentFile.id).all()
+
+    return {"message": "Порядок файлов обновлен", "files": files}
 
 
 @router.delete("/{file_id}")

@@ -22,7 +22,8 @@
     "@vicons/ionicons5": "^0.13.0",
     "axios": "^1.12.2",
     "naive-ui": "^2.43.1",
-    "vue": "^3.5.18"
+    "vue": "^3.5.18",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
@@ -53,7 +54,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/icon.ico",
@@ -75,7 +78,9 @@
       "deleteAppDataOnUninstall": false,
       "perMachine": false,
       "language": "1049",
-      "installerLanguages": ["ru_RU"],
+      "installerLanguages": [
+        "ru_RU"
+      ],
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "portable": {

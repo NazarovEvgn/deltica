@@ -30,8 +30,9 @@ import {
   useDialog,
   NDialogProvider
 } from 'naive-ui'
-import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon, CheckmarkCircleOutline as CheckmarkIcon, CloseCircleOutline as CloseIcon } from '@vicons/ionicons5'
+import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon, CheckmarkCircleOutline as CheckmarkIcon, CloseCircleOutline as CloseIcon, ReorderTwoOutline as DragIcon } from '@vicons/ionicons5'
 import axios from 'axios'
+import draggable from 'vuedraggable'
 import { useAuth } from '@/composables/useAuth'
 import { API_ENDPOINTS } from '../config/api.js'
 
@@ -270,6 +271,37 @@ const setFileAsActive = async (fileId) => {
     console.error('Ошибка при изменении статуса файла:', error)
     message.error('Ошибка при изменении статуса файла')
   }
+}
+
+// Сохранение порядка файлов после перетаскивания
+const saveFileOrder = async () => {
+  if (!props.equipmentId) return
+
+  try {
+    const fileIds = equipmentFiles.value.map(f => f.id)
+    await axios.put(API_ENDPOINTS.filesReorder(props.equipmentId), {
+      file_ids: fileIds
+    })
+  } catch (error) {
+    console.error('Ошибка при сохранении порядка файлов:', error)
+  }
+}
+
+// Обработчик перетаскивания в списке (внутри одной секции)
+const onDragEnd = async (evt) => {
+  await saveFileOrder()
+}
+
+// Обработчик перетаскивания в секцию "Главные"
+const onAddToActive = async (evt) => {
+  const fileId = evt.item._underlying_vm_.id
+  await setFileAsActive(fileId)
+}
+
+// Обработчик перетаскивания из секции "Главные"
+const onRemoveFromActive = async (evt) => {
+  const fileId = evt.item._underlying_vm_.id
+  await setFileAsActive(fileId)
 }
 
 // Форматирование размера файла
@@ -1011,45 +1043,57 @@ watch(() => props.show, (newValue) => {
           </n-grid-item>
 
           <n-grid-item :span="3">
-            <!-- Файлы на главной (всегда видимы вверху) -->
-            <div v-if="activeFiles.length > 0" class="certificate-section">
-              <n-list bordered>
-                <n-list-item v-for="file in activeFiles" :key="'active-' + file.id">
-                  <n-thing>
-                    <template #avatar>
-                      <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
-                    </template>
-                    <template #header>
-                      <a
-                        href="#"
-                        @click.prevent="openFile(file.id, file.file_name)"
-                        class="file-link"
+            <!-- Файлы на главной (drop zone для перетаскивания) -->
+            <div class="certificate-section" :class="{ 'drop-zone-empty': activeFiles.length === 0 }">
+              <div class="section-label">
+                <n-icon :component="CheckmarkIcon" color="#18a058" size="16" />
+                <span>На главной</span>
+                <span v-if="!readOnly" class="drop-hint">(перетащите файл сюда)</span>
+              </div>
+              <draggable
+                :list="activeFiles"
+                group="files"
+                item-key="id"
+                class="draggable-list"
+                :disabled="readOnly"
+                @add="onAddToActive"
+              >
+                <template #item="{ element: file }">
+                  <div class="draggable-file-item active-file">
+                    <div class="drag-handle" v-if="!readOnly">
+                      <n-icon :component="DragIcon" size="18" />
+                    </div>
+                    <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
+                    <a
+                      href="#"
+                      @click.prevent="openFile(file.id, file.file_name)"
+                      class="file-link file-name"
+                    >
+                      {{ file.file_name }}
+                    </a>
+                    <div class="file-actions">
+                      <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                        Скачать
+                      </n-button>
+                      <n-button
+                        v-if="!readOnly"
+                        size="small"
+                        tertiary
+                        @click="setFileAsActive(file.id)"
+                        title="Убрать с главной"
+                        style="border: 1px solid #e0e0e6;"
                       >
-                        {{ file.file_name }}
-                      </a>
-                    </template>
-                    <template #action>
-                      <n-space>
-                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                          Скачать
-                        </n-button>
-                        <n-button
-                          v-if="!readOnly"
-                          size="small"
-                          tertiary
-                          @click="setFileAsActive(file.id)"
-                          title="Убрать с главной"
-                          style="border: 1px solid #e0e0e6;"
-                        >
-                          <template #icon>
-                            <n-icon :component="CloseIcon" color="#d03050" />
-                          </template>
-                        </n-button>
-                      </n-space>
-                    </template>
-                  </n-thing>
-                </n-list-item>
-              </n-list>
+                        <template #icon>
+                          <n-icon :component="CloseIcon" color="#d03050" />
+                        </template>
+                      </n-button>
+                    </div>
+                  </div>
+                </template>
+              </draggable>
+              <div v-if="activeFiles.length === 0" class="empty-drop-zone">
+                Перетащите файл сюда для добавления на главную
+              </div>
             </div>
 
             <n-collapse :default-expanded-names="['verification', 'general']">
@@ -1059,52 +1103,58 @@ watch(() => props.show, (newValue) => {
                   <span class="file-section-title">Документы по поверке/калибровке/аттестации</span>
                 </template>
                 <!-- Список файлов поверки -->
-                <n-list v-if="verificationFiles.length > 0" bordered style="margin-bottom: 12px;">
-                  <n-list-item v-for="file in verificationFiles" :key="file.id">
-                    <n-thing>
-                      <template #avatar>
-                        <n-icon size="24" :component="DocumentIcon" />
-                      </template>
-                      <template #header>
-                        <n-space align="center" :size="8">
-                          <a
-                            href="#"
-                            @click.prevent="openFile(file.id, file.file_name)"
-                            class="file-link"
-                          >
-                            {{ file.file_name }}
-                          </a>
-                          <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
-                            На главной
-                          </n-tag>
-                        </n-space>
-                      </template>
-                      <template #action>
-                        <n-space>
-                          <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
-                            <template #icon>
-                              <n-icon :component="TrashIcon" color="#d03050" />
-                            </template>
-                            Удалить
-                          </n-button>
-                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                            Скачать
-                          </n-button>
-                          <n-button
-                            v-if="!readOnly && !file.is_active_certificate"
-                            size="small"
-                            @click="setFileAsActive(file.id)"
-                            title="Добавить на главную"
-                          >
-                            <template #icon>
-                              <n-icon :component="CheckmarkIcon" color="#18a058" />
-                            </template>
-                          </n-button>
-                        </n-space>
-                      </template>
-                    </n-thing>
-                  </n-list-item>
-                </n-list>
+                <draggable
+                  v-if="verificationFiles.length > 0"
+                  :list="verificationFiles"
+                  group="files"
+                  item-key="id"
+                  class="draggable-list bordered"
+                  :disabled="readOnly"
+                  @end="onDragEnd"
+                  @remove="onRemoveFromActive"
+                >
+                  <template #item="{ element: file }">
+                    <div class="draggable-file-item">
+                      <div class="drag-handle" v-if="!readOnly">
+                        <n-icon :component="DragIcon" size="18" />
+                      </div>
+                      <n-icon size="24" :component="DocumentIcon" />
+                      <div class="file-info">
+                        <a
+                          href="#"
+                          @click.prevent="openFile(file.id, file.file_name)"
+                          class="file-link file-name"
+                        >
+                          {{ file.file_name }}
+                        </a>
+                        <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
+                          На главной
+                        </n-tag>
+                      </div>
+                      <div class="file-actions">
+                        <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
+                          <template #icon>
+                            <n-icon :component="TrashIcon" color="#d03050" />
+                          </template>
+                          Удалить
+                        </n-button>
+                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                          Скачать
+                        </n-button>
+                        <n-button
+                          v-if="!readOnly && !file.is_active_certificate"
+                          size="small"
+                          @click="setFileAsActive(file.id)"
+                          title="Добавить на главную"
+                        >
+                          <template #icon>
+                            <n-icon :component="CheckmarkIcon" color="#18a058" />
+                          </template>
+                        </n-button>
+                      </div>
+                    </div>
+                  </template>
+                </draggable>
                 <n-text v-else depth="3" style="display: block; margin-bottom: 12px;">
                   Документы по поверке не загружены
                 </n-text>
@@ -1138,52 +1188,58 @@ watch(() => props.show, (newValue) => {
                   <span class="file-section-title">Общие документы по оборудованию</span>
                 </template>
                 <!-- Список общих файлов -->
-                <n-list v-if="generalFiles.length > 0" bordered style="margin-bottom: 12px;">
-                  <n-list-item v-for="file in generalFiles" :key="file.id">
-                    <n-thing>
-                      <template #avatar>
-                        <n-icon size="24" :component="DocumentIcon" />
-                      </template>
-                      <template #header>
-                        <n-space align="center" :size="8">
-                          <a
-                            href="#"
-                            @click.prevent="openFile(file.id, file.file_name)"
-                            class="file-link"
-                          >
-                            {{ file.file_name }}
-                          </a>
-                          <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
-                            На главной
-                          </n-tag>
-                        </n-space>
-                      </template>
-                      <template #action>
-                        <n-space>
-                          <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
-                            <template #icon>
-                              <n-icon :component="TrashIcon" color="#d03050" />
-                            </template>
-                            Удалить
-                          </n-button>
-                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                            Скачать
-                          </n-button>
-                          <n-button
-                            v-if="!readOnly && !file.is_active_certificate"
-                            size="small"
-                            @click="setFileAsActive(file.id)"
-                            title="Добавить на главную"
-                          >
-                            <template #icon>
-                              <n-icon :component="CheckmarkIcon" color="#18a058" />
-                            </template>
-                          </n-button>
-                        </n-space>
-                      </template>
-                    </n-thing>
-                  </n-list-item>
-                </n-list>
+                <draggable
+                  v-if="generalFiles.length > 0"
+                  :list="generalFiles"
+                  group="files"
+                  item-key="id"
+                  class="draggable-list bordered"
+                  :disabled="readOnly"
+                  @end="onDragEnd"
+                  @remove="onRemoveFromActive"
+                >
+                  <template #item="{ element: file }">
+                    <div class="draggable-file-item">
+                      <div class="drag-handle" v-if="!readOnly">
+                        <n-icon :component="DragIcon" size="18" />
+                      </div>
+                      <n-icon size="24" :component="DocumentIcon" />
+                      <div class="file-info">
+                        <a
+                          href="#"
+                          @click.prevent="openFile(file.id, file.file_name)"
+                          class="file-link file-name"
+                        >
+                          {{ file.file_name }}
+                        </a>
+                        <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
+                          На главной
+                        </n-tag>
+                      </div>
+                      <div class="file-actions">
+                        <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
+                          <template #icon>
+                            <n-icon :component="TrashIcon" color="#d03050" />
+                          </template>
+                          Удалить
+                        </n-button>
+                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                          Скачать
+                        </n-button>
+                        <n-button
+                          v-if="!readOnly && !file.is_active_certificate"
+                          size="small"
+                          @click="setFileAsActive(file.id)"
+                          title="Добавить на главную"
+                        >
+                          <template #icon>
+                            <n-icon :component="CheckmarkIcon" color="#18a058" />
+                          </template>
+                        </n-button>
+                      </div>
+                    </div>
+                  </template>
+                </draggable>
                 <n-text v-else depth="3" style="display: block; margin-bottom: 12px;">
                   Общие документы не загружены
                 </n-text>
@@ -1321,5 +1377,121 @@ h3 {
 .footer-divider {
   margin-top: 24px;
   border-bottom: 2px solid var(--gpn-blue-primary, #0071BC);
+}
+
+/* Стили для drag & drop */
+.draggable-list {
+  min-height: 20px;
+}
+
+.draggable-list.bordered {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.draggable-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.draggable-file-item:last-child {
+  border-bottom: none;
+}
+
+.draggable-file-item:hover {
+  background: #f9f9f9;
+}
+
+.draggable-file-item.active-file {
+  background: #f0f9ff;
+  border-bottom: 1px solid #e0f0ff;
+}
+
+.draggable-file-item.active-file:hover {
+  background: #e6f4ff;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #999;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.drag-handle:hover {
+  color: #666;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.file-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Стили для секции "На главной" */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.drop-hint {
+  font-weight: 400;
+  color: #999;
+  font-size: 12px;
+}
+
+.empty-drop-zone {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  border: 2px dashed #e0e0e0;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.drop-zone-empty .draggable-list {
+  min-height: 0;
+}
+
+/* Стиль для элемента при перетаскивании */
+.sortable-ghost {
+  opacity: 0.5;
+  background: #e6f4ff;
+}
+
+.sortable-drag {
+  opacity: 1;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>

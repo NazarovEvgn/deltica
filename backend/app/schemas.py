@@ -223,9 +223,15 @@ class EquipmentFileResponse(EquipmentFileBase):
     file_size: int
     uploaded_at: datetime
     is_active_certificate: bool = False
+    sort_order: int = 0
 
     class Config:
         from_attributes = True
+
+
+class FileOrderUpdate(BaseModel):
+    """Запрос на обновление порядка файлов"""
+    file_ids: list[int]  # Список ID файлов в нужном порядке
 
 
 # Схемы для архива

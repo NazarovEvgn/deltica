@@ -41,6 +41,7 @@ function createEndpoints(baseUrl) {
     fileDownload: (fileId) => `${baseUrl}/files/download/${fileId}`,
     fileDelete: (fileId) => `${baseUrl}/files/${fileId}`,
     fileSetActive: (fileId) => `${baseUrl}/files/${fileId}/set-active`,
+    filesReorder: (equipmentId) => `${baseUrl}/files/equipment/${equipmentId}/reorder`,
 
     // Archive
     archive: `${baseUrl}/archive`,

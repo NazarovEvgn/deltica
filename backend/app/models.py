@@ -91,6 +91,7 @@ class EquipmentFile(Base):
     file_size = Column(Integer, nullable=False)  # Размер в байтах
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active_certificate = Column(Boolean, default=False)  # Флаг действующего сертификата
+    sort_order = Column(Integer, default=0)  # Порядок сортировки для drag & drop
 
     equipment = relationship("Equipment", back_populates="files")
 
@@ -196,6 +197,7 @@ class ArchivedEquipmentFile(Base):
     file_type = Column(Enum('verification_docs', 'general_docs', 'active_certificate', name='file_type_enum'), nullable=False, default='general_docs')
     file_size = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), nullable=False)  # Копируем дату оригинальной загрузки
+    sort_order = Column(Integer, default=0)  # Порядок сортировки
 
     archived_equipment = relationship("ArchivedEquipment", back_populates="archived_files")
 
