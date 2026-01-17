@@ -260,15 +260,15 @@ const deleteFile = async (fileId) => {
   }
 }
 
-// Установить файл как действующее свидетельство
+// Добавить/убрать файл с главной
 const setFileAsActive = async (fileId) => {
   try {
-    await axios.patch(API_ENDPOINTS.fileSetActive(fileId))
-    message.success('Файл установлен как действующее свидетельство')
+    const response = await axios.patch(API_ENDPOINTS.fileSetActive(fileId))
+    message.success(response.data.message)
     await loadEquipmentFiles()
   } catch (error) {
-    console.error('Ошибка при установке файла как действующего:', error)
-    message.error('Ошибка при установке файла как действующего')
+    console.error('Ошибка при изменении статуса файла:', error)
+    message.error('Ошибка при изменении статуса файла')
   }
 }
 
