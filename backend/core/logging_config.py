@@ -2,11 +2,47 @@
 
 import logging
 import sys
+import os
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 import json
 from datetime import datetime
 from typing import Any, Dict
+
+
+def get_logs_dir() -> Path:
+    """
+    Получить директорию для логов.
+
+    - Для PyInstaller exe: папка logs/ рядом с exe
+    - Fallback при отсутствии прав (Program Files): AppData/Local/Deltica/logs
+    - Для разработки: backend/logs/
+    """
+    if getattr(sys, 'frozen', False):
+        # Запущено из PyInstaller exe
+        exe_dir = Path(sys.executable).parent
+        logs_dir = exe_dir / "logs"
+
+        try:
+            logs_dir.mkdir(parents=True, exist_ok=True)
+            # Проверяем права на запись
+            test_file = logs_dir / ".write_test"
+            test_file.touch()
+            test_file.unlink()
+            return logs_dir
+        except (PermissionError, OSError):
+            # Нет прав на запись (например, Program Files)
+            # Fallback в AppData
+            appdata = Path(os.environ.get('LOCALAPPDATA', os.environ.get('APPDATA', '.')))
+            logs_dir = appdata / "Deltica" / "logs"
+            logs_dir.mkdir(parents=True, exist_ok=True)
+            print(f"[WARNING] No write permission in exe directory, using: {logs_dir}")
+            return logs_dir
+    else:
+        # Development mode
+        logs_dir = Path("backend/logs")
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        return logs_dir
 
 
 class JSONFormatter(logging.Formatter):
@@ -55,12 +91,11 @@ def setup_logging():
 
     - JSON формат логов
     - Ротация: ежедневная, хранить 30 дней
-    - Логи в директории backend/logs/
+    - Логи: рядом с exe (или AppData при отсутствии прав), для dev - backend/logs/
     - Дублирование в console (для разработки)
     """
-    # Создаём директорию для логов
-    logs_dir = Path("backend/logs")
-    logs_dir.mkdir(parents=True, exist_ok=True)
+    # Получаем директорию для логов (с учётом прав доступа)
+    logs_dir = get_logs_dir()
 
     # Получаем root logger
     logger = logging.getLogger()
