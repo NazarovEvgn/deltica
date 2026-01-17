@@ -1011,12 +1011,8 @@ watch(() => props.show, (newValue) => {
           </n-grid-item>
 
           <n-grid-item :span="3">
-            <!-- Секция 1: Действующее свидетельство/сертификат (всегда видима) -->
+            <!-- Файл на главной (всегда видим вверху) -->
             <div class="certificate-section">
-              <div class="certificate-section-header">
-                <span class="certificate-section-title">Действующее свидетельство/сертификат</span>
-              </div>
-              <!-- Текущий активный сертификат -->
               <div v-if="activeCertificate" style="margin-bottom: 12px;">
                 <n-thing>
                   <template #avatar>
@@ -1046,9 +1042,6 @@ watch(() => props.show, (newValue) => {
                   </template>
                 </n-thing>
               </div>
-              <n-text v-else depth="3" style="display: block;">
-                Действующее свидетельство не загружено. Загрузите документ в секцию "Документы по поверке" и нажмите кнопку ✓
-              </n-text>
             </div>
 
             <n-collapse :default-expanded-names="['verification', 'general']">
@@ -1074,7 +1067,7 @@ watch(() => props.show, (newValue) => {
                             {{ file.file_name }}
                           </a>
                           <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
-                            Действующий
+                            На главной
                           </n-tag>
                         </n-space>
                       </template>
@@ -1093,7 +1086,7 @@ watch(() => props.show, (newValue) => {
                             v-if="!readOnly && !file.is_active_certificate"
                             size="small"
                             @click="setFileAsActive(file.id)"
-                            title="Сделать этот документ действующим свидетельством"
+                            title="Добавить на главную"
                           >
                             <template #icon>
                               <n-icon :component="CheckmarkIcon" color="#18a058" />
@@ -1144,24 +1137,39 @@ watch(() => props.show, (newValue) => {
                         <n-icon size="24" :component="DocumentIcon" />
                       </template>
                       <template #header>
-                        <a
-                          href="#"
-                          @click.prevent="openFile(file.id, file.file_name)"
-                          class="file-link"
-                        >
-                          {{ file.file_name }}
-                        </a>
+                        <n-space align="center" :size="8">
+                          <a
+                            href="#"
+                            @click.prevent="openFile(file.id, file.file_name)"
+                            class="file-link"
+                          >
+                            {{ file.file_name }}
+                          </a>
+                          <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
+                            На главной
+                          </n-tag>
+                        </n-space>
                       </template>
                       <template #action>
                         <n-space>
-                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                            Скачать
-                          </n-button>
                           <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
                             <template #icon>
                               <n-icon :component="TrashIcon" color="#d03050" />
                             </template>
                             Удалить
+                          </n-button>
+                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                            Скачать
+                          </n-button>
+                          <n-button
+                            v-if="!readOnly && !file.is_active_certificate"
+                            size="small"
+                            @click="setFileAsActive(file.id)"
+                            title="Добавить на главную"
+                          >
+                            <template #icon>
+                              <n-icon :component="CheckmarkIcon" color="#18a058" />
+                            </template>
                           </n-button>
                         </n-space>
                       </template>
@@ -1263,18 +1271,6 @@ h3 {
   background: #fafafa;
   border-radius: 6px;
   border: 1px solid #e8e8e8;
-}
-
-.certificate-section-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.certificate-section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #333;
 }
 
 /* Стили для текстового вида информации (readOnly режим) */
