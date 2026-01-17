@@ -176,6 +176,18 @@ const isEdit = ref(false)
 // Состояние файлов
 const equipmentFiles = ref([])
 
+// Отдельные ref массивы для каждой категории (нужны для vuedraggable)
+const verificationFilesList = ref([])
+const generalFilesList = ref([])
+const activeFilesList = ref([])
+
+// Синхронизация отфильтрованных списков
+const syncFileLists = () => {
+  verificationFilesList.value = equipmentFiles.value.filter(f => f.file_type === 'verification_docs')
+  generalFilesList.value = equipmentFiles.value.filter(f => f.file_type === 'general_docs')
+  activeFilesList.value = equipmentFiles.value.filter(f => f.is_active_certificate === true)
+}
+
 // Загрузка списка файлов оборудования
 const loadEquipmentFiles = async () => {
   if (!props.equipmentId) return
@@ -186,6 +198,7 @@ const loadEquipmentFiles = async () => {
   try {
     const response = await axios.get(API_ENDPOINTS.files(props.equipmentId))
     equipmentFiles.value = response.data
+    syncFileLists()
   } catch (error) {
     console.error('Ошибка при загрузке файлов:', error)
   }
@@ -223,19 +236,10 @@ const handleFileUpload = async ({ file }, fileType = 'general_docs') => {
   return false  // Предотвращаем стандартное поведение
 }
 
-// Фильтрация файлов по категориям
-const verificationFiles = computed(() =>
-  equipmentFiles.value.filter(f => f.file_type === 'verification_docs')
-)
-
-const generalFiles = computed(() =>
-  equipmentFiles.value.filter(f => f.file_type === 'general_docs')
-)
-
-// Файлы на главной - все файлы с флагом is_active_certificate
-const activeFiles = computed(() =>
-  equipmentFiles.value.filter(f => f.is_active_certificate === true)
-)
+// Computed свойства для отображения (используются в read-only режиме и для проверки наличия файлов)
+const verificationFiles = computed(() => verificationFilesList.value)
+const generalFiles = computed(() => generalFilesList.value)
+const activeFiles = computed(() => activeFilesList.value)
 
 // Открытие файла для просмотра
 const openFile = (fileId, fileName) => {
@@ -1051,7 +1055,7 @@ watch(() => props.show, (newValue) => {
                 <span v-if="!readOnly" class="drop-hint">(перетащите файл сюда)</span>
               </div>
               <draggable
-                :list="activeFiles"
+                :list="activeFilesList"
                 group="files"
                 item-key="id"
                 class="draggable-list"
@@ -1104,8 +1108,8 @@ watch(() => props.show, (newValue) => {
                 </template>
                 <!-- Список файлов поверки -->
                 <draggable
-                  v-if="verificationFiles.length > 0"
-                  :list="verificationFiles"
+                  v-if="verificationFilesList.length > 0"
+                  :list="verificationFilesList"
                   group="files"
                   item-key="id"
                   class="draggable-list bordered"
@@ -1189,8 +1193,8 @@ watch(() => props.show, (newValue) => {
                 </template>
                 <!-- Список общих файлов -->
                 <draggable
-                  v-if="generalFiles.length > 0"
-                  :list="generalFiles"
+                  v-if="generalFilesList.length > 0"
+                  :list="generalFilesList"
                   group="files"
                   item-key="id"
                   class="draggable-list bordered"
