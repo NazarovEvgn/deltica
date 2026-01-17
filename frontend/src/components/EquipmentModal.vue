@@ -1092,7 +1092,6 @@ watch(() => props.show, (newValue) => {
                           <n-button
                             v-if="!readOnly && !file.is_active_certificate"
                             size="small"
-                            quaternary
                             @click="setFileAsActive(file.id)"
                             title="Сделать этот документ действующим свидетельством"
                           >
