@@ -217,26 +217,20 @@ def download_file(file_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{file_id}/set-active")
 def set_file_as_active_certificate(file_id: int, db: Session = Depends(get_db)):
-    """Установить файл как действующее свидетельство/сертификат."""
+    """Добавить/убрать файл с главной."""
     db_file = db.query(EquipmentFile).filter(EquipmentFile.id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="Файл не найден")
 
-    equipment_id = db_file.equipment_id
-
-    # Сбросить флаг у всех предыдущих активных сертификатов этого оборудования
-    db.query(EquipmentFile).filter(
-        EquipmentFile.equipment_id == equipment_id,
-        EquipmentFile.is_active_certificate == True
-    ).update({'is_active_certificate': False})
-
-    # Установить флаг для выбранного файла
-    db_file.is_active_certificate = True
+    # Переключить флаг (toggle)
+    db_file.is_active_certificate = not db_file.is_active_certificate
     db.commit()
     db.refresh(db_file)
 
+    message = "Файл добавлен на главную" if db_file.is_active_certificate else "Файл убран с главной"
+
     return {
-        "message": "Файл установлен как действующее свидетельство",
+        "message": message,
         "file": {
             "id": db_file.id,
             "file_name": db_file.file_name,

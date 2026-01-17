@@ -30,7 +30,7 @@ import {
   useDialog,
   NDialogProvider
 } from 'naive-ui'
-import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon, CheckmarkCircleOutline as CheckmarkIcon } from '@vicons/ionicons5'
+import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon, CheckmarkCircleOutline as CheckmarkIcon, CloseCircleOutline as CloseIcon } from '@vicons/ionicons5'
 import axios from 'axios'
 import { useAuth } from '@/composables/useAuth'
 import { API_ENDPOINTS } from '../config/api.js'
@@ -231,9 +231,9 @@ const generalFiles = computed(() =>
   equipmentFiles.value.filter(f => f.file_type === 'general_docs')
 )
 
-// Активный сертификат - файл с флагом is_active_certificate
-const activeCertificate = computed(() =>
-  equipmentFiles.value.find(f => f.is_active_certificate === true)
+// Файлы на главной - все файлы с флагом is_active_certificate
+const activeFiles = computed(() =>
+  equipmentFiles.value.filter(f => f.is_active_certificate === true)
 )
 
 // Открытие файла для просмотра
@@ -1011,37 +1011,39 @@ watch(() => props.show, (newValue) => {
           </n-grid-item>
 
           <n-grid-item :span="3">
-            <!-- Файл на главной (всегда видим вверху) -->
-            <div class="certificate-section">
-              <div v-if="activeCertificate" style="margin-bottom: 12px;">
-                <n-thing>
-                  <template #avatar>
-                    <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
-                  </template>
-                  <template #header>
-                    <a
-                      href="#"
-                      @click.prevent="openFile(activeCertificate.id, activeCertificate.file_name)"
-                      class="file-link"
-                    >
-                      {{ activeCertificate.file_name }}
-                    </a>
-                  </template>
-                  <template #action>
-                    <n-space>
-                      <n-button size="small" @click="downloadFile(activeCertificate.id, activeCertificate.file_name)">
-                        Скачать
-                      </n-button>
-                      <n-button v-if="!readOnly" size="small" @click="deleteFile(activeCertificate.id)">
-                        <template #icon>
-                          <n-icon :component="TrashIcon" color="#d03050" />
-                        </template>
-                        Удалить
-                      </n-button>
-                    </n-space>
-                  </template>
-                </n-thing>
-              </div>
+            <!-- Файлы на главной (всегда видимы вверху) -->
+            <div v-if="activeFiles.length > 0" class="certificate-section">
+              <n-list bordered>
+                <n-list-item v-for="file in activeFiles" :key="'active-' + file.id">
+                  <n-thing>
+                    <template #avatar>
+                      <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
+                    </template>
+                    <template #header>
+                      <a
+                        href="#"
+                        @click.prevent="openFile(file.id, file.file_name)"
+                        class="file-link"
+                      >
+                        {{ file.file_name }}
+                      </a>
+                    </template>
+                    <template #action>
+                      <n-space>
+                        <n-button v-if="!readOnly" size="small" @click="setFileAsActive(file.id)">
+                          <template #icon>
+                            <n-icon :component="CloseIcon" color="#d03050" />
+                          </template>
+                          Убрать
+                        </n-button>
+                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                          Скачать
+                        </n-button>
+                      </n-space>
+                    </template>
+                  </n-thing>
+                </n-list-item>
+              </n-list>
             </div>
 
             <n-collapse :default-expanded-names="['verification', 'general']">
