@@ -225,6 +225,12 @@ class EquipmentFileResponse(EquipmentFileBase):
     is_active_certificate: bool = False
     sort_order: int = 0
 
+    @field_validator('sort_order', mode='before')
+    @classmethod
+    def set_sort_order_default(cls, v):
+        """Convert None to 0 for sort_order field."""
+        return v if v is not None else 0
+
     class Config:
         from_attributes = True
 

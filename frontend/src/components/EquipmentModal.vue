@@ -1049,11 +1049,6 @@ watch(() => props.show, (newValue) => {
           <n-grid-item :span="3">
             <!-- Файлы на главной (drop zone для перетаскивания) -->
             <div class="certificate-section" :class="{ 'drop-zone-empty': activeFiles.length === 0 }">
-              <div class="section-label">
-                <n-icon :component="CheckmarkIcon" color="#18a058" size="16" />
-                <span>На главной</span>
-                <span v-if="!readOnly" class="drop-hint">(перетащите файл сюда)</span>
-              </div>
               <draggable
                 :list="activeFilesList"
                 group="files"
@@ -1095,9 +1090,6 @@ watch(() => props.show, (newValue) => {
                   </div>
                 </template>
               </draggable>
-              <div v-if="activeFiles.length === 0" class="empty-drop-zone">
-                Перетащите файл сюда для добавления на главную
-              </div>
             </div>
 
             <n-collapse :default-expanded-names="['verification', 'general']">
@@ -1136,15 +1128,6 @@ watch(() => props.show, (newValue) => {
                         </n-tag>
                       </div>
                       <div class="file-actions">
-                        <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
-                          <template #icon>
-                            <n-icon :component="TrashIcon" color="#d03050" />
-                          </template>
-                          Удалить
-                        </n-button>
-                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                          Скачать
-                        </n-button>
                         <n-button
                           v-if="!readOnly && !file.is_active_certificate"
                           size="small"
@@ -1154,6 +1137,15 @@ watch(() => props.show, (newValue) => {
                           <template #icon>
                             <n-icon :component="CheckmarkIcon" color="#18a058" />
                           </template>
+                        </n-button>
+                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                          Скачать
+                        </n-button>
+                        <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
+                          <template #icon>
+                            <n-icon :component="TrashIcon" color="#d03050" />
+                          </template>
+                          Удалить
                         </n-button>
                       </div>
                     </div>
@@ -1221,15 +1213,6 @@ watch(() => props.show, (newValue) => {
                         </n-tag>
                       </div>
                       <div class="file-actions">
-                        <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
-                          <template #icon>
-                            <n-icon :component="TrashIcon" color="#d03050" />
-                          </template>
-                          Удалить
-                        </n-button>
-                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                          Скачать
-                        </n-button>
                         <n-button
                           v-if="!readOnly && !file.is_active_certificate"
                           size="small"
@@ -1239,6 +1222,15 @@ watch(() => props.show, (newValue) => {
                           <template #icon>
                             <n-icon :component="CheckmarkIcon" color="#18a058" />
                           </template>
+                        </n-button>
+                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                          Скачать
+                        </n-button>
+                        <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
+                          <template #icon>
+                            <n-icon :component="TrashIcon" color="#d03050" />
+                          </template>
+                          Удалить
                         </n-button>
                       </div>
                     </div>
