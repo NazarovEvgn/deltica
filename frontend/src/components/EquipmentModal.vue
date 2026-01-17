@@ -1080,6 +1080,15 @@ watch(() => props.show, (newValue) => {
                       </template>
                       <template #action>
                         <n-space>
+                          <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
+                            <template #icon>
+                              <n-icon :component="TrashIcon" color="#d03050" />
+                            </template>
+                            Удалить
+                          </n-button>
+                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                            Скачать
+                          </n-button>
                           <n-button
                             v-if="!readOnly && !file.is_active_certificate"
                             size="small"
@@ -1090,15 +1099,6 @@ watch(() => props.show, (newValue) => {
                             <template #icon>
                               <n-icon :component="CheckmarkIcon" color="#18a058" />
                             </template>
-                          </n-button>
-                          <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                            Скачать
-                          </n-button>
-                          <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
-                            <template #icon>
-                              <n-icon :component="TrashIcon" color="#d03050" />
-                            </template>
-                            Удалить
                           </n-button>
                         </n-space>
                       </template>
