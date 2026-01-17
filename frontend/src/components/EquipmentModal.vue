@@ -1030,14 +1030,20 @@ watch(() => props.show, (newValue) => {
                     </template>
                     <template #action>
                       <n-space>
-                        <n-button v-if="!readOnly" size="small" @click="setFileAsActive(file.id)">
+                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                          Скачать
+                        </n-button>
+                        <n-button
+                          v-if="!readOnly"
+                          size="small"
+                          tertiary
+                          @click="setFileAsActive(file.id)"
+                          title="Убрать с главной"
+                          style="border: 1px solid #e0e0e6;"
+                        >
                           <template #icon>
                             <n-icon :component="CloseIcon" color="#d03050" />
                           </template>
-                          Убрать
-                        </n-button>
-                        <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                          Скачать
                         </n-button>
                       </n-space>
                     </template>
@@ -1208,6 +1214,9 @@ watch(() => props.show, (newValue) => {
           </n-grid-item>
         </template>
       </n-grid>
+
+      <!-- Разделительная линия перед кнопками -->
+      <div class="footer-divider"></div>
     </n-form>
 
     <template #footer>
@@ -1306,5 +1315,11 @@ h3 {
 .info-value {
   color: #333;
   word-break: break-word;
+}
+
+/* Разделительная линия перед кнопками футера */
+.footer-divider {
+  margin-top: 24px;
+  border-bottom: 2px solid var(--gpn-blue-primary, #0071BC);
 }
 </style>

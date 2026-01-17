@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Reference
+
+```bash
+# Development
+uv run uvicorn backend.core.main:app --reload     # Backend: http://localhost:8000
+cd frontend && npm run dev                         # Frontend: http://localhost:5173
+cd frontend && npm run electron:dev                # Desktop mode
+
+# Testing
+uv run pytest                                      # All 152 tests
+uv run pytest backend/tests/test_file.py -v       # Single test file
+
+# Database
+uv run alembic upgrade head                        # Apply migrations
+uv run python backend/scripts/seed_users.py       # Create admin/admin123
+```
+
 ## Project Overview
 
 Deltica - система управления метрологическим оборудованием для нефтегазовых компаний. Отслеживает средства измерений (СИ) и испытательное оборудование (ИО), их графики поверки/калибровки/аттестации.
@@ -496,26 +513,6 @@ await axios.post(API_ENDPOINTS.documentLabels, data)  // ✅ Правильно
   - Build-скрипты автоматически создают пустую папку `uploads/` в release, но НЕ очищают исходную папку
   - При переносе старых файлов в production - копировать вручную ПОСЛЕ установки сервера
 
-- ✅ **РЕШЕНО (2025-12-23)**: ModuleNotFoundError: No module named 'backend'
-  - Проблема: PyInstaller spec файл копировал папки БЕЗ родительской директории backend/
-  - Симптомы: При запуске deltica-server.exe ошибка "ModuleNotFoundError: No module named 'backend'" в main.py:5
-  - РЕШЕНИЕ: Изменен spec файл в build-server.ps1:
-    ```python
-    # Было (неправильно):
-    datas=[
-        ('backend/app', 'app'),      # создавало app/ напрямую
-        ('backend/core', 'core'),
-        ...
-    ]
-
-    # Стало (правильно):
-    datas=[
-        ('backend', 'backend'),      # сохраняет структуру backend/
-    ]
-    ```
-  - Результат: Структура импортов `from backend.routes import ...` теперь работает корректно
-  - Альтернатива: Использовать `build_server_simple.py` (Python скрипт без проблем с кодировкой PowerShell)
-
 - **Критические файлы отсутствуют в сборке**:
   - PyInstaller упаковывает все data files ВНУТРЬ .exe, но некоторые скрипты ищут их рядом с .exe
   - Симптомы: "Checking tables...Tables not found. Failed to restore database from dump!", отсутствуют config/, docs/, migrations/, alembic.ini
@@ -566,17 +563,6 @@ await axios.post(API_ENDPOINTS.documentLabels, data)  // ✅ Правильно
   - Конфигурация сохраняется в `%APPDATA%\Deltica\config.json` (НЕ в папке установки!)
   - `useAuth.js` и `api.js` используют единый источник конфигурации через `window.electron.getConfig()`
   - При вводе `192.168.1.10` автоматически преобразуется в `http://192.168.1.10:8000`
-
-- ✅ **РЕШЕНО (2025-01-25)**: Хардкоженные URL заменены на динамические
-  - Проблема: Компоненты использовали `'http://localhost:8000/...'` вместо `API_ENDPOINTS`
-  - Решение: Все компоненты (MainTable, EquipmentModal, ArchiveTable, DocumentsPanel, BackupPanel, ContractsNotebook, SystemMonitor, LaborantStatistics) используют `API_ENDPOINTS` из `config/api.js`
-  - Результат: Клиент корректно работает с удаленным сервером
-
-- ✅ **РЕШЕНО (2025-01-25)**: Windows SSO определял неправильного пользователя
-  - Проблема: Backend использовал `os.environ.get('USERNAME')` - username на **сервере**, а не на клиенте
-  - Решение: Клиент отправляет заголовок `X-Windows-Username` с текущим Windows username
-  - Код: `window.electron.getWindowsUsername()` в preload.js получает username на клиенте
-  - Результат: Каждый пользователь входит под своим Windows логином
 
 ### Minor Issues
 
@@ -792,18 +778,7 @@ await axios.post(API_ENDPOINTS.documentLabels, data)  // ✅ Правильно
 
 7. **Войти**: `admin` / `admin123`
 
-**Troubleshooting:**
-- Если вход не выполняется - проверить что сервер запущен и доступен
-- Если "ошибка соединения":
-  - Удалить `%APPDATA%\Deltica\config.json`
-  - Перезапустить клиент → появится диалог настройки
-  - Ввести IP сервера заново (порт добавится автоматически)
-- **Если init-database.bat не работает** (падает на шаге 3 или таблицы не создаются):
-  1. Использовать файлы из `dist/Database-Init-v2.0/`
-  2. Открыть pgAdmin → Query Tool на базе `deltica_db`
-  3. Загрузить и выполнить `create_tables_only.sql` (если нужны ВСЕ таблицы)
-  4. Или `create_tables_NO_USERS.sql` (если таблица users уже создана вручную)
-  5. См. `БЫСТРАЯ_ИНСТРУКЦИЯ.txt` для подробностей
+**Troubleshooting:** См. раздел "Known Issues" для решения проблем с init-database.bat и PostgreSQL permissions.
 
 ### Ключевые преимущества:
 
