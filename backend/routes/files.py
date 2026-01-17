@@ -123,7 +123,8 @@ async def upload_file(
         file_name=file.filename,  # Оригинальное имя
         file_path=relative_path,
         file_type=file_type,
-        file_size=file_size
+        file_size=file_size,
+        is_active_certificate=False
     )
 
     db.add(db_file)
@@ -212,6 +213,37 @@ def download_file(file_id: int, db: Session = Depends(get_db)):
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
         }
     )
+
+
+@router.patch("/{file_id}/set-active")
+def set_file_as_active_certificate(file_id: int, db: Session = Depends(get_db)):
+    """Установить файл как действующее свидетельство/сертификат."""
+    db_file = db.query(EquipmentFile).filter(EquipmentFile.id == file_id).first()
+    if not db_file:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+
+    equipment_id = db_file.equipment_id
+
+    # Сбросить флаг у всех предыдущих активных сертификатов этого оборудования
+    db.query(EquipmentFile).filter(
+        EquipmentFile.equipment_id == equipment_id,
+        EquipmentFile.is_active_certificate == True
+    ).update({'is_active_certificate': False})
+
+    # Установить флаг для выбранного файла
+    db_file.is_active_certificate = True
+    db.commit()
+    db.refresh(db_file)
+
+    return {
+        "message": "Файл установлен как действующее свидетельство",
+        "file": {
+            "id": db_file.id,
+            "file_name": db_file.file_name,
+            "file_type": db_file.file_type,
+            "is_active_certificate": db_file.is_active_certificate
+        }
+    }
 
 
 @router.delete("/{file_id}")

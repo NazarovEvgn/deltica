@@ -37,6 +37,7 @@
   "build": {
     "appId": "com.deltica.app",
     "productName": "Deltica",
+    "icon": "public/icon.ico",
     "directories": {
       "output": "dist-electron",
       "buildResources": "public"
@@ -58,10 +59,7 @@
       "icon": "public/icon.ico",
       "executableName": "Deltica",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "verifyUpdateCodeSignature": false,
-      "requestedExecutionLevel": "asInvoker",
-      "forceCodeSigning": false,
-      "signAndEditExecutable": false
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,

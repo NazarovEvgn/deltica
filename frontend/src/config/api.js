@@ -40,6 +40,7 @@ function createEndpoints(baseUrl) {
     fileView: (fileId) => `${baseUrl}/files/view/${fileId}`,
     fileDownload: (fileId) => `${baseUrl}/files/download/${fileId}`,
     fileDelete: (fileId) => `${baseUrl}/files/${fileId}`,
+    fileSetActive: (fileId) => `${baseUrl}/files/${fileId}/set-active`,
 
     // Archive
     archive: `${baseUrl}/archive`,

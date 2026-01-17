@@ -222,6 +222,7 @@ class EquipmentFileResponse(EquipmentFileBase):
     file_path: str
     file_size: int
     uploaded_at: datetime
+    is_active_certificate: bool = False
 
     class Config:
         from_attributes = True

@@ -25,11 +25,12 @@ import {
   NThing,
   NCollapse,
   NCollapseItem,
+  NTag,
   useMessage,
   useDialog,
   NDialogProvider
 } from 'naive-ui'
-import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon } from '@vicons/ionicons5'
+import { CloudUploadOutline as CloudUploadIcon, DocumentTextOutline as DocumentIcon, TrashOutline as TrashIcon, ArchiveOutline as ArchiveIcon, CheckmarkCircleOutline as CheckmarkIcon } from '@vicons/ionicons5'
 import axios from 'axios'
 import { useAuth } from '@/composables/useAuth'
 import { API_ENDPOINTS } from '../config/api.js'
@@ -230,8 +231,9 @@ const generalFiles = computed(() =>
   equipmentFiles.value.filter(f => f.file_type === 'general_docs')
 )
 
+// Активный сертификат - файл с флагом is_active_certificate
 const activeCertificate = computed(() =>
-  equipmentFiles.value.find(f => f.file_type === 'active_certificate')
+  equipmentFiles.value.find(f => f.is_active_certificate === true)
 )
 
 // Открытие файла для просмотра
@@ -255,6 +257,18 @@ const deleteFile = async (fileId) => {
   } catch (error) {
     console.error('Ошибка при удалении файла:', error)
     message.error('Ошибка при удалении файла')
+  }
+}
+
+// Установить файл как действующее свидетельство
+const setFileAsActive = async (fileId) => {
+  try {
+    await axios.patch(API_ENDPOINTS.fileSetActive(fileId))
+    message.success('Файл установлен как действующее свидетельство')
+    await loadEquipmentFiles()
+  } catch (error) {
+    console.error('Ошибка при установке файла как действующего:', error)
+    message.error('Ошибка при установке файла как действующего')
   }
 }
 
@@ -997,67 +1011,47 @@ watch(() => props.show, (newValue) => {
           </n-grid-item>
 
           <n-grid-item :span="3">
-            <n-collapse :default-expanded-names="['certificate', 'verification', 'general']">
-              <!-- Секция 1: Действующее свидетельство/сертификат -->
-              <n-collapse-item name="certificate">
-                <template #header>
-                  <span class="file-section-title">Действующее свидетельство/сертификат</span>
-                </template>
-                <!-- Текущий активный сертификат -->
-                <div v-if="activeCertificate" style="margin-bottom: 12px;">
-                  <n-thing>
-                    <template #avatar>
-                      <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
-                    </template>
-                    <template #header>
-                      <a
-                        href="#"
-                        @click.prevent="openFile(activeCertificate.id, activeCertificate.file_name)"
-                        style="color: #18a058; text-decoration: none; cursor: pointer;"
-                        @mouseover="$event.target.style.textDecoration = 'underline'"
-                        @mouseleave="$event.target.style.textDecoration = 'none'"
-                      >
-                        {{ activeCertificate.file_name }}
-                      </a>
-                    </template>
-                    <template #action>
-                      <n-space>
-                        <n-button size="small" @click="downloadFile(activeCertificate.id, activeCertificate.file_name)">
-                          Скачать
-                        </n-button>
-                        <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(activeCertificate.id)">
-                          <template #icon>
-                            <n-icon :component="TrashIcon" />
-                          </template>
-                          Удалить
-                        </n-button>
-                      </n-space>
-                    </template>
-                  </n-thing>
-                </div>
-                <n-text v-else depth="3" style="display: block; margin-bottom: 12px;">
-                  Действующее свидетельство не загружено
-                </n-text>
-                <!-- Загрузчик активного сертификата -->
-                <n-upload
-                  v-if="!readOnly"
-                  :custom-request="(options) => handleFileUpload(options, 'active_certificate')"
-                  :show-file-list="false"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                >
-                  <n-upload-dragger>
-                    <div style="margin-bottom: 8px">
-                      <n-icon size="32" :depth="3">
-                        <cloud-upload-icon />
-                      </n-icon>
-                    </div>
-                    <n-text style="font-size: 14px">
-                      {{ activeCertificate ? 'Заменить сертификат' : 'Загрузить сертификат' }}
-                    </n-text>
-                  </n-upload-dragger>
-                </n-upload>
-              </n-collapse-item>
+            <!-- Секция 1: Действующее свидетельство/сертификат (всегда видима) -->
+            <div class="certificate-section">
+              <div class="certificate-section-header">
+                <span class="certificate-section-title">Действующее свидетельство/сертификат</span>
+              </div>
+              <!-- Текущий активный сертификат -->
+              <div v-if="activeCertificate" style="margin-bottom: 12px;">
+                <n-thing>
+                  <template #avatar>
+                    <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
+                  </template>
+                  <template #header>
+                    <a
+                      href="#"
+                      @click.prevent="openFile(activeCertificate.id, activeCertificate.file_name)"
+                      class="file-link"
+                    >
+                      {{ activeCertificate.file_name }}
+                    </a>
+                  </template>
+                  <template #action>
+                    <n-space>
+                      <n-button size="small" @click="downloadFile(activeCertificate.id, activeCertificate.file_name)">
+                        Скачать
+                      </n-button>
+                      <n-button v-if="!readOnly" size="small" @click="deleteFile(activeCertificate.id)">
+                        <template #icon>
+                          <n-icon :component="TrashIcon" color="#d03050" />
+                        </template>
+                        Удалить
+                      </n-button>
+                    </n-space>
+                  </template>
+                </n-thing>
+              </div>
+              <n-text v-else depth="3" style="display: block;">
+                Действующее свидетельство не загружено. Загрузите документ в секцию "Документы по поверке" и нажмите кнопку ✓
+              </n-text>
+            </div>
 
+            <n-collapse :default-expanded-names="['verification', 'general']">
               <!-- Секция 2: Документы по поверке/калибровке/аттестации -->
               <n-collapse-item name="verification">
                 <template #header>
@@ -1071,24 +1065,38 @@ watch(() => props.show, (newValue) => {
                         <n-icon size="24" :component="DocumentIcon" />
                       </template>
                       <template #header>
-                        <a
-                          href="#"
-                          @click.prevent="openFile(file.id, file.file_name)"
-                          style="color: #18a058; text-decoration: none; cursor: pointer;"
-                          @mouseover="$event.target.style.textDecoration = 'underline'"
-                          @mouseleave="$event.target.style.textDecoration = 'none'"
-                        >
-                          {{ file.file_name }}
-                        </a>
+                        <n-space align="center" :size="8">
+                          <a
+                            href="#"
+                            @click.prevent="openFile(file.id, file.file_name)"
+                            class="file-link"
+                          >
+                            {{ file.file_name }}
+                          </a>
+                          <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
+                            Действующий
+                          </n-tag>
+                        </n-space>
                       </template>
                       <template #action>
                         <n-space>
+                          <n-button
+                            v-if="!readOnly && !file.is_active_certificate"
+                            size="small"
+                            quaternary
+                            @click="setFileAsActive(file.id)"
+                            title="Сделать этот документ действующим свидетельством"
+                          >
+                            <template #icon>
+                              <n-icon :component="CheckmarkIcon" color="#18a058" />
+                            </template>
+                          </n-button>
                           <n-button size="small" @click="downloadFile(file.id, file.file_name)">
                             Скачать
                           </n-button>
-                          <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
+                          <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
                             <template #icon>
-                              <n-icon :component="TrashIcon" />
+                              <n-icon :component="TrashIcon" color="#d03050" />
                             </template>
                             Удалить
                           </n-button>
@@ -1140,9 +1148,7 @@ watch(() => props.show, (newValue) => {
                         <a
                           href="#"
                           @click.prevent="openFile(file.id, file.file_name)"
-                          style="color: #18a058; text-decoration: none; cursor: pointer;"
-                          @mouseover="$event.target.style.textDecoration = 'underline'"
-                          @mouseleave="$event.target.style.textDecoration = 'none'"
+                          class="file-link"
                         >
                           {{ file.file_name }}
                         </a>
@@ -1152,9 +1158,9 @@ watch(() => props.show, (newValue) => {
                           <n-button size="small" @click="downloadFile(file.id, file.file_name)">
                             Скачать
                           </n-button>
-                          <n-button v-if="!readOnly" size="small" type="error" @click="deleteFile(file.id)">
+                          <n-button v-if="!readOnly" size="small" @click="deleteFile(file.id)">
                             <template #icon>
-                              <n-icon :component="TrashIcon" />
+                              <n-icon :component="TrashIcon" color="#d03050" />
                             </template>
                             Удалить
                           </n-button>
@@ -1235,7 +1241,39 @@ h3 {
 
 /* Стили для заголовков секций файлов */
 .file-section-title {
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Стили для ссылок на файлы */
+.file-link {
+  color: var(--gpn-blue-primary, #0071BC);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}
+
+/* Стили для несворачиваемой секции сертификата */
+.certificate-section {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.certificate-section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.certificate-section-title {
+  font-size: 16px;
   font-weight: 700;
   color: #333;
 }
