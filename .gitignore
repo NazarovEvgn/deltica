@@ -54,3 +54,13 @@ frontend/public/config.json
 
 # Logs
 backend/logs/
+
+# Temporary files (root only)
+/*.jpg
+/*.png
+/Screenshot*.jpg
+/backup_uploads_*/
+/run-build.bat
+
+# Claude Code local settings
+.claude/settings.local.json
