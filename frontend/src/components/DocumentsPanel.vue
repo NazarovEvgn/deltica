@@ -244,9 +244,6 @@ const formatDate = (dateString) => {
                 {{ doc.file_name }}
               </a>
             </template>
-            <template #description>
-              {{ formatFileSize(doc.file_size) }} • Загружен: {{ formatDate(doc.uploaded_at) }}
-            </template>
             <template #action>
               <n-space>
                 <n-button size="small" @click="downloadDocument(doc.id, doc.file_name)">
@@ -255,11 +252,10 @@ const formatDate = (dateString) => {
                 <n-button
                   v-if="isAdmin"
                   size="small"
-                  type="error"
                   @click="deleteDocument(doc.id, doc.file_name)"
                 >
                   <template #icon>
-                    <n-icon :component="TrashIcon" />
+                    <n-icon :component="TrashIcon" color="#d03050" />
                   </template>
                   Удалить
                 </n-button>

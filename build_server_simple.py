@@ -155,7 +155,7 @@ def main():
     # Step 4: Create release structure
     print("\n[4/4] Creating release structure...")
 
-    release_dir = Path("dist/Deltica-Server-v1.0.5")
+    release_dir = Path("dist/Deltica-Server-v1.0.6")
     if release_dir.exists():
         import shutil
         shutil.rmtree(release_dir)

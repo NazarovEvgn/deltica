@@ -792,37 +792,91 @@ watch(() => props.show, (newValue) => {
       <!-- Секция: Прикрепленные файлы -->
       <div class="info-section" v-if="isEdit">
         <h3>Прикрепленные файлы</h3>
-        <n-list v-if="equipmentFiles.length > 0" bordered>
-          <n-list-item v-for="file in equipmentFiles" :key="file.id">
-            <n-thing>
-              <template #avatar>
+
+        <!-- Файлы на главной -->
+        <div v-if="activeFiles.length > 0" class="certificate-section readonly-files">
+          <div v-for="file in activeFiles" :key="file.id" class="readonly-file-item active-file">
+            <n-icon size="24" :component="DocumentIcon" color="#0071BC" />
+            <a
+              href="#"
+              @click.prevent="openFile(file.id, file.file_name)"
+              class="file-link file-name"
+            >
+              {{ file.file_name }}
+            </a>
+            <div class="file-actions">
+              <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                Скачать
+              </n-button>
+            </div>
+          </div>
+        </div>
+
+        <n-collapse :default-expanded-names="['verification', 'general']">
+          <!-- Документы по поверке/калибровке/аттестации -->
+          <n-collapse-item name="verification">
+            <template #header>
+              <span class="file-section-title">Документы по поверке/калибровке/аттестации</span>
+            </template>
+            <div v-if="verificationFiles.length > 0" class="readonly-files">
+              <div v-for="file in verificationFiles" :key="file.id" class="readonly-file-item">
                 <n-icon size="24" :component="DocumentIcon" />
-              </template>
-              <template #header>
-                <a
-                  href="#"
-                  @click.prevent="openFile(file.id, file.file_name)"
-                  style="color: #0071BC; text-decoration: none; cursor: pointer;"
-                  @mouseover="$event.target.style.textDecoration = 'underline'"
-                  @mouseleave="$event.target.style.textDecoration = 'none'"
-                >
-                  {{ file.file_name }}
-                </a>
-              </template>
-              <template #description>
-                {{ formatFileSize(file.file_size) }}
-              </template>
-              <template #action>
-                <n-button size="small" @click="downloadFile(file.id, file.file_name)">
-                  Скачать
-                </n-button>
-              </template>
-            </n-thing>
-          </n-list-item>
-        </n-list>
-        <n-text v-else depth="3" style="display: block;">
-          Файлы не загружены
-        </n-text>
+                <div class="file-info">
+                  <a
+                    href="#"
+                    @click.prevent="openFile(file.id, file.file_name)"
+                    class="file-link file-name"
+                  >
+                    {{ file.file_name }}
+                  </a>
+                  <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
+                    На главной
+                  </n-tag>
+                </div>
+                <div class="file-actions">
+                  <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                    Скачать
+                  </n-button>
+                </div>
+              </div>
+            </div>
+            <n-text v-else depth="3" style="display: block;">
+              Документы по поверке не загружены
+            </n-text>
+          </n-collapse-item>
+
+          <!-- Общие документы -->
+          <n-collapse-item name="general">
+            <template #header>
+              <span class="file-section-title">Общие документы</span>
+            </template>
+            <div v-if="generalFiles.length > 0" class="readonly-files">
+              <div v-for="file in generalFiles" :key="file.id" class="readonly-file-item">
+                <n-icon size="24" :component="DocumentIcon" />
+                <div class="file-info">
+                  <a
+                    href="#"
+                    @click.prevent="openFile(file.id, file.file_name)"
+                    class="file-link file-name"
+                  >
+                    {{ file.file_name }}
+                  </a>
+                  <n-tag v-if="file.is_active_certificate" size="small" type="success" round>
+                    На главной
+                  </n-tag>
+                </div>
+                <div class="file-actions">
+                  <n-button size="small" @click="downloadFile(file.id, file.file_name)">
+                    Скачать
+                  </n-button>
+                </div>
+              </div>
+            </div>
+            <n-text v-else depth="3" style="display: block;">
+              Общие документы не загружены
+            </n-text>
+          </n-collapse-item>
+        </n-collapse>
       </div>
     </div>
 
@@ -1427,6 +1481,40 @@ h3 {
 
 .drag-handle:active {
   cursor: grabbing;
+}
+
+/* Стили для readonly файлов (лаборант) */
+.readonly-files {
+  border: 1px solid #e0e0e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.readonly-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.readonly-file-item:last-child {
+  border-bottom: none;
+}
+
+.readonly-file-item:hover {
+  background: #f9f9f9;
+}
+
+.readonly-file-item.active-file {
+  background: #f0f9ff;
+  border-bottom: 1px solid #e0f0ff;
+}
+
+.readonly-file-item.active-file:hover {
+  background: #e6f4ff;
 }
 
 .file-info {
